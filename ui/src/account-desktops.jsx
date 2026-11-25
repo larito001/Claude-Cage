@@ -21,13 +21,16 @@ import { shareClipboard } from "./shared-clipboard.mjs";
 import { desktopInputChannel } from "./desktop-input-channel.mjs";
 import { installRemoteInput } from "./remote-input";
 import { guestKeys } from "./guest-keys.mjs";
+import { followDisplaySize } from "./remote-display.mjs";
 import { runtimeSocketURL } from "./client-context.mjs";
 import { translate, useTranslation } from "./interface-language.mjs";
 import { localizeBackendMessage } from "./backend-message.mjs";
 import {
+  canDeleteDesktop,
   desktopClipboardState,
   desktopMergeNoticeTarget,
   desktopTitle as title,
+  hasDefaultDesktop,
   reconcileAccountDesktopPanes,
 } from "./account-desktop-state.mjs";
 
@@ -56,7 +59,7 @@ function DesktopRowAction({ label, icon: Icon, disabled, className = "", onClick
   );
 }
 
-export function useAccountDesktops(onShow, onHide, notify, confirm, visible, revision) {
+export function useAccountDesktops(onShow, onHide, notify, confirm, visible, revision, onDefaultRemoved) {
   const [expanded, setExpanded] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState({});
   const [catalog, setCatalog] = useState(null);
@@ -71,6 +74,10 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
   const previousDefaultRedirect = useRef(null);
   const notifyRef = useRef(notify);
   notifyRef.current = notify;
+  const onHideRef = useRef(onHide);
+  onHideRef.current = onHide;
+  const onDefaultRemovedRef = useRef(onDefaultRemoved);
+  onDefaultRemovedRef.current = onDefaultRemoved;
   const refresh = useCallback(async (background = false) => {
     const g = ++generation.current;
     try {
@@ -85,6 +92,10 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
       }
       previousDefaultRedirect.current = nextDefaultRedirect;
       setCatalog(next);
+      if (Boolean(visibleRef.current) && panesRef.current.length === 0 && next?.default_removed) {
+        onDefaultRemovedRef.current?.();
+        onHideRef.current?.();
+      }
       setPanes((old) => reconcileAccountDesktopPanes(old, next, Boolean(visibleRef.current)));
       return next;
     } catch (e) {
@@ -178,9 +189,15 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
         setPending(account.id);
         try {
           await api(entry(account.id), undefined, "DELETE");
-          const closingOnly = panesRef.current.length === 1 && panesRef.current[0].id === account.id;
-          setPanes((old) => old.filter((a) => a.id !== account.id));
-          if (closingOnly) onHide();
+          if (account.id === "default") {
+            const viewingDefault = Boolean(visibleRef.current) && panesRef.current.length === 0;
+            onDefaultRemovedRef.current?.();
+            if (viewingDefault) onHideRef.current?.();
+          } else {
+            const closingOnly = panesRef.current.length === 1 && panesRef.current[0].id === account.id;
+            setPanes((old) => old.filter((a) => a.id !== account.id));
+            if (closingOnly) onHideRef.current?.();
+          }
           await refresh();
         } finally {
           lock.current = false;
@@ -409,6 +426,8 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
     catalog?.accounts ??
     []
   ).filter((a) => !a.provider || a.provider === "claude");
+  const showDefault = hasDefaultDesktop(catalog);
+  const showDelete = canDeleteDesktop(catalog);
   const original = instances.find(a => a.id === "default");
   const defaultEntry = original || { id: "default", label: tr("默认 Desktop") };
   const isDefaultRunning = Boolean(defaultEntry.running || defaultRunning);
@@ -434,13 +453,13 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
       </button>
       {expanded && (
         <div className="account-desktop-list">
-          {!catalog?.redirects?.default && (
+          {showDefault && (
             <div className={`account-desktop-row ${defaultSelected ? "active" : ""}`}>
               <button
                 className="sidebar-link"
                 title={title(defaultEntry)}
                 aria-pressed={defaultSelected}
-                disabled={disabled}
+                disabled={Boolean(pending) || disabled}
                 onClick={onDefault}
                 onContextMenu={focusRowActions}
                 onKeyDown={(event) => {
@@ -448,9 +467,9 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
                 }}
               >
                 <DesktopAccountLabel account={defaultEntry} />
-                {isDefaultRunning ? <span className="account-desktop-status" aria-hidden="true">●</span> : null}
+                {pending === "default" || isDefaultRunning ? <span className="account-desktop-status" aria-hidden="true">{pending === "default" ? "…" : "●"}</span> : null}
               </button>
-              {((isDefaultRunning && onDefaultStop) || (catalog?.supported && onRename)) && (
+              {((isDefaultRunning && onDefaultStop) || (catalog?.supported && (onRename || showDelete))) && (
                 <div className="terminal-row-actions" role="group" aria-label={tr("{0} 的操作", title(defaultEntry))}>
                   {isDefaultRunning && onDefaultStop && (
                     <DesktopRowAction
@@ -468,6 +487,15 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
                       onClick={() => onRename(defaultEntry)}
                     />
                   )}
+                  {showDelete && (
+                    <DesktopRowAction
+                      label={tr("删除")}
+                      icon={Trash2}
+                      className="desktop-delete-action"
+                      disabled={Boolean(pending) || disabled}
+                      onClick={(event) => model.remove({ ...defaultEntry, running: isDefaultRunning }, event.currentTarget)}
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -475,6 +503,8 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
           {catalog?.supported &&
             instances.filter(a => a.id !== "default").map((a) => {
               const active = selected && panes.some((p) => p.id === a.id);
+              const showBeside = panes.length > 0 && !panes.some((p) => p.id === a.id);
+              const hasRowActions = showBeside || a.running || Boolean(onRename) || showDelete;
               return (
                 <div className={`account-desktop-row ${active ? "active" : ""}`} key={a.id}>
                   <button
@@ -492,39 +522,43 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
                     <DesktopAccountLabel account={a} />
                     {pending === a.id || a.running ? <span className="account-desktop-status" aria-hidden="true">{pending === a.id ? "…" : "●"}</span> : null}
                   </button>
-                  <div className="terminal-row-actions" role="group" aria-label={tr("{0} 的操作", title(a))}>
-                    {panes.length > 0 && !panes.some((p) => p.id === a.id) && (
-                      <DesktopRowAction
-                        label={tr("并排打开")}
-                        icon={Columns2}
-                        disabled={Boolean(pending) || disabled}
-                        onClick={() => model.act(a, "start", true)}
-                      />
-                    )}
-                    {a.running && (
-                      <DesktopRowAction
-                        label={tr("关闭")}
-                        icon={Power}
-                        disabled={Boolean(pending) || disabled}
-                        onClick={(event) => model.act(a, "stop", false, false, event.currentTarget)}
-                      />
-                    )}
-                    {onRename && (
-                      <DesktopRowAction
-                        label={tr("重命名")}
-                        icon={Pencil}
-                        disabled={Boolean(pending) || disabled}
-                        onClick={() => onRename(a)}
-                      />
-                    )}
-                    <DesktopRowAction
-                      label={tr("删除")}
-                      icon={Trash2}
-                      className="desktop-delete-action"
-                      disabled={Boolean(pending) || disabled}
-                      onClick={(event) => model.remove(a, event.currentTarget)}
-                    />
-                  </div>
+                  {hasRowActions && (
+                    <div className="terminal-row-actions" role="group" aria-label={tr("{0} 的操作", title(a))}>
+                      {showBeside && (
+                        <DesktopRowAction
+                          label={tr("并排打开")}
+                          icon={Columns2}
+                          disabled={Boolean(pending) || disabled}
+                          onClick={() => model.act(a, "start", true)}
+                        />
+                      )}
+                      {a.running && (
+                        <DesktopRowAction
+                          label={tr("关闭")}
+                          icon={Power}
+                          disabled={Boolean(pending) || disabled}
+                          onClick={(event) => model.act(a, "stop", false, false, event.currentTarget)}
+                        />
+                      )}
+                      {onRename && (
+                        <DesktopRowAction
+                          label={tr("重命名")}
+                          icon={Pencil}
+                          disabled={Boolean(pending) || disabled}
+                          onClick={() => onRename(a)}
+                        />
+                      )}
+                      {showDelete && (
+                        <DesktopRowAction
+                          label={tr("删除")}
+                          icon={Trash2}
+                          className="desktop-delete-action"
+                          disabled={Boolean(pending) || disabled}
+                          onClick={(event) => model.remove(a, event.currentTarget)}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -545,8 +579,14 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
   );
 }
 
-function DesktopPane({
+// DesktopPane shows one Desktop instance's display. A plugin's desktop
+// application uses it too, with its own address and labels.
+export function DesktopPane({
   account,
+  path: instancePath = entry(account.id),
+  heading,
+  inputLabel = "Claude Desktop 输入",
+  closeLabel = "关闭实例",
   ready = true,
   visible,
   windowVisible = true,
@@ -579,7 +619,9 @@ function DesktopPane({
   const current = useRef({ visible: screenVisible && focused, keyboard, systemClipboard, onStatus, onFallback });
   current.current = { visible: screenVisible && focused, keyboard, systemClipboard, onStatus, onFallback };
   const [message, setMessage] = useState("");
+  const [sizeError, setSizeError] = useState(false);
   const [attempt, retry] = useState(0);
+  const sizingRef = useRef(null);
   useEffect(() => {
     if (!focused) input.current?.deactivate();
   }, [focused]);
@@ -587,7 +629,7 @@ function DesktopPane({
     if (!clipboardState.connected) return;
     clipboardReady.current = false;
     const clipboard = shareClipboard({
-      connect: () => new WebSocket(runtimeSocketURL(entry(account.id) + "/clipboard")),
+      connect: () => new WebSocket(runtimeSocketURL(instancePath + "/clipboard")),
       native,
       onStatus: (text) => current.current.onStatus?.(text),
       setActive: (active) => { clipboardReady.current = Boolean(active); },
@@ -599,7 +641,7 @@ function DesktopPane({
       clipboardRef.current = null;
       clipboard.dispose();
     };
-  }, [account.id, account.generation, clipboardState.connected]);
+  }, [account.id, account.generation, clipboardState.connected, instancePath]);
   useEffect(() => {
     clipboardRef.current?.setVisible(clipboardState.pollingVisible);
   }, [clipboardState.pollingVisible]);
@@ -618,12 +660,19 @@ function DesktopPane({
     let live = true,
       client,
       keys,
-      channel;
+      channel,
+      sizing;
     const valid = () => live && current.current.visible;
     setMessage("正在连接…");
-    const path = entry(account.id);
+    setSizeError(false);
+    const path = instancePath;
+    const stopSizing = () => {
+      sizing?.dispose();
+      sizing = undefined;
+      sizingRef.current = null;
+    };
     api(path + "/vnc-credentials")
-      .then(({ password, native_input }) => {
+      .then(({ password, native_input, display_scale, dynamic_scale }) => {
         if (!live) return;
         client = new RFB(container, runtimeSocketURL(path + "/vnc"), {
           credentials: { password },
@@ -632,11 +681,23 @@ function DesktopPane({
         keys = guestKeys(client.sendKey.bind(client));
         client.sendKey = keys.sendKey;
         client.scaleViewport = true;
-        client.resizeSession = true;
+        // The workbench sizes the display in screen pixels and sets its density;
+        // noVNC's own request would use CSS pixels at 96 DPI.
+        client.resizeSession = false;
         client.focusOnClick = true;
         client.addEventListener("connect", () => {
           if (!live) return;
           setMessage("");
+          stopSizing();
+          // A session started by an earlier version keeps 96 DPI and reports
+          // display_scale 1: its pane is sized in CSS pixels as before.
+          sizing = followDisplaySize({
+            client, container, desktop: true, density: display_scale ?? 1, follow: dynamic_scale === true,
+            resize: (size) => api(path + "/resize", size),
+            onError: () => { if (live) setSizeError(true); },
+            onSuccess: () => { if (live) setSizeError(false); },
+          });
+          sizingRef.current = sizing;
           input.current?.dispose();
           channel?.dispose();
           channel = desktopInputChannel(() => new WebSocket(runtimeSocketURL(path + "/input")));
@@ -700,7 +761,7 @@ function DesktopPane({
                 },
                 valid,
               ),
-              inputLabel: "Claude Desktop 输入",
+              inputLabel,
               tabId: () => `desktop:${account.id}`,
               mode: () => current.current.keyboard,
               isActive: valid,
@@ -714,6 +775,7 @@ function DesktopPane({
         });
         client.addEventListener("disconnect", () => {
           keys?.stop();
+          stopSizing();
           input.current?.dispose();
           input.current = null;
           channel?.dispose();
@@ -726,6 +788,7 @@ function DesktopPane({
       });
     return () => {
       live = false;
+      stopSizing();
       input.current?.dispose();
       input.current = null;
       channel?.dispose();
@@ -733,7 +796,7 @@ function DesktopPane({
       rfb.current = null;
       client?.disconnect();
     };
-  }, [account.id, account.generation, screenVisible, attempt]);
+  }, [account.id, account.generation, screenVisible, attempt, instancePath]);
   return (
     <section
       className="account-desktop-pane"
@@ -745,13 +808,19 @@ function DesktopPane({
     >
       <header>
         <strong className="account-desktop-title" title={title(account)}>
-          <DesktopAccountLabel account={account} />
+          {heading ?? <DesktopAccountLabel account={account} />}
         </strong>
         <button disabled={busy} onClick={close}>
-          {tr("关闭实例")}
+          {tr(closeLabel)}
         </button>
       </header>
       <div className="account-desktop-screen" ref={box} />
+      {sizeError && !message && (
+        <div className="account-desktop-message" role="alert">
+          {tr("画面尺寸未能同步，显示比例可能不准确。")}{" "}
+          <button onClick={() => sizingRef.current?.retry()}>{tr("重试调整")}</button>
+        </div>
+      )}
       {message && (
         <div className="account-desktop-message" role="status">
           {localizeBackendMessage(message, tr)}{" "}

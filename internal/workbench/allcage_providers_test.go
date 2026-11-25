@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sylvinus/agent-vm/internal/hostbridge"
 )
 
 func TestProvidersCatalogHTTP(t *testing.T) {
@@ -332,5 +334,20 @@ func TestMultiProviderGeneralSettingsAndNotifications(t *testing.T) {
 	ev := <-eventsCh
 	if ev.Provider != "antigravity" || ev.TerminalTitle != "Antigravity 1" {
 		t.Fatalf("unexpected notificationEvent: %+v", ev)
+	}
+}
+
+func TestNativeProviderDesktopAppCollisionGuard(t *testing.T) {
+	if !isNativeProviderDesktopApp(hostbridge.DesktopApp{Source: hostbridge.AppSource{Package: "chatgpt"}}) {
+		t.Fatal("expected chatgpt package to be guarded as native provider desktop app")
+	}
+	if !isNativeProviderDesktopApp(hostbridge.DesktopApp{Schemes: []string{"antigravity"}}) {
+		t.Fatal("expected antigravity scheme to be guarded as native provider desktop app")
+	}
+	if isNativeProviderDesktopApp(hostbridge.DesktopApp{
+		Source:  hostbridge.AppSource{Package: "obsidian"},
+		Schemes: []string{"obsidian"},
+	}) {
+		t.Fatal("third-party obsidian desktop app must remain allowed")
 	}
 }

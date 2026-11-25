@@ -85,17 +85,13 @@ export function EnvironmentVersions({ status, onConfirm }) {
   };
 
   const updateDesktop = async () => {
-    if (
-      desktop?.running &&
-      !(await onConfirm({
-        title: "更新 Claude Desktop？",
-        body: "请先保存应用内的工作。更新会关闭 Claude Desktop，从官方软件源安装可用版本，再重新打开；登录资料继续保留。",
-        confirm: "更新应用",
-      }))
-    )
-      return;
-    setStarting(true);
-    setError("");
+    const wasRunning = Boolean(desktop?.running);
+    if (wasRunning && !(await onConfirm({
+      title: "更新 Claude Desktop？",
+      body: "请先保存应用内的工作。更新会关闭 Claude Desktop，从官方软件源安装可用版本，再重新打开；登录资料继续保留。",
+      confirm: "更新应用",
+    }))) return;
+    setStarting(true); setError("");
     try {
       let job = await api("/claude-desktop/update", {});
       while (job?.running) {
@@ -103,14 +99,13 @@ export function EnvironmentVersions({ status, onConfirm }) {
         job = await api("/agent/jobs/" + job.id);
       }
       if (job?.error || job?.canceled) throw new Error(job.error || tr("操作已取消"));
-      if (desktop?.running) {
+      if (wasRunning) {
         let startJob = await api("/claude-desktop/start", {});
         while (startJob?.running) {
           await new Promise((resolve) => setTimeout(resolve, 500));
           startJob = await api("/agent/jobs/" + startJob.id);
         }
-        if (startJob?.error || startJob?.canceled)
-          throw new Error(startJob.error || tr("操作已取消"));
+        if (startJob?.error || startJob?.canceled) throw new Error(startJob.error || tr("操作已取消"));
       }
       await refresh();
     } catch (e) {

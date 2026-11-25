@@ -86,6 +86,7 @@ type Server struct {
 	diagnosticRateMu                                 sync.Mutex
 	diagnosticWindow                                 time.Time
 	diagnosticCount                                  int
+	guestThemeMu                                     sync.Mutex
 	tickets                                          map[string]time.Time
 	remoteDesktopTickets                             map[string]bool
 	browserControl                                   *browserClient
@@ -477,7 +478,9 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("POST /api/favorites", s.serveFavorites)
 	mux.HandleFunc("POST /api/appearance", s.saveAppearance)
 	mux.HandleFunc("GET /api/appearance/codex", s.codexAppearance)
+	mux.HandleFunc("POST /api/appearance/guest-theme", s.syncGuestAppearance)
 	mux.HandleFunc("POST /api/settings/probe", s.probe)
+	mux.HandleFunc("POST /api/settings/dns-check", s.checkDNS)
 	mux.HandleFunc("GET /api/proxy", s.proxyStatus)
 	mux.HandleFunc("GET /api/proxy/local-configs", s.proxyLocalConfigs)
 	mux.HandleFunc("POST /api/proxy/delay", s.proxyDelay)
@@ -537,6 +540,8 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("POST /api/desktop-instances/{id}/metadata", s.updateAccountDesktopMetadata)
 	mux.HandleFunc("GET /api/desktop-instances/{id}/{action}", s.accountDesktop)
 	mux.HandleFunc("POST /api/desktop-instances/{id}/{action}", s.accountDesktop)
+	mux.HandleFunc("GET /api/desktop-apps/{plugin}/{app}/{action}", s.desktopApp)
+	mux.HandleFunc("POST /api/desktop-apps/{plugin}/{app}/{action}", s.desktopApp)
 	mux.HandleFunc("GET /api/claude-desktop", s.claudeDesktopStatus)
 	mux.HandleFunc("GET /api/claude-desktop/vnc-credentials", s.claudeDesktopCredentials)
 	mux.HandleFunc("GET /api/claude-desktop/vnc", s.claudeDesktopVNC)
@@ -892,6 +897,26 @@ func (s *Server) proposedWithOptions(w http.ResponseWriter, r *http.Request) (sa
 	}
 	return savedProfile{c, p}, input.SaveStaticDraft, true
 }
+
+var checkDNSFunc = cage.CheckDNS
+
+func (s *Server) checkDNS(w http.ResponseWriter, r *http.Request) {
+	v, ok := s.proposed(w, r)
+	if !ok {
+		return
+	}
+	if err := v.Config.RequireManagedProxy(s.profile); err != nil {
+		requestError(w, err)
+		return
+	}
+	result, err := checkDNSFunc(r.Context(), v.Config)
+	if err != nil {
+		requestError(w, err)
+		return
+	}
+	jsonReply(w, result)
+}
+
 func (s *Server) probe(w http.ResponseWriter, r *http.Request) {
 	v, ok := s.proposed(w, r)
 	if !ok {
@@ -901,10 +926,23 @@ func (s *Server) probe(w http.ResponseWriter, r *http.Request) {
 		requestError(w, err)
 		return
 	}
-	loc, err := probeLocation(r.Context(), v.Config, v.Preferences.locationOptions())
-	if finishErr := s.finishLocationProbe(v.Config, loc, err); finishErr != nil {
-		requestError(w, finishErr)
+	old, err := loadConfig(s.configPath)
+	if err != nil {
+		requestError(w, err)
 		return
+	}
+	if p, loadErr := s.proxyStore.Load(s.profile); loadErr != nil || !needsBootstrapPreflight(old, v.Config, p) {
+		if err := s.ensureProxyInterfaceBeforeUse(r.Context()); err != nil {
+			requestError(w, err)
+			return
+		}
+	}
+	loc, usedPreflight, err := s.probeCandidateLocation(r.Context(), old, v.Config, v.Preferences)
+	if !usedPreflight {
+		if finishErr := s.finishLocationProbe(v.Config, loc, err); finishErr != nil {
+			requestError(w, finishErr)
+			return
+		}
 	}
 	if err != nil {
 		requestError(w, err)

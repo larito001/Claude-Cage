@@ -339,15 +339,16 @@ func (s *Server) probeProviderGuest(ctx context.Context, provider, guestID strin
 	}
 	if a != nil {
 		if guestID == "default" {
-			cmd = wrapAccountNamespace("unshare -nm", cmd)
+			cmd = wrapOfflineAccountNamespace(cmd)
 		} else if cmd, err = s.routeSelected(ctx, *a, cmd); err != nil {
 			return snap, err
 		}
 	}
-	data, err := s.guest(ctx, cmd)
+	data, stderr, err := s.guestControlWithStderr(ctx, cmd)
 	if err != nil {
-		diagnostics.Log("warn", "provider-accounts", fmt.Sprintf("provider=%s guest=%s probe failed: %v", provider, guestID, err))
-		return snap, errors.New("无法读取账号状态，请确认环境已启动并同步环境组件")
+		probeErr := classifyAccountProbeError(err, stderr)
+		diagnostics.Log("warn", "provider-accounts", fmt.Sprintf("provider=%s guest=%s probe failed: exit=%d err=%v stderr=%q", provider, guestID, probeErr.exitCode, err, sanitizeAccountNetworkStderr(stderr)))
+		return snap, probeErr
 	}
 	if err := json.Unmarshal(data, &snap); err != nil {
 		return snap, errors.New("无法解析账号状态，请同步环境组件后重试")
@@ -359,7 +360,7 @@ func (s *Server) archiveProviderDefaultLogin(ctx context.Context, provider, sour
 	var snap providerGuestSnapshot
 	cmd := "exec /usr/local/bin/cage-provider-account " + shellescape.Quote(provider) + " archive-login " +
 		shellescape.Quote(targetID) + " " + shellescape.Quote(sourceID) + " " + shellescape.Quote(subject)
-	cmd = wrapAccountNamespace("unshare -nm", cmd)
+	cmd = wrapOfflineAccountNamespace(cmd)
 	data, err := s.guest(ctx, cmd)
 	if err != nil || json.Unmarshal(data, &snap) != nil {
 		return snap, errors.New("无法复制默认登录凭据到独立账号目录")

@@ -1,10 +1,37 @@
 export const desktopTitle = (a) =>
   a.number ? `#${String(a.number).padStart(2, "0")} ${a.label}` : a.label;
 
+export function hasDefaultDesktop(catalog) {
+  if (!catalog) return true;
+  return !catalog.default_removed && !catalog.redirects?.default;
+}
+
+function claudeInstances(catalog) {
+  const list = catalog?.providers?.claude?.instances ?? catalog?.instances ?? catalog?.accounts ?? [];
+  return Array.isArray(list) ? list.filter((item) => !item.provider || item.provider === "claude") : [];
+}
+
+export function visibleDesktopCount(catalog) {
+  const others = claudeInstances(catalog).filter((item) => item.id !== "default");
+  return (hasDefaultDesktop(catalog) ? 1 : 0) + others.length;
+}
+
+export function canDeleteDesktop(catalog) {
+  return Boolean(catalog?.supported) && visibleDesktopCount(catalog) > 1;
+}
+
 export function mergedDefaultInstance(catalog) {
   const target = catalog?.redirects?.default;
-  if (!target || !Array.isArray(catalog?.instances)) return null;
-  return catalog.instances.find((item) => item.id === target) || null;
+  if (!target) return null;
+  return claudeInstances(catalog).find((item) => item.id === target) || null;
+}
+
+export function fallbackDesktopInstance(catalog) {
+  const merged = mergedDefaultInstance(catalog);
+  if (merged) return merged;
+  if (!catalog?.default_removed) return null;
+  const others = claudeInstances(catalog).filter((item) => item.id !== "default");
+  return others.find((item) => item.running) || others[0] || null;
 }
 
 export function reconcileAccountDesktopPanes(oldPanes, catalog, viewingDefault = false) {
