@@ -27,7 +27,7 @@
 这样一来，Cage 同时实现了三个目标：
 
 - **把危险的部分关起来，把有用的能力放出来。** Claude 大小姐安心待在 Cage 里，坐在她的小螃蟹上，只需把手伸出来处理外面的工作——不必在 Cage 里重新搭一整间办公室。
-- **通过插件市场，与开源社区解耦协作。** 我们开放了[插件市场（cage-plugins）](https://github.com/Lee-xeo/cage-plugins)：**插件 = MCP + 扩展**，分别对应「给 Claude 的能力」与「Cage 工作台的定制化」。开源社区可以在插件市场持续贡献工具、桌面控制与工作流扩展，而不必挤进 Cage 主仓库的 Issue 列表；Cage 核心维护团队也能更聚焦于隔离环境、网络与工作台本身的打磨。
+- **通过插件市场，与开源社区解耦协作。** 我们开放了[插件市场（cage-plugins）](https://github.com/larito001/cage-plugins)：**插件 = MCP + 扩展**，分别对应「给 Claude 的能力」与「Cage 工作台的定制化」。开源社区可以在插件市场持续贡献工具、桌面控制与工作流扩展，而不必挤进 Cage 主仓库的 Issue 列表；Cage 核心维护团队也能更聚焦于隔离环境、网络与工作台本身的打磨。
 - **合规、安全、轻量化、本地、低成本，一键安装、一键配置、开箱即用。** 我们不再需要维护复杂臃肿的多系统客机，不再担心 Claude 的能力被困在孤岛里，也无需承担高昂的云端成本或数据安全隐患——在自己电脑上就能优雅地实现这一切。
 
 ## 受够了 Anthropic
@@ -56,7 +56,7 @@ Claude Cage 在一个小型的 Debian 13 环境里运行官方 Claude Code 和 C
 ## 你可以用它做什么
 
 - **在一个窗口里完成工作。** 用终端运行 Claude Code，用编辑器查看改动，用 Cage 浏览器预览服务和完成登录。
-- **通过插件市场解锁全部能力。** 内置开放的[插件市场（cage-plugins）](https://github.com/Lee-xeo/cage-plugins)，插件 = MCP + 扩展：既能让环境里的 Claude 通过标准 MCP 安全、受控地使用本机能力（如桌面键鼠控制、Office 文档、Blender、命令行工具等），也能通过沙箱页面定制 Cage 工作台。主机插件默认受权限声明与弹窗确认保护。 [插件与插件市场](docs/guide/plugins.md) · [开发规范](docs/plugins.md)
+- **通过插件市场解锁全部能力。** 内置开放的[插件市场（cage-plugins）](https://github.com/larito001/cage-plugins)，插件 = MCP + 扩展：既能让环境里的 Claude 通过标准 MCP 安全、受控地使用本机能力（如桌面键鼠控制、Office 文档、Blender、命令行工具等），也能通过沙箱页面定制 Cage 工作台。主机插件默认受权限声明与弹窗确认保护。 [插件与插件市场](docs/guide/plugins.md) · [开发规范](docs/plugins.md)
 - **三个平台，同一个轻量化环境。** macOS、Windows 和 Linux 上的 Cage 都运行同一个轻量化 Debian 13 环境，无需维护复杂的多系统客机，工具与操作方式一致。 [Debian 环境](docs/guide/guest-systems.md)
 - **控制共享范围。** 只共享默认工作区和明确打开的项目文件夹；主机的 Claude 登录、浏览器配置和 SSH 密钥不会自动导入。
 - **看清网络状态。** 内置代理管理支持导入订阅、选择节点和检查出口。关键检查未通过时，环境保持离线；代理不可用时没有直连回退。
@@ -130,7 +130,7 @@ macOS 和已签名 Windows 版本支持通过所选代理更新；Windows 未签
 | 了解 Debian 环境的要求、空间与数据保留 | [Debian 环境](https://claude-cage.com/docs/guest-systems/) |
 | 安装市场插件、管理主机授权与权限边界 | [插件与插件市场](https://claude-cage.com/docs/plugins/) |
 | 开发 MCP 工具或自定义页面插件并上架 | [插件开发规范](docs/plugins.md) |
-| 浏览与提交社区插件到开放市场 | [cage-plugins 插件市场](https://github.com/Lee-xeo/cage-plugins) |
+| 浏览与提交社区插件到开放市场 | [cage-plugins 插件市场](https://github.com/larito001/cage-plugins) |
 | 添加多个订阅、查看额度和分配终端 | [多账号与额度](https://claude-cage.com/docs/accounts/) |
 | 手机扫码、工具审批、远程浏览器 | [手机连接与远程会话](https://claude-cage.com/docs/mobile/) |
 | 在自己的 VPS 部署和连接环境 | [云端部署与 SSH](https://claude-cage.com/docs/cloud/) |
@@ -141,7 +141,7 @@ macOS 和已签名 Windows 版本支持通过所选代理更新；Windows 未签
 | 报告可复现问题 | [GitHub Issues](https://github.com/Lee-xeo/Claude-Cage/issues) |
 | 提交修复、功能实现或文档改进 | [贡献指南](.github/CONTRIBUTING.md) |
 
-想要为 Claude 接入新的 MCP 能力或为 Cage 制作扩展页面？欢迎直接前往 [cage-plugins](https://github.com/Lee-xeo/cage-plugins) 提交插件，与 Cage 主仓库解耦协作。
+想要为 Claude 接入新的 MCP 能力或为 Cage 制作扩展页面？欢迎直接前往 [cage-plugins](https://github.com/larito001/cage-plugins) 提交插件，与 Cage 主仓库解耦协作。
 
 Cage 核心代码与文档贡献采用“`contribution` Issue 审核 → 邀请成为协作者 → 提交 PR → 审查合入”的流程。请先提交[方案贡献 Issue](https://github.com/Lee-xeo/Claude-Cage/issues/new?template=05-contribution.yml)；维护者审核通过并添加 `accepted` 标签后，自动化会发送协作者邀请。接受邀请后再创建 PR，详细步骤与权限说明见[贡献指南](.github/CONTRIBUTING.md)。
 

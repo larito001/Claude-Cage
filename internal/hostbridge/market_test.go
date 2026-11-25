@@ -56,6 +56,33 @@ func packTar(t *testing.T, files ...tarFile) []byte {
 
 const marketManifest = `{"name":"notes","version":"1.2.0","description":"Keeps notes","permissions":["files"],"command":["python3","server.py"]}`
 
+func TestCommunityMarketResolvesForkAssets(t *testing.T) {
+	const upstream = "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/"
+	entry := entryFor(upstream+"dist/", "notes-1.2.0.tar.gz", []byte("archive"))
+	entry.Icon = upstream + "plugins/notes/icon.svg"
+	resolved := CommunityMarket.resolveForkAssets(entry)
+	if !CommunityMarket.valid(resolved) || resolved.Archive != CommunityMarket.ArchivePrefix+"notes-1.2.0.tar.gz" || resolved.Icon != CommunityMarket.IconPrefix+"notes/icon.svg" {
+		t.Fatalf("fork assets not resolved: %+v", resolved)
+	}
+	if resolved.SHA256 != entry.SHA256 || resolved.Bytes != entry.Bytes {
+		t.Fatal("fork resolution changed integrity metadata")
+	}
+	if again := CommunityMarket.resolveForkAssets(resolved); again.Archive != resolved.Archive || again.Icon != resolved.Icon {
+		t.Fatal("fork addresses must remain unchanged")
+	}
+	for _, address := range []string{upstream + "dist/../index.json", upstream + "dist/a%2fb.tar.gz", "https://example.com/notes.tar.gz"} {
+		bad := entry
+		bad.Archive = address
+		if CommunityMarket.valid(CommunityMarket.resolveForkAssets(bad)) {
+			t.Fatalf("accepted invalid archive: %s", address)
+		}
+	}
+	other := Market{IndexURL: "https://example.com/index.json", ArchivePrefix: "https://example.com/dist/"}
+	if got := other.resolveForkAssets(entry); got.Archive != entry.Archive || got.Icon != entry.Icon {
+		t.Fatal("changed assets of an unrelated market")
+	}
+}
+
 func serveMarket(t *testing.T, archives map[string][]byte, entries func(base string) []MarketEntry) (Market, *http.Client) {
 	t.Helper()
 	mux := http.NewServeMux()

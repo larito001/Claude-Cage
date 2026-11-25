@@ -27,7 +27,7 @@
 這樣一來，Cage 同時實現了三個目標：
 
 - **把危險的部分關起來，把有用的能力放出來。** Claude 大小姐安心待在 Cage 裡，坐在她的小螃蟹上，只需把手伸出來處理外面的工作——不必在 Cage 裡重新搭一整間辦公室。
-- **透過外掛市場，與開源社群解耦協作。** 我們開放了[外掛市場（cage-plugins）](https://github.com/Lee-xeo/cage-plugins)：**外掛 = MCP + 擴充**，分別對應「給 Claude 的能力」與「Cage 工作臺的客製化」。開源社群可以在外掛市場持續貢獻工具、桌面控制與工作流擴充，而不必擠進 Cage 主倉庫的 Issue 列表；Cage 核心維護團隊也能更聚焦於隔離環境、網路與工作臺本身的打磨。
+- **透過外掛市場，與開源社群解耦協作。** 我們開放了[外掛市場（cage-plugins）](https://github.com/larito001/cage-plugins)：**外掛 = MCP + 擴充**，分別對應「給 Claude 的能力」與「Cage 工作臺的客製化」。開源社群可以在外掛市場持續貢獻工具、桌面控制與工作流擴充，而不必擠進 Cage 主倉庫的 Issue 列表；Cage 核心維護團隊也能更聚焦於隔離環境、網路與工作臺本身的打磨。
 - **合規、安全、輕量化、本機、低成本，一鍵安裝、一鍵配置、開箱即用。** 我們不再需要維護複雜臃腫的多系統客機，不再擔心 Claude 的能力被困在孤島裡，也無需承擔高昂的雲端成本或資料安全隱憂——在自己電腦上就能優雅地實現這一切。
 
 ## 受夠了 Anthropic
@@ -56,7 +56,7 @@ Claude Cage 在一個小型的 Debian 13 環境裡執行官方 Claude Code 和 C
 ## 你可以用它做什麼
 
 - **在一個視窗裡完成工作。** 用終端執行 Claude Code，用編輯器檢視改動，用 Cage 瀏覽器預覽服務和完成登入。
-- **透過外掛市場解鎖全部能力。** 內建開放的[外掛市場（cage-plugins）](https://github.com/Lee-xeo/cage-plugins)，外掛 = MCP + 擴充：既能讓環境裡的 Claude 透過標準 MCP 安全、受控地使用本機能力（如桌面鍵鼠控制、Office 文件、Blender、命令列工具等），也能透過沙箱頁面客製化 Cage 工作臺。主機外掛預設受權限宣告與確認對話框保護。 [外掛與市場](docs/guide/plugins.md) · [開發規範](docs/plugins.md)
+- **透過外掛市場解鎖全部能力。** 內建開放的[外掛市場（cage-plugins）](https://github.com/larito001/cage-plugins)，外掛 = MCP + 擴充：既能讓環境裡的 Claude 透過標準 MCP 安全、受控地使用本機能力（如桌面鍵鼠控制、Office 文件、Blender、命令列工具等），也能透過沙箱頁面客製化 Cage 工作臺。主機外掛預設受權限宣告與確認對話框保護。 [外掛與市場](docs/guide/plugins.md) · [開發規範](docs/plugins.md)
 - **三個平台，同一個輕量化環境。** macOS、Windows 和 Linux 上的 Cage 都執行同一個輕量化 Debian 13 環境，無需維護複雜的多系統客機，工具與操作方式一致。 [Debian 環境](docs/guide/guest-systems.md)
 - **控制共享範圍。** 只共享預設工作區和明確開啟的專案資料夾；主機的 Claude 登入、瀏覽器配置和 SSH 金鑰不會自動匯入。
 - **看清網路狀態。** 內建代理管理支援匯入訂閱、選擇節點和檢查出口。關鍵檢查未透過時，環境保持離線；代理不可用時沒有直連回退。

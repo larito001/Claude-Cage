@@ -10,7 +10,7 @@ Cage 的核心路线是把 Claude 的运行外壳关在轻量化的本地隔离�
 | 定制 Cage（扩展） | 在 Cage 侧栏加一个自己的沙箱页面，扩展工作台界面与工作流 | `contributes.views` |
 | 运行桌面应用 | 在环境里安装并运行厂商的官方桌面应用，默认跟随最新版本 | `contributes.desktopApps` |
 
-工具由标准的 [MCP](https://modelcontextprotocol.io) 服务提供，通过标准输入输出通信，用任何语言都能写。页面是普通的 HTML，运行在沙箱里。所有社区插件通过开放的插件市场 [cage-plugins](https://github.com/Lee-xeo/cage-plugins) 与 Cage 主仓库解耦协作：社区在市场持续贡献 MCP 工具与页面扩展，Cage 维护团队专注于隔离环境、网络与工作台本身。日常安装、权限管理与使用说明也见[插件与插件市场指南](guide/plugins.md)。
+工具由标准的 [MCP](https://modelcontextprotocol.io) 服务提供，通过标准输入输出通信，用任何语言都能写。页面是普通的 HTML，运行在沙箱里。所有社区插件通过开放的插件市场 [cage-plugins](https://github.com/larito001/cage-plugins) 与 Cage 主仓库解耦协作：社区在市场持续贡献 MCP 工具与页面扩展，Cage 维护团队专注于隔离环境、网络与工作台本身。日常安装、权限管理与使用说明也见[插件与插件市场指南](guide/plugins.md)。
 
 插件可以运行在两个地方，由清单的 `kind` 决定：
 
@@ -23,7 +23,7 @@ Cage 的核心路线是把 Claude 的运行外壳关在轻量化的本地隔离�
 
 ### 安装
 
-在侧栏打开「插件」，先打开总开关，再进入「插件市场」选择插件安装。市场的内容来自 [cage-plugins](https://github.com/Lee-xeo/cage-plugins) 仓库：应用读取其中的索引，下载压缩包并核对 SHA-256 后安装。读取和下载走电脑自己的网络，遵循系统代理设置。
+在侧栏打开「插件」，先打开总开关，再进入「插件市场」选择插件安装。市场的内容来自 [cage-plugins](https://github.com/larito001/cage-plugins) 仓库：应用读取其中的索引，下载压缩包并核对 SHA-256 后安装。读取和下载走电脑自己的网络，遵循系统代理设置。
 
 也可以手动安装：把插件目录放进配置目录的 `plugins/` 下（默认 `~/.claude-cage/plugins/<插件名>/`），然后在插件页点击「重新加载」。
 
@@ -266,7 +266,7 @@ Cage 界面会按当前软件界面语言自动展示插件的名称与说明（
 ```
 
 - 每个语言条目支持 `displayName`（可选，最多 80 字符）和 `description`（必需，最多 600 字符），且不得包含保留词或控制字符。
-- 提交到官方插件市场 [cage-plugins](https://github.com/Lee-xeo/cage-plugins) 时：
+- 提交到官方插件市场 [cage-plugins](https://github.com/larito001/cage-plugins) 时：
   - `i18n.json` 必须完整覆盖 Cage 支持的全部 15 种界面语言（`zh-CN`、`zh-TW`、`ru`、`ar`、`fa`、`ko`、`es`、`my`、`be`、`ps`、`prs`、`am`、`so`、`ti`、`fr`，与 `internal/uilocale/languages.json` 一致）。
   - 需在市场仓库根目录的 `authors.json` 中登记插件名与贡献者的 GitHub 用户名；市场客户端对官方维护的插件显示「Cage 官方」，对社区贡献插件直接显示 GitHub 用户名。
 
@@ -397,7 +397,7 @@ MCP 服务可以脱离 Cage 单独测试：它只是一个读标准输入、写�
 
 ### 上架到市场
 
-市场的规则、打包方法和收录要求见 [cage-plugins](https://github.com/Lee-xeo/cage-plugins)。向市场提交新插件或界面/交互变更时，请按仓库的 PR 模板填写插件信息、权限、数据流向与实测范围，并在 PR 描述中直接拖入插件在 Cage 中的**真实运行效果图**（截图、GIF 或短录屏，上传前遮盖敏感信息，不要提交进插件目录或压缩包）。
+市场的规则、打包方法和收录要求见 [cage-plugins](https://github.com/larito001/cage-plugins)。向市场提交新插件或界面/交互变更时，请按仓库的 PR 模板填写插件信息、权限、数据流向与实测范围，并在 PR 描述中直接拖入插件在 Cage 中的**真实运行效果图**（截图、GIF 或短录屏，上传前遮盖敏感信息，不要提交进插件目录或压缩包）。
 
 应用安装市场里的插件时还会检查：压缩包解压后不超过 100 MiB、不超过 2000 个文件；索引里写的权限必须与插件清单完全一致。
 
@@ -413,11 +413,11 @@ MCP 服务可以脱离 Cage 单独测试：它只是一个读标准输入、写�
 
 ## 示例
 
-- [`clock`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/clock)：最小的主机插件，旧格式，一个工具。
-- [`desktop-control`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/desktop-control)：主机插件，查看屏幕并使用键鼠，声明了 `screen` 和 `input` 权限。
-- [`system-status`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/system-status)：环境内插件，一个页面加一个工具。
-- [`browser`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/browser)：环境内插件，用环境里的 Chromium 浏览网页，基于 microsoft/playwright-mcp。
-- [`excel-workbooks`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/excel-workbooks)、[`word-documents`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/word-documents)、[`powerpoint-slides`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/powerpoint-slides)：环境内插件，读写 Office 文件，不需要安装 Office 或本机 `uv`，通过 `launcher.py` 按 `pylock.json` SHA-256 锁定校验启动。
-- [`blender`](https://github.com/Lee-xeo/cage-plugins/tree/main/plugins/blender)：主机插件，操作正在运行的 Blender，基于 ahujasid/blender-mcp。
+- [`clock`](https://github.com/larito001/cage-plugins/tree/main/plugins/clock)：最小的主机插件，旧格式，一个工具。
+- [`desktop-control`](https://github.com/larito001/cage-plugins/tree/main/plugins/desktop-control)：主机插件，查看屏幕并使用键鼠，声明了 `screen` 和 `input` 权限。
+- [`system-status`](https://github.com/larito001/cage-plugins/tree/main/plugins/system-status)：环境内插件，一个页面加一个工具。
+- [`browser`](https://github.com/larito001/cage-plugins/tree/main/plugins/browser)：环境内插件，用环境里的 Chromium 浏览网页，基于 microsoft/playwright-mcp。
+- [`excel-workbooks`](https://github.com/larito001/cage-plugins/tree/main/plugins/excel-workbooks)、[`word-documents`](https://github.com/larito001/cage-plugins/tree/main/plugins/word-documents)、[`powerpoint-slides`](https://github.com/larito001/cage-plugins/tree/main/plugins/powerpoint-slides)：环境内插件，读写 Office 文件，不需要安装 Office 或本机 `uv`，通过 `launcher.py` 按 `pylock.json` SHA-256 锁定校验启动。
+- [`blender`](https://github.com/larito001/cage-plugins/tree/main/plugins/blender)：主机插件，操作正在运行的 Blender，基于 ahujasid/blender-mcp。
 
-向市场提交插件的方法见 [cage-plugins](https://github.com/Lee-xeo/cage-plugins)。
+向市场提交插件的方法见 [cage-plugins](https://github.com/larito001/cage-plugins)。

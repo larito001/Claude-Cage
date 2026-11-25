@@ -1,6 +1,6 @@
 <!--
 请先确认已完成贡献方案审核并按 .github/CONTRIBUTING.md 的流程从最新 main 创建独立分支。
-提交插件请直接前往插件市场仓库：https://github.com/Lee-xeo/cage-plugins
+提交插件请直接前往插件市场仓库：https://github.com/larito001/cage-plugins
 -->
 
 ## 关联 Issue

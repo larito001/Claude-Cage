@@ -16,7 +16,7 @@ Cage 的核心路线是把有风险的运行外壳（Claude Code、Claude Deskto
 | **给 Claude 的能力（MCP）** | 提供标准输入输出的 MCP 工具，让环境里的 Claude 能够操作本机桌面、处理本地文档、调用本机软件或读写环境内服务 | `contributes.mcpServers` |
 | **定制 Cage（扩展）** | 在 Cage 侧栏新增独立的沙箱页面，把状态面板、控制台或工作流界面直接融进工作台 | `contributes.views` |
 
-通过开放的插件市场 [cage-plugins](https://github.com/Lee-xeo/cage-plugins)，开源社区可以持续贡献各类 MCP 工具与工作台扩展，而不必挤进 Cage 主仓库的 Issue 列表；Cage 核心团队也能专注于隔离环境、网络与工作台本身的稳定性。
+通过开放的插件市场 [cage-plugins](https://github.com/larito001/cage-plugins)，开源社区可以持续贡献各类 MCP 工具与工作台扩展，而不必挤进 Cage 主仓库的 Issue 列表；Cage 核心团队也能专注于隔离环境、网络与工作台本身的稳定性。
 
 ## 主机插件与环境内插件
 
@@ -35,7 +35,7 @@ Cage 的核心路线是把有风险的运行外壳（Claude Code、Claude Deskto
 2. 切换到 **插件市场**，按分类（桌面控制、开发、系统与状态、网络、文件、效率、示例）浏览或搜索插件。
 3. 打开插件详情页，查看功能说明、声明的权限以及基于的上游开源项目信息，点击安装即可。
 
-市场索引与压缩包来自 [cage-plugins](https://github.com/Lee-xeo/cage-plugins)：
+市场索引与压缩包来自 [cage-plugins](https://github.com/larito001/cage-plugins)：
 
 - **校验与网络**：应用读取市场索引、下载压缩包并核对 SHA-256，同时检查压缩包大小（解压后不超过 100 MiB、2000 个文件）以及索引权限与插件清单完全一致。读取和下载走电脑自己的网络，遵循系统代理设置。
 - **上游开源依赖**：基于开源项目的插件会在详情页「上游项目」展示项目名、版本、许可证和地址。部分插件首次启动时通过 `npx` 或 `uvx` 拉取上游固定版本，需先在本机安装 Node.js 或 [uv](https://docs.astral.sh/uv/)；主机插件启动时会使用与终端相同的 `PATH`。
@@ -96,7 +96,7 @@ Cage 的核心路线是把有风险的运行外壳（Claude Code、Claude Deskto
 
 ## 常见插件示例
 
-可以在[官网插件市场](https://claude-cage.com/plugins/)在线浏览全部插件、权限声明与 SHA-256 校验值，或在 [cage-plugins](https://github.com/Lee-xeo/cage-plugins) 仓库查看源码。代表性插件包括：
+可以在[官网插件市场](https://claude-cage.com/plugins/)在线浏览全部插件、权限声明与 SHA-256 校验值，或在 [cage-plugins](https://github.com/larito001/cage-plugins) 仓库查看源码。代表性插件包括：
 
 - **`desktop-control`**（主机插件）：查看屏幕并控制本机键鼠，声明 `screen` 和 `input` 权限。
 - **`blender`**（主机插件）：连接并操作本机正在运行的 Blender（基于 `ahujasid/blender-mcp`）。
@@ -113,4 +113,4 @@ Cage 的核心路线是把有风险的运行外壳（Claude Code、Claude Deskto
 任何能读写标准输入输出的程序都可以写成 Cage 的 MCP 插件，任何静态 HTML/JS/CSS 页面都可以封装成工作台扩展视图。
 
 - 完整的清单格式（`plugin.json`）、权限列表、沙箱页面 JSON-RPC 协议、工具命名规则（不向模型暴露产品与运行环境名称）以及本地调试方法，见[插件开发规范](https://github.com/Lee-xeo/Claude-Cage/blob/main/docs/plugins.md)。
-- 打包脚本、审核要求与提交流程见 [cage-plugins](https://github.com/Lee-xeo/cage-plugins)。发起 PR 时请按仓库 PR 模板填写信息并在描述中附带插件在 Cage 中的真实运行效果图（脱敏后直接拖入 PR 描述框，不打进插件包）。欢迎把你的 MCP 工具和 Cage 扩展页面直接贡献到插件市场。
+- 打包脚本、审核要求与提交流程见 [cage-plugins](https://github.com/larito001/cage-plugins)。发起 PR 时请按仓库 PR 模板填写信息并在描述中附带插件在 Cage 中的真实运行效果图（脱敏后直接拖入 PR 描述框，不打进插件包）。欢迎把你的 MCP 工具和 Cage 扩展页面直接贡献到插件市场。

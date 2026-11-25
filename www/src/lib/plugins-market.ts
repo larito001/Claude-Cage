@@ -1,7 +1,16 @@
-export const MARKET_INDEX_URL = 'https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/index.json';
-export const MARKET_ARCHIVE_PREFIX = 'https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/';
-export const MARKET_ICON_PREFIX = 'https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/';
-export const MARKET_REPO_URL = 'https://github.com/Lee-xeo/cage-plugins';
+export const MARKET_INDEX_URL = 'https://raw.githubusercontent.com/larito001/cage-plugins/main/index.json';
+export const MARKET_ARCHIVE_PREFIX = 'https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/';
+export const MARKET_ICON_PREFIX = 'https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/';
+export const MARKET_REPO_URL = 'https://github.com/larito001/cage-plugins';
+
+// Forked indexes can retain upstream URLs; downloads still come from our fork.
+const UPSTREAM_ASSET_PREFIX = 'https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/';
+function resolveForkAsset(value: string | undefined, folder: 'dist' | 'plugins'): string | undefined {
+  const prefix = `${UPSTREAM_ASSET_PREFIX}${folder}/`;
+  if (typeof value !== 'string' || !value.startsWith(prefix)) return value;
+  const target = folder === 'dist' ? MARKET_ARCHIVE_PREFIX : MARKET_ICON_PREFIX;
+  return target + value.slice(prefix.length);
+}
 
 export interface RawMarketSource {
   project: string;
@@ -139,15 +148,15 @@ export const RUNTIME_LABELS: Record<string, string> = {
 };
 
 const KNOWN_ZH_SUMMARIES: Record<string, string> = {
-  blender: '连接本机正在运行的 Blender：读取场景、创建与修改模型材质、执行 Python 脚本并截取视口画面。',
+  blender: '由隔离环境内的 AI 调用，操作环境外主机上已打开的 Blender：读取场景、修改物体与材质、执行 Blender Python、截取视口。需在主机 Blender 中安装并启用配套 add-on，不是在环境内运行 Blender。',
   browser: '在环境内驱动无头 Chromium 打开网页、读取无障碍结构快照，并完成点击、输入、填表与截图。',
   clock: '读取当前电脑的本机时间，适合作为最小主机 MCP 插件示例。',
-  'desktop-control': '查看电脑屏幕并控制本机键鼠，让环境里的 Claude 经你授权后直接操作桌面应用。',
+  'desktop-control': '控制本机桌面：截屏、点击、拖动、滚动和键盘输入。使用实际桌面与鼠标，可能影响你当前的操作；Linux 需 X11。',
   'documents-to-markdown': '将 PDF、Word、Excel、PowerPoint、EPUB 与 HTML 文档解析、大纲化并检索为干净的 Markdown。',
   'excel-workbooks': '创建、读取和编辑 Excel 工作簿（.xlsx），支持公式、格式、图表、透视表与工作表，无需安装 Office。',
   'git-repository': '读取与管理 Git 仓库：查看状态、差异、提交历史、分支，以及暂存和提交代码。',
   'knowledge-memory': '维护跨对话持久化的本地知识图谱，记录实体、关系与观察笔记。',
-  'linux-desktop': '查看 Cage 内 Debian 桌面并控制其键鼠，直接协作操作环境内的图形程序。',
+  'linux-desktop': '控制运行环境内的 Linux 图形桌面：截屏、点击、拖动、滚动和键盘输入。需要已启动的 X11 桌面会话，不操作外部电脑的桌面。',
   'local-preview': '打开本机回环地址（localhost）上的开发预览页面，并读回标签页标题与当前地址。',
   'powerpoint-slides': '创建、读取和编辑 PowerPoint 演示文稿（.pptx），支持幻灯片、表格、图表、图片与模板，无需安装 Office。',
   sqlite: '查询与管理本地 SQLite 数据库：执行读写 SQL、建表、检查表结构并记录分析笔记。',
@@ -268,8 +277,9 @@ export function normalizeMarketIndex(raw: unknown, baseUrl = '/'): MarketPlugin[
 
   const grouped = new Map<string, MarketPlugin>();
 
-  for (const entry of doc.plugins) {
-    if (!entry || typeof entry !== 'object') continue;
+  for (const rawEntry of doc.plugins) {
+    if (!rawEntry || typeof rawEntry !== 'object') continue;
+    const entry = { ...rawEntry, archive: resolveForkAsset(rawEntry.archive, 'dist'), icon: resolveForkAsset(rawEntry.icon, 'plugins') };
     if (typeof entry.name !== 'string' || !PLUGIN_NAME_RE.test(entry.name)) continue;
     if (typeof entry.version !== 'string' || !entry.version || entry.version.length > 40) continue;
     if (typeof entry.archive !== 'string' || !entry.archive.startsWith(MARKET_ARCHIVE_PREFIX)) continue;

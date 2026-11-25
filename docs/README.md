@@ -13,7 +13,7 @@ Cage 为 Claude 及相关程序提供轻量化的本地 Debian 13 隔离环境�
 | 了解 Debian 环境的要求、空间占用与数据保留 | [Debian 环境](guide/guest-systems.md) |
 | 从插件市场安装插件、管理主机授权与权限边界 | [插件与插件市场](guide/plugins.md) |
 | 开发 MCP 工具或自定义页面插件，并了解清单与协议规范 | [插件开发规范](plugins.md) |
-| 向开放插件市场浏览或贡献社区插件 | [cage-plugins 插件市场](https://github.com/Lee-xeo/cage-plugins) |
+| 向开放插件市场浏览或贡献社区插件 | [cage-plugins 插件市场](https://github.com/larito001/cage-plugins) |
 | 查看快捷键、文件保存、关闭与退出行为 | [日常使用](getting-started.md#日常使用) |
 | 在 Windows 上安装、使用和更新 | [Windows 支持](windows.md) |
 | 在 Linux 上安装、使用和更新 | [Linux 支持](linux.md) |

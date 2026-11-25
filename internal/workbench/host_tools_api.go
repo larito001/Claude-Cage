@@ -669,7 +669,7 @@ func (s *Server) getHostMarket(w http.ResponseWriter, r *http.Request) {
 		// Categories are the market's sections, in the order to show them.
 		Categories []string              `json:"categories"`
 		Entries    []hostMarketEntryView `json:"entries"`
-	}{Source: "https://github.com/Lee-xeo/cage-plugins", Categories: hostbridge.KnownCategories, Entries: []hostMarketEntryView{}}
+	}{Source: "https://github.com/larito001/cage-plugins", Categories: hostbridge.KnownCategories, Entries: []hostMarketEntryView{}}
 	if !fetched.IsZero() {
 		view.Fetched = fetched.UTC().Format(time.RFC3339)
 	}

@@ -2,14 +2,185 @@
   "version": 1,
   "plugins": [
     {
-      "name": "blender",
+      "name": "ai-exit-check",
       "version": "0.1.0",
-      "description": "Works with an open Blender: reads the scene, creates and changes objects and materials, runs Python in Blender and captures the viewport. Needs Blender with the included add-on.",
+      "description": "Checks exit IPs, vendor-detected regions, service availability, and region consistency across Google, Anthropic, and OpenAI.",
+      "permissions": [],
+      "author": {
+        "name": "larito001"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "AI 出口与地区检测",
+          "description": "检测 Google（Antigravity/Gemini）、Anthropic（Claude）与 OpenAI（Codex）各自识别到的真实出口 IP、所属国家/地区、边缘节点及地区一致性。"
+        },
+        "zh-TW": {
+          "displayName": "AI 出口與地區檢測",
+          "description": "檢測 Google（Antigravity/Gemini）、Anthropic（Claude）與 OpenAI（Codex）各自識別到的真實出口 IP、所屬國家/地區、邊緣節點與地區一致性。"
+        },
+        "ru": {
+          "displayName": "Проверка IP и региона для ИИ",
+          "description": "Проверяет внешний IP-адрес, определяемую страну, доступность сервисов и совпадение регионов для Google, Anthropic и OpenAI."
+        },
+        "ar": {
+          "displayName": "فحص عنوان الخروج والمنطقة للذكاء الاصطناعي",
+          "description": "يفحص عنوان IP الخارجي والمنطقة المكتشفة وتوفر الخدمة وتطابق المناطق لدى Google وAnthropic وOpenAI."
+        },
+        "fa": {
+          "displayName": "بررسی IP خروجی و منطقه هوش مصنوعی",
+          "description": "آدرس IP خروجی، کشور شناسایی‌شده، دسترسی به سرویس و تطابق منطقه را در Google، Anthropic و OpenAI بررسی می‌کند."
+        },
+        "ko": {
+          "displayName": "AI 출구 IP 및 지역 감지",
+          "description": "Google(Antigravity/Gemini), Anthropic(Claude), OpenAI(Codex)에서 인식하는 출구 IP, 감지된 국가/지역 및 일치 여부를 확인합니다."
+        },
+        "es": {
+          "displayName": "Comprobación de IP y región de IA",
+          "description": "Comprueba la IP de salida, la región detectada, la disponibilidad del servicio y la coherencia regional en Google, Anthropic y OpenAI."
+        },
+        "my": {
+          "displayName": "AI ထွက်ပေါက် IP နှင့် ဒေသစစ်ဆေးမှု",
+          "description": "Google၊ Anthropic နှင့် OpenAI တို့မှ သိရှိသော ထွက်ပေါက် IP၊ နိုင်ငံ/ဒေသ နှင့် ဒေသကိုက်ညီမှုတို့ကို စစ်ဆေးပေးသည်။"
+        },
+        "be": {
+          "displayName": "Праверка IP і рэгіёна для ШІ",
+          "description": "Правярае знешні IP-адрас, вызначаную краіну, даступнасць сэрвісаў і адпаведнасць рэгіёнаў для Google, Anthropic і OpenAI."
+        },
+        "ps": {
+          "displayName": "د AI وتلو IP او سیمې ازموینه",
+          "description": "په Google، Anthropic او OpenAI کې د وتلو IP پته، پېژندل شوې سیمه، د خدمت شتون او د سیمې مطابقت ګوري."
+        },
+        "prs": {
+          "displayName": "بررسی IP خروجی و منطقه هوش مصنوعی",
+          "description": "آدرس IP خروجی، کشور شناسایی‌شده، دسترسی خدمات و سازگاری منطقه را در Google، Anthropic و OpenAI بررسی می‌کند."
+        },
+        "am": {
+          "displayName": "የAI መውጫ IP እና ክልል ምርመራ",
+          "description": "በGoogle፣ Anthropic እና OpenAI የሚታወቀውን የመውጫ IP፣ የተለየውን አገር/ክልል እና የክልል ተመሳሳይነት ይፈትሻል።"
+        },
+        "so": {
+          "displayName": "Hubinta IP-ga Bixitaanka iyo Gobolka AI",
+          "description": "Wuxuu hubiyaa IP-ga bixitaanka, gobolka la aqoonsaday, helitaanka adeegga, iyo iswaafaqsanaanta gobolka ee Google, Anthropic, iyo OpenAI."
+        },
+        "ti": {
+          "displayName": "ምርመራ መውጽኢ IPን ዞባን AI",
+          "description": "ብGoogle፣ Anthropic ከምኡውን OpenAI ዝልለ መውጽኢ IP፣ ሃገር/ዞባን ምጥዕዓም ዞባን ይምርምር።"
+        },
+        "fr": {
+          "displayName": "Vérification IP et région IA",
+          "description": "Vérifie l’IP de sortie, la région détectée, la disponibilité du service et la cohérence régionale auprès de Google, Anthropic et OpenAI."
+        }
+      },
+      "displayName": "AI Exit IP & Region Check",
+      "categories": [
+        "network",
+        "system"
+      ],
+      "kind": "guest",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "checker",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ],
+        "views": [
+          {
+            "id": "dashboard",
+            "title": "AI 出口与地区检测",
+            "icon": "icon.svg",
+            "entry": "view/index.html",
+            "server": "checker"
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/ai-exit-check/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/ai-exit-check-0.1.0.tar.gz",
+      "sha256": "d881c819b81124f52c54120a212876372bf8cbd520d9d26ad0b5d537b8d5a1e9",
+      "bytes": 23549
+    },
+    {
+      "name": "blender",
+      "version": "0.1.2",
+      "description": "Lets the AI inside the isolated environment control Blender running on the host computer outside it: read scenes, edit objects and materials, run Blender Python and capture the viewport. Requires Blender running on the host with the included add-on enabled.",
       "permissions": [
         "commands",
         "files",
         "network"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Blender",
+          "description": "由隔离环境内的 AI 调用，操作环境外主机上已打开的 Blender：读取场景、修改物体与材质、执行 Blender Python、截取视口。需在主机 Blender 中安装并启用配套 add-on，不是在环境内运行 Blender。"
+        },
+        "zh-TW": {
+          "displayName": "Blender",
+          "description": "由隔離環境內的 AI 呼叫，操作環境外主機上已開啟的 Blender：讀取場景、修改物件與材質、執行 Blender Python、擷取視埠。需在主機 Blender 中安裝並啟用配套 add-on，不是在環境內執行 Blender。"
+        },
+        "ru": {
+          "displayName": "Blender",
+          "description": "Работает с открытым Blender: читает сцену, создаёт и изменяет объекты и материалы, запускает Python в Blender и делает снимки вьюпорта. Требуется Blender со встроенным дополнением."
+        },
+        "ar": {
+          "displayName": "Blender",
+          "description": "يعمل مع تطبيق Blender المفتوح: يقرأ المشهد، وينشئ ويعدّل الكائنات والمواد، ويشغّل Python داخل Blender ويلتقط صور منفذ العرض. يتطلب Blender مع الإضافة المرفقة."
+        },
+        "fa": {
+          "displayName": "Blender",
+          "description": "با Blender بازشده کار می‌کند: صحنه را می‌خواند، اشیا و متریال‌ها را ایجاد و ویرایش می‌کند، پایتون را در Blender اجرا کرده و از نمای سه‌بعدی عکس می‌گیرد. نیازمند Blender و افزونه همراه است."
+        },
+        "ko": {
+          "displayName": "Blender",
+          "description": "열려 있는 Blender와 연동하여 장면을 읽고, 오브젝트와 재질을 생성·수정하며, Blender 내에서 Python을 실행하고 뷰포트를 캡처합니다. 포함된 애드온이 설치된 Blender가 필요합니다."
+        },
+        "es": {
+          "displayName": "Blender",
+          "description": "Trabaja con un Blender abierto: lee la escena, crea y modifica objetos y materiales, ejecuta Python en Blender y captura la vista. Requiere Blender con el complemento incluido."
+        },
+        "my": {
+          "displayName": "Blender",
+          "description": "ဖွင့်ထားသော Blender နှင့် တွဲဖက်အလုပ်လုပ်သည်- မြင်ကွင်းကိုဖတ်ခြင်း၊ အရာဝတ္ထုနှင့် ပစ္စည်းများ ဖန်တီးပြင်ဆင်ခြင်း၊ Blender အတွင်း Python run ခြင်းနှင့် viewport ပုံရိုက်ခြင်းတို့ လုပ်နိုင်သည်။ ပါဝင်သည့် add-on တပ်ဆင်ထားသော Blender လိုအပ်သည်။"
+        },
+        "be": {
+          "displayName": "Blender",
+          "description": "Працуе з адкрытым Blender: чытае сцэну, стварае і змяняе аб'екты і матэрыялы, выконвае Python у Blender і робіць здымкі акна прагляду. Патрабуецца Blender з дадаткам з камплекта."
+        },
+        "ps": {
+          "displayName": "Blender",
+          "description": "له خلاص شوي Blender سره کار کوي: صحنه لولي، شیان او مواد جوړوي او بدلوي، په Blender کې Python چلوي او د لید انځور اخلي. له ملګري افزونې سره Blender ته اړتیا لري."
+        },
+        "prs": {
+          "displayName": "Blender",
+          "description": "با Blender بازشده کار می‌کند: صحنه را می‌خواند، اشیا و مواد را ایجاد و تغییر می‌دهد، Python را در Blender اجرا می‌کند و از نمای دید عکس می‌گیرد. به Blender با افزونه همراه نیاز دارد."
+        },
+        "am": {
+          "displayName": "Blender",
+          "description": "ከተከፈተው Blender ጋር ይሰራል፦ ትዕይንቱን ያነባል፣ ቁሶችንና ቁሳቁሶችን ይፈጥራል ያስተካክላል፣ በBlender ውስጥ Python ያስኬዳል እንዲሁም የእይታ መስኮቱን ፎቶ ያነሳል። የተካተተው ተጨማሪ የተጫነበት Blender ያስፈልጋል።"
+        },
+        "so": {
+          "displayName": "Blender",
+          "description": "Waxay la shaqeysaa Blender furan: waxay akhrisaa goobta, waxay abuurtaa oo beddeshaa walxaha iyo agabyada, waxay ku socodsiisaa Python gudaha Blender waxayna qabataa sawirka muuqaalka. Waxay u baahan tahay Blender leh add-on-ka la socda."
+        },
+        "ti": {
+          "displayName": "Blender",
+          "description": "ምስ ዝተኸፍተ Blender ይሰርሕ፡ ትዕይንቲ የንብብ፡ ኣቕሑን ንዋትን ይፈጥርን ይቕይርን፡ ኣብ ውሽጢ Blender Python የካይድ፡ ካብ መርኣዪ ድማ ስእሊ የልዕል። ዝተሓወሰ ተወሳኺ ዘለዎ Blender የድሊ።"
+        },
+        "fr": {
+          "displayName": "Blender",
+          "description": "Interagit avec une instance ouverte de Blender : lit la scène, crée et modifie objets et matériaux, exécute du Python dans Blender et capture la vue. Nécessite Blender avec le module complémentaire fourni."
+        }
+      },
       "displayName": "Blender",
       "categories": [
         "productivity",
@@ -44,85 +215,187 @@
         "license": "MIT",
         "url": "https://github.com/ahujasid/blender-mcp"
       },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/blender/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/blender-0.1.0.tar.gz",
-      "sha256": "78ac56449282f5931bb72f3227880aa5c3b87292ce455eef4cdb42bc2c4b1710",
-      "bytes": 18112
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/blender/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/blender-0.1.2.tar.gz",
+      "sha256": "03b0e1f3923fe8f1bdcd09d891815aef2078cdd3072e5e179d5e76c8a8da9dff",
+      "bytes": 20754
     },
     {
-      "name": "browser",
-      "version": "0.1.0",
-      "description": "Opens web pages in a headless Chromium, reads them as an accessibility snapshot, and clicks, types, fills forms and takes screenshots.",
-      "permissions": [
-        "network"
-      ],
-      "displayName": "Browser",
-      "categories": [
-        "network",
-        "developer"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "browser",
-            "command": [
-              "npx",
-              "--yes",
-              "@playwright/mcp@0.0.86",
-              "--headless",
-              "--isolated",
-              "--browser",
-              "chromium",
-              "--executable-path",
-              "/usr/bin/chromium",
-              "--output-dir",
-              "output"
-            ]
-          }
-        ]
-      },
-      "runtime": "npx",
-      "source": {
-        "project": "microsoft/playwright-mcp",
-        "version": "0.0.86",
-        "license": "Apache-2.0",
-        "url": "https://github.com/microsoft/playwright-mcp"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/browser/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/browser-0.1.0.tar.gz",
-      "sha256": "66aa1c65c539df134e74d5a3b14e723b5091f261512592e23620cbfe0124c8d9",
-      "bytes": 5859
-    },
-    {
-      "name": "clock",
-      "version": "0.1.3",
-      "description": "Tells the current time on this computer.",
-      "permissions": [],
-      "platforms": [
-        "darwin",
-        "linux"
-      ],
-      "categories": [
-        "example"
-      ],
-      "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.3.tar.gz",
-      "sha256": "317e889044234bec059964fc82b5d3d635c382e379b542fffb810c18aabe98f0",
-      "bytes": 1104
-    },
-    {
-      "name": "desktop-control",
-      "version": "0.3.0",
-      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "name": "computer-use",
+      "version": "0.2.9",
+      "description": "macOS only. Reads screenshots, controls and text from a selected app window, and clicks, types and scrolls in the background by default. Access is approved per app; some actions require a foreground window.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "wudi341"
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "macos无障碍操作",
+          "description": "仅限 macOS。读取指定应用窗口的截图、控件和文字，默认在后台点击、输入和滚动。按应用授权，部分操作需要前台窗口。"
+        },
+        "zh-TW": {
+          "displayName": "macos無障礙操作",
+          "description": "僅限 macOS。讀取指定應用程式視窗的截圖、控制項和文字，預設在背景點擊、輸入和捲動。按應用程式授權，部分操作需要前景視窗。"
+        },
+        "ru": {
+          "displayName": "Работа с приложениями",
+          "description": "Видит приложения этого компьютера и работает в них в фоновом режиме, каждый раз спрашивая разрешение пользователя, не меняя приложение, которое находится на переднем плане."
+        },
+        "ar": {
+          "displayName": "التحكم بالتطبيقات",
+          "description": "يعرض تطبيقات هذا الكمبيوتر ويعمل عليها في الخلفية، ويطلب إذن المستخدم قبل كل تطبيق، دون تغيير التطبيق الظاهر في المقدمة."
+        },
+        "fa": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این رایانه را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "ko": {
+          "displayName": "앱 사용",
+          "description": "이 컴퓨터의 앱을 백그라운드에서 보고 조작하며, 각 앱마다 먼저 사용자에게 허락을 구하고 사용자가 앞에 두고 있는 앱은 바꾸지 않습니다."
+        },
+        "es": {
+          "displayName": "Uso de aplicaciones",
+          "description": "Ve y utiliza las aplicaciones de este ordenador en segundo plano, pidiendo permiso al usuario antes de cada aplicación y sin cambiar la aplicación que está en primer plano."
+        },
+        "my": {
+          "displayName": "အက်ပ်များ အသုံးပြုခြင်း",
+          "description": "ဤကွန်ပျူတာရှိ အက်ပ်များကို နောက်ကွယ်တွင် ကြည့်ရှုအသုံးပြုပြီး အက်ပ်တစ်ခုစီမတိုင်မီ အသုံးပြုသူ၏ ခွင့်ပြုချက်ကို တောင်းခံကာ ရှေ့ဆုံးရှိ အက်ပ်ကို မပြောင်းလဲပါ။"
+        },
+        "be": {
+          "displayName": "Праца з праграмамі",
+          "description": "Бачыць праграмы гэтага камп’ютара і працуе з імі ў фонавым рэжыме, кожны раз пытаючыся дазволу ў карыстальніка і не змяняючы праграму, якая знаходзіцца на пярэднім плане."
+        },
+        "ps": {
+          "displayName": "د اپلیکیشنونو کارول",
+          "description": "د دې کمپیوټر اپلیکیشنونه په شاليد کې ګوري او په کې کار کوي، د هر اپلیکیشن دمخه له کاروونکي اجازه غواړي، او هغه اپلیکیشن نه بدلوي چې مخکې دی."
+        },
+        "prs": {
+          "displayName": "کار با برنامه‌ها",
+          "description": "برنامه‌های این کمپیوتر را می‌بیند و در پس‌زمینه با آن‌ها کار می‌کند، پیش از هر برنامه از کاربر اجازه می‌گیرد و برنامه‌ای را که در پیش‌زمینه است تغییر نمی‌دهد."
+        },
+        "am": {
+          "displayName": "መተግበሪያዎችን መጠቀም",
+          "description": "የዚህን ኮምፒውተር መተግበሪያዎች በጀርባ ያያል ይጠቀማልም፤ ከእያንዳንዱ መተግበሪያ በፊት ተጠቃሚውን ፈቃድ ይጠይቃል፤ ፊት ያለውንም መተግበሪያ አይቀይርም።"
+        },
+        "so": {
+          "displayName": "Isticmaalka codsiyada",
+          "description": "Wuxuu eegaa oo ka shaqeeyaa codsiyada kombuyuutarkan asalka dambe, isagoo isticmaalaha ka codsanaya ogolaansho codsi kasta ka hor, mana beddelo codsiga hore u taagan."
+        },
+        "ti": {
+          "displayName": "መተግበሪታት ምጥቃም",
+          "description": "ናይዚ ኮምፒተር መተግበሪታት ኣብ ድሕሪት የራኽብን ይጥቀምን፤ ቅድሚ ነፍሲ ወከፍ መተግበሪ ንተጠቃሚ ፍቓድ ይሓትት፤ ኣብ ቅድሚት ዘሎ መተግበሪ ድማ ኣይቐይርን።"
+        },
+        "fr": {
+          "displayName": "Utilisation des applications",
+          "description": "Voit et utilise les applications de cet ordinateur en arrière-plan, en demandant l’accord de l’utilisateur avant chaque application, sans changer l’application au premier plan."
+        }
+      },
+      "displayName": "macOS Accessibility Control",
+      "platforms": [
+        "darwin"
+      ],
+      "categories": [
+        "desktop"
+      ],
+      "kind": "host",
+      "engines": {
+        "cage": ">=0.2.0"
+      },
+      "contributes": {
+        "mcpServers": [
+          {
+            "id": "computer-use",
+            "command": [
+              "python3",
+              "server.py"
+            ]
+          }
+        ]
+      },
+      "runtime": "python3",
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/computer-use/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/computer-use-0.2.9.tar.gz",
+      "sha256": "ff3ced4459a4cc99017798f8b3c67ec3eaf06fd6e3255d37de4bd6379904a12f",
+      "bytes": 185927
+    },
+    {
+      "name": "desktop-control",
+      "version": "0.3.4",
+      "description": "Controls this computer's desktop with screenshots, clicks, drags, scrolling and keyboard input. Uses the actual desktop and pointer, so it can interfere with your work. Linux requires X11.",
+      "permissions": [
+        "screen",
+        "input"
+      ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "简易截图/鼠标控制",
+          "description": "控制本机桌面：截屏、点击、拖动、滚动和键盘输入。使用实际桌面与鼠标，可能影响你当前的操作；Linux 需 X11。"
+        },
+        "zh-TW": {
+          "displayName": "簡易截圖/滑鼠控制",
+          "description": "控制本機桌面：截圖、點擊、拖曳、捲動和鍵盤輸入。使用實際桌面與滑鼠，可能影響你目前的操作；Linux 需 X11。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
+      "displayName": "Simple Screenshot / Mouse Control",
       "platforms": [
         "darwin"
       ],
@@ -130,168 +403,85 @@
         "desktop"
       ],
       "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0.tar.gz",
-      "sha256": "af17418f562049af02daa77a72f069be152acad1d4773fee0235c8d7b0dd5084",
-      "bytes": 15254
-    },
-    {
-      "name": "documents-to-markdown",
-      "version": "0.1.0",
-      "description": "Reads, outlines and searches PDF, Word, Excel, PowerPoint, EPUB and HTML documents as clean Markdown.",
-      "permissions": [],
-      "displayName": "Documents to Markdown",
-      "categories": [
-        "files",
-        "productivity"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "documents",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "npx",
-      "source": {
-        "project": "SylphxAI/anymd",
-        "version": "8.5.13",
-        "license": "MIT",
-        "url": "https://github.com/SylphxAI/anymd"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/documents-to-markdown/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/documents-to-markdown-0.1.0.tar.gz",
-      "sha256": "6f9e2893d1553cb1403a411eabab2f162d6806f3b4e35664b7b171bc99b70821",
-      "bytes": 11862
-    },
-    {
-      "name": "excel-workbooks",
-      "version": "0.2.0",
-      "description": "Creates, reads and edits Excel workbooks (.xlsx): cells, formulas, formatting, charts, pivot tables and sheets. Microsoft Excel is not needed.",
-      "permissions": [],
-      "displayName": "Excel Workbooks",
-      "categories": [
-        "productivity",
-        "files"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "excel",
-            "command": [
-              "python3",
-              "launcher.py",
-              "--allow-dir",
-              "${PROJECT_DIR}"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "haris-musa/excel-mcp-server",
-        "version": "2.3.2",
-        "license": "MIT",
-        "url": "https://github.com/haris-musa/excel-mcp-server"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/excel-workbooks/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/excel-workbooks-0.2.0.tar.gz",
-      "sha256": "3801270fb8316e78a98f116e700c386a45347ec0366f94bf1bb05e2093c71911",
-      "bytes": 33039
-    },
-    {
-      "name": "git-repository",
-      "version": "0.1.0",
-      "description": "Reads and manages Git repositories: status, diffs, commit log, branches, staging, committing and showing objects.",
-      "permissions": [],
-      "displayName": "Git Repository",
-      "categories": [
-        "developer"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "git",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "modelcontextprotocol/servers",
-        "version": "2026.11.18",
-        "license": "Apache-2.0 OR MIT",
-        "url": "https://github.com/modelcontextprotocol/servers"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/git-repository/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/git-repository-0.1.0.tar.gz",
-      "sha256": "8e4fdc9a99c86183110cea6de12f07f0c04af91f103e9c8d71333c2b2f6062f4",
-      "bytes": 22352
-    },
-    {
-      "name": "knowledge-memory",
-      "version": "0.1.0",
-      "description": "Maintains a persistent local knowledge graph of entities, relations and observations across conversations.",
-      "permissions": [],
-      "displayName": "Knowledge Memory",
-      "categories": [
-        "productivity",
-        "developer"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "memory",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "node",
-      "source": {
-        "project": "modelcontextprotocol/servers",
-        "version": "2.2.1",
-        "license": "Apache-2.0 OR MIT",
-        "url": "https://github.com/modelcontextprotocol/servers"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/knowledge-memory/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/knowledge-memory-0.1.0.tar.gz",
-      "sha256": "3e260692d24ce3daa96bc3ea64248861bde2e8d6842c0f96053f7bd41be966d6",
-      "bytes": 3252157
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/desktop-control-0.3.4.tar.gz",
+      "sha256": "74fbc0391d57601b9f98172bd83e1a22494a29b7ef694bed2d464ee70754832e",
+      "bytes": 16946
     },
     {
       "name": "linux-desktop",
-      "version": "0.1.0",
-      "description": "Sees the Linux desktop of the environment and uses its mouse and keyboard, to work with the programs shown there.",
+      "version": "0.1.3",
+      "description": "Controls the Linux graphical desktop inside the working environment: screenshots, clicks, drags, scrolling and keyboard input. Requires an active X11 session; it does not control the outer computer's desktop.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "Linux 桌面",
+          "description": "控制运行环境内的 Linux 图形桌面：截屏、点击、拖动、滚动和键盘输入。需要已启动的 X11 桌面会话，不操作外部电脑的桌面。"
+        },
+        "zh-TW": {
+          "displayName": "Linux 桌面",
+          "description": "控制執行環境內的 Linux 圖形桌面：截圖、點擊、拖曳、捲動和鍵盤輸入。需要已啟動的 X11 桌面工作階段，不操作外部電腦的桌面。"
+        },
+        "ru": {
+          "displayName": "Рабочий стол Linux",
+          "description": "Просматривает рабочий стол Linux внутри среды и управляет его мышью и клавиатурой для работы с отображаемыми программами."
+        },
+        "ar": {
+          "displayName": "سطح مكتب Linux",
+          "description": "يعرض سطح مكتب Linux داخل البيئة ويستخدم فأرته ولوحة مفاتيحه للتعامل مع البرامج المعروضة هناك."
+        },
+        "fa": {
+          "displayName": "دسکتاپ Linux",
+          "description": "دسکتاپ Linux موجود در محیط را می‌بیند و با ماوس و صفحه‌کلید آن با برنامه‌های نمایش‌داده‌شده کار می‌کند."
+        },
+        "ko": {
+          "displayName": "Linux 데스크톱",
+          "description": "환경 내부의 Linux 데스크톱 화면을 보고 마우스와 키보드를 조작해 표시된 프로그램을 사용합니다."
+        },
+        "es": {
+          "displayName": "Escritorio Linux",
+          "description": "Ve el escritorio Linux del entorno y usa su ratón y teclado para trabajar con los programas que se muestran allí."
+        },
+        "my": {
+          "displayName": "Linux ဒက်စ်တော့",
+          "description": "ပတ်ဝန်းကျင်အတွင်းရှိ Linux ဒက်စ်တော့ကို ကြည့်ရှုပြီး ၎င်း၏ မောက်စ်နှင့် ကီးဘုတ်ဖြင့် ပြသထားသော ပရိုဂရမ်များကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Працоўны стол Linux",
+          "description": "Бачыць працоўны стол Linux унутры асяроддзя і выкарыстоўвае яго мыш і клавіятуру для працы з паказанымі праграмамі."
+        },
+        "ps": {
+          "displayName": "د Linux ډېسکټاپ",
+          "description": "د چاپېریال دننه د Linux ډېسکټاپ ګوري او د هغه موږک او کیبورډ کاروي تر څو هلته ښکاره شوي پروګرامونه وکاروي."
+        },
+        "prs": {
+          "displayName": "دسکتاپ Linux",
+          "description": "دسکتاپ Linux داخل محیط را می‌بیند و از ماوس و کیبورد آن برای کار با برنامه‌های نمایش‌داده‌شده استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የLinux ዴስክቶፕ",
+          "description": "በአካባቢው ውስጥ ያለውን የLinux ዴስክቶፕ ያያል እንዲሁም እዚያ የሚታዩ ፕሮግራሞችን ለመጠቀም መዳፊቱንና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Shaashadda Linux",
+          "description": "Waxay aragtaa shaashadda Linux ee deegaanka gudihiisa waxayna adeegsataa jiirkeeda iyo kiiboodhkeeda si ay ula shaqeyso barnaamijyada halkaas ka muuqda."
+        },
+        "ti": {
+          "displayName": "ደስክቶፕ Linux",
+          "description": "ኣብ ውሽጢ ከባቢ ዘሎ ደስክቶፕ Linux ይርኢ፡ ኣብኡ ዝርኣዩ ፕሮግራማት ንምጥቃም ድማ ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Bureau Linux",
+          "description": "Voit le bureau Linux de l'environnement et utilise sa souris et son clavier pour interagir avec les programmes qui y sont affichés."
+        }
+      },
       "displayName": "Linux Desktop",
       "categories": [
         "desktop"
@@ -313,245 +503,86 @@
         ]
       },
       "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/linux-desktop/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/linux-desktop-0.1.0.tar.gz",
-      "sha256": "a4fc7ffc3cc94d48d21446b833a09619ec6f4018a8b37bdd2a7922f0263c04b7",
-      "bytes": 17870
-    },
-    {
-      "name": "local-preview",
-      "version": "0.1.0",
-      "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
-      "permissions": [
-        "network"
-      ],
-      "displayName": "Local Preview",
-      "platforms": [
-        "darwin",
-        "linux"
-      ],
-      "categories": [
-        "developer"
-      ],
-      "kind": "host",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "preview",
-            "command": [
-              "python3",
-              "server.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-preview/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.0.tar.gz",
-      "sha256": "1c7eef6757a286f1ff0d49d19daedb7c7aa4c7ddc4e9bbb87ed48e28344b73a6",
-      "bytes": 6842
-    },
-    {
-      "name": "powerpoint-slides",
-      "version": "0.2.0",
-      "description": "Creates, reads and edits PowerPoint presentations (.pptx): slides, text, tables, charts, images and templates. Microsoft PowerPoint is not needed.",
-      "permissions": [],
-      "displayName": "PowerPoint Slides",
-      "categories": [
-        "productivity",
-        "files"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "powerpoint",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "GongRzhe/Office-PowerPoint-MCP-Server",
-        "version": "2.0.7",
-        "license": "MIT",
-        "url": "https://github.com/GongRzhe/Office-PowerPoint-MCP-Server"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/powerpoint-slides/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/powerpoint-slides-0.2.0.tar.gz",
-      "sha256": "2c7edb8fb41eb46ecc59cf39584b69989159c1b3b701142d7e6a4c51407475d4",
-      "bytes": 25949
-    },
-    {
-      "name": "sqlite",
-      "version": "0.1.0",
-      "description": "Queries and manages local SQLite databases: SELECT and write SQL statements, create tables, inspect schemas and record analysis notes.",
-      "permissions": [],
-      "displayName": "SQLite",
-      "categories": [
-        "developer",
-        "files"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "sqlite",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "modelcontextprotocol/servers-archived",
-        "version": "2025.4.25",
-        "license": "MIT",
-        "url": "https://github.com/modelcontextprotocol/servers-archived"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/sqlite/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/sqlite-0.1.0.tar.gz",
-      "sha256": "29d66eca13104e3002a39c4ae0066b15adea924e2a75b75dfe39cf9a555cebd7",
-      "bytes": 17395
-    },
-    {
-      "name": "system-status",
-      "version": "0.1.0",
-      "description": "Shows processor load, memory and disk use of the environment, to you on a page and to Claude as a tool.",
-      "permissions": [],
-      "displayName": "System Status",
-      "categories": [
-        "system",
-        "example"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "status",
-            "command": [
-              "python3",
-              "server.py"
-            ]
-          }
-        ],
-        "views": [
-          {
-            "id": "status",
-            "title": "System Status",
-            "icon": "icon.svg",
-            "entry": "view/index.html",
-            "server": "status"
-          }
-        ]
-      },
-      "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/system-status/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/system-status-0.1.0.tar.gz",
-      "sha256": "2055808d327ca4a06c4dae55c70574f6cb5e4975db24954869471f8c1840e0b7",
-      "bytes": 3604
-    },
-    {
-      "name": "web-fetch",
-      "version": "0.1.0",
-      "description": "Fetches web pages and converts HTML content to clean Markdown for reading, with pagination and robots.txt support.",
-      "permissions": [
-        "network"
-      ],
-      "displayName": "Web Fetch",
-      "categories": [
-        "network",
-        "productivity"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "fetch",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "modelcontextprotocol/servers",
-        "version": "2026.11.18",
-        "license": "Apache-2.0 OR MIT",
-        "url": "https://github.com/modelcontextprotocol/servers"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/web-fetch/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/web-fetch-0.1.0.tar.gz",
-      "sha256": "d327354fdcfd1d23eeea0a62029bf60a41b326ad564d20c95141bac408016c58",
-      "bytes": 22844
-    },
-    {
-      "name": "word-documents",
-      "version": "0.2.0",
-      "description": "Creates, reads and edits Word documents (.docx): text, headings, tables, images, styles and comments. Microsoft Word is not needed.",
-      "permissions": [],
-      "displayName": "Word Documents",
-      "categories": [
-        "productivity",
-        "files"
-      ],
-      "kind": "guest",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "word",
-            "command": [
-              "python3",
-              "launcher.py"
-            ]
-          }
-        ]
-      },
-      "runtime": "python3",
-      "source": {
-        "project": "GongRzhe/Office-Word-MCP-Server",
-        "version": "1.1.11",
-        "license": "MIT",
-        "url": "https://github.com/GongRzhe/Office-Word-MCP-Server"
-      },
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/word-documents/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/word-documents-0.2.0.tar.gz",
-      "sha256": "8303d7744e5811706a8a7f726e45ef15bb2a3b0bfd5aba65b637cecc32aeffc0",
-      "bytes": 99334
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/linux-desktop/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/linux-desktop-0.1.3.tar.gz",
+      "sha256": "20c41b29aae8bab37d697fc1a0895928d02b404f39cce8d2f7993a25feafee9d",
+      "bytes": 19834
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
-      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "version": "0.3.4",
+      "description": "Controls this computer's desktop with screenshots, clicks, drags, scrolling and keyboard input. Uses the actual desktop and pointer, so it can interfere with your work. Linux requires X11.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "简易截图/鼠标控制",
+          "description": "控制本机桌面：截屏、点击、拖动、滚动和键盘输入。使用实际桌面与鼠标，可能影响你当前的操作；Linux 需 X11。"
+        },
+        "zh-TW": {
+          "displayName": "簡易截圖/滑鼠控制",
+          "description": "控制本機桌面：截圖、點擊、拖曳、捲動和鍵盤輸入。使用實際桌面與滑鼠，可能影響你目前的操作；Linux 需 X11。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
+      "displayName": "Simple Screenshot / Mouse Control",
       "platforms": [
         "linux"
       ],
@@ -560,19 +591,86 @@
       ],
       "target": "linux-arm64",
       "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-linux-arm64.tar.gz",
-      "sha256": "c30dd15b2c7b52aaed89a2fc15ed322cc45430575ab5f5cd2f1f4057de4e69a5",
-      "bytes": 19991
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/desktop-control-0.3.4-linux-arm64.tar.gz",
+      "sha256": "448a1b118ff4a228882332f6b3c79228fdfcf133b0e656ac2fa9e45125a5d966",
+      "bytes": 21630
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
-      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "version": "0.3.4",
+      "description": "Controls this computer's desktop with screenshots, clicks, drags, scrolling and keyboard input. Uses the actual desktop and pointer, so it can interfere with your work. Linux requires X11.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "简易截图/鼠标控制",
+          "description": "控制本机桌面：截屏、点击、拖动、滚动和键盘输入。使用实际桌面与鼠标，可能影响你当前的操作；Linux 需 X11。"
+        },
+        "zh-TW": {
+          "displayName": "簡易截圖/滑鼠控制",
+          "description": "控制本機桌面：截圖、點擊、拖曳、捲動和鍵盤輸入。使用實際桌面與滑鼠，可能影響你目前的操作；Linux 需 X11。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
+      "displayName": "Simple Screenshot / Mouse Control",
       "platforms": [
         "linux"
       ],
@@ -581,37 +679,86 @@
       ],
       "target": "linux-x64",
       "runtime": "python3",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-linux-x64.tar.gz",
-      "sha256": "c30dd15b2c7b52aaed89a2fc15ed322cc45430575ab5f5cd2f1f4057de4e69a5",
-      "bytes": 19991
-    },
-    {
-      "name": "clock",
-      "version": "0.1.3",
-      "description": "Tells the current time on this computer.",
-      "permissions": [],
-      "platforms": [
-        "windows"
-      ],
-      "categories": [
-        "example"
-      ],
-      "target": "win32-arm64",
-      "runtime": "powershell",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.3-win32-arm64.tar.gz",
-      "sha256": "67a4c6a23878b7e1b0efbe5b4251d3441b7511a69948e6fa7dacc859792e88e7",
-      "bytes": 1374
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/desktop-control-0.3.4-linux-x64.tar.gz",
+      "sha256": "448a1b118ff4a228882332f6b3c79228fdfcf133b0e656ac2fa9e45125a5d966",
+      "bytes": 21630
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
-      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "version": "0.3.4",
+      "description": "Controls this computer's desktop with screenshots, clicks, drags, scrolling and keyboard input. Uses the actual desktop and pointer, so it can interfere with your work. Linux requires X11.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "简易截图/鼠标控制",
+          "description": "控制本机桌面：截屏、点击、拖动、滚动和键盘输入。使用实际桌面与鼠标，可能影响你当前的操作；Linux 需 X11。"
+        },
+        "zh-TW": {
+          "displayName": "簡易截圖/滑鼠控制",
+          "description": "控制本機桌面：截圖、點擊、拖曳、捲動和鍵盤輸入。使用實際桌面與滑鼠，可能影響你目前的操作；Linux 需 X11。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
+      "displayName": "Simple Screenshot / Mouse Control",
       "platforms": [
         "windows"
       ],
@@ -620,79 +767,86 @@
       ],
       "target": "win32-arm64",
       "runtime": "powershell",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-win32-arm64.tar.gz",
-      "sha256": "aed8d8918e3302112762b8f6b0c36d9784d8e283c45922f960081cb963fa5656",
-      "bytes": 15281
-    },
-    {
-      "name": "local-preview",
-      "version": "0.1.0",
-      "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
-      "permissions": [
-        "network"
-      ],
-      "displayName": "Local Preview",
-      "platforms": [
-        "windows"
-      ],
-      "categories": [
-        "developer"
-      ],
-      "kind": "host",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "preview",
-            "command": [
-              "powershell.exe",
-              "-NoLogo",
-              "-NoProfile",
-              "-NonInteractive",
-              "-ExecutionPolicy",
-              "Bypass",
-              "-File",
-              "server.ps1"
-            ]
-          }
-        ]
-      },
-      "target": "win32-arm64",
-      "runtime": "powershell",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-preview/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.0-win32-arm64.tar.gz",
-      "sha256": "b66d00a129cb7534b1a62c5306fe1f1fe084d768452e020a964cba4b41027bb7",
-      "bytes": 6921
-    },
-    {
-      "name": "clock",
-      "version": "0.1.3",
-      "description": "Tells the current time on this computer.",
-      "permissions": [],
-      "platforms": [
-        "windows"
-      ],
-      "categories": [
-        "example"
-      ],
-      "target": "win32-x64",
-      "runtime": "powershell",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/clock/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/clock-0.1.3-win32-x64.tar.gz",
-      "sha256": "67a4c6a23878b7e1b0efbe5b4251d3441b7511a69948e6fa7dacc859792e88e7",
-      "bytes": 1374
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/desktop-control-0.3.4-win32-arm64.tar.gz",
+      "sha256": "5c6afe16443a1b1d17e6d72bfb65c283141bf06e7a39c885f3c2bd1802f132b2",
+      "bytes": 16892
     },
     {
       "name": "desktop-control",
-      "version": "0.3.0",
-      "description": "Sees the screen and uses the mouse and keyboard of this computer.",
+      "version": "0.3.4",
+      "description": "Controls this computer's desktop with screenshots, clicks, drags, scrolling and keyboard input. Uses the actual desktop and pointer, so it can interfere with your work. Linux requires X11.",
       "permissions": [
         "screen",
         "input"
       ],
+      "author": {
+        "name": "Lee-xeo",
+        "official": true
+      },
+      "i18n": {
+        "zh-CN": {
+          "displayName": "简易截图/鼠标控制",
+          "description": "控制本机桌面：截屏、点击、拖动、滚动和键盘输入。使用实际桌面与鼠标，可能影响你当前的操作；Linux 需 X11。"
+        },
+        "zh-TW": {
+          "displayName": "簡易截圖/滑鼠控制",
+          "description": "控制本機桌面：截圖、點擊、拖曳、捲動和鍵盤輸入。使用實際桌面與滑鼠，可能影響你目前的操作；Linux 需 X11。"
+        },
+        "ru": {
+          "displayName": "Управление рабочим столом",
+          "description": "Просматривает экран этого компьютера и управляет мышью и клавиатурой."
+        },
+        "ar": {
+          "displayName": "التحكم بسطح المكتب",
+          "description": "يعرض شاشة هذا الكمبيوتر ويستخدم الفأرة ولوحة المفاتيح."
+        },
+        "fa": {
+          "displayName": "کنترل دسکتاپ",
+          "description": "صفحه‌نمایش این رایانه را می‌بیند و از ماوس و صفحه‌کلید آن استفاده می‌کند."
+        },
+        "ko": {
+          "displayName": "데스크톱 제어",
+          "description": "이 컴퓨터의 화면을 보고 마우스와 키보드를 조작합니다."
+        },
+        "es": {
+          "displayName": "Control de escritorio",
+          "description": "Ve la pantalla de este equipo y controla el ratón y el teclado."
+        },
+        "my": {
+          "displayName": "ဒက်စ်တော့ ထိန်းချုပ်မှု",
+          "description": "ဤကွန်ပျူတာ၏ စခရင်ကိုကြည့်ပြီး မောက်စ်နှင့် ကီးဘုတ်ကို အသုံးပြုသည်။"
+        },
+        "be": {
+          "displayName": "Кіраванне працоўным сталом",
+          "description": "Бачыць экран гэтага камп'ютара і кіруе мышшу і клавіятурай."
+        },
+        "ps": {
+          "displayName": "د ډېسکټاپ کنټرول",
+          "description": "د دې کمپیوټر سکرین ګوري او موږک او کیبورډ کاروي."
+        },
+        "prs": {
+          "displayName": "کنترول دسکتاپ",
+          "description": "صفحه این کمپیوتر را می‌بیند و از ماوس و کیبورد آن استفاده می‌کند."
+        },
+        "am": {
+          "displayName": "የዴስክቶፕ ቁጥጥር",
+          "description": "የዚህን ኮምፒውተር ስክሪን ያያል እንዲሁም መዳፊትና ቁልፍ ሰሌዳውን ይጠቀማል።"
+        },
+        "so": {
+          "displayName": "Xakamaynta Shaashadda",
+          "description": "Wuxuu arkaa shaashadda kombiyuutarkan wuxuuna adeegsadaa jiirka iyo kiiboodhka."
+        },
+        "ti": {
+          "displayName": "ቁጽጽር ደስክቶፕ",
+          "description": "ስክሪን እዛ ኮምፒተር ይርኢ ከምኡውን ማውስን ኪቦርድን ይጥቀም።"
+        },
+        "fr": {
+          "displayName": "Contrôle du bureau",
+          "description": "Voit l'écran de cet ordinateur et utilise la souris et le clavier."
+        }
+      },
+      "displayName": "Simple Screenshot / Mouse Control",
       "platforms": [
         "windows"
       ],
@@ -701,52 +855,10 @@
       ],
       "target": "win32-x64",
       "runtime": "powershell",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/desktop-control/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/desktop-control-0.3.0-win32-x64.tar.gz",
-      "sha256": "aed8d8918e3302112762b8f6b0c36d9784d8e283c45922f960081cb963fa5656",
-      "bytes": 15281
-    },
-    {
-      "name": "local-preview",
-      "version": "0.1.0",
-      "description": "Opens pages served on this computer's loopback address in a browser and reads back the tab's title and address.",
-      "permissions": [
-        "network"
-      ],
-      "displayName": "Local Preview",
-      "platforms": [
-        "windows"
-      ],
-      "categories": [
-        "developer"
-      ],
-      "kind": "host",
-      "engines": {
-        "cage": ">=0.1.8"
-      },
-      "contributes": {
-        "mcpServers": [
-          {
-            "id": "preview",
-            "command": [
-              "powershell.exe",
-              "-NoLogo",
-              "-NoProfile",
-              "-NonInteractive",
-              "-ExecutionPolicy",
-              "Bypass",
-              "-File",
-              "server.ps1"
-            ]
-          }
-        ]
-      },
-      "target": "win32-x64",
-      "runtime": "powershell",
-      "icon": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/local-preview/icon.svg",
-      "archive": "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/local-preview-0.1.0-win32-x64.tar.gz",
-      "sha256": "b66d00a129cb7534b1a62c5306fe1f1fe084d768452e020a964cba4b41027bb7",
-      "bytes": 6921
+      "icon": "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/desktop-control/icon.svg",
+      "archive": "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/desktop-control-0.3.4-win32-x64.tar.gz",
+      "sha256": "5c6afe16443a1b1d17e6d72bfb65c283141bf06e7a39c885f3c2bd1802f132b2",
+      "bytes": 16892
     }
   ]
 }

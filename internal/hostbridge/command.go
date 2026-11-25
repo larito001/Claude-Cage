@@ -55,7 +55,7 @@ type CommandRequest struct {
 
 type commandInput struct {
 	Command        string `json:"command" jsonschema:"the shell command to run"`
-	Dir            string `json:"dir,omitempty" jsonschema:"absolute directory to run in; defaults to the first project directory"`
+	Dir            string `json:"dir,omitempty" jsonschema:"absolute starting directory on the host; defaults to the first project directory; this does not restrict filesystem access"`
 	TimeoutSeconds int    `json:"timeout_seconds,omitempty" jsonschema:"stop the command after this many seconds; default 120, at most 1800; a background command defaults to 1800, at most 21600"`
 	Background     bool   `json:"background,omitempty" jsonschema:"return at once with a job id instead of waiting; use for builds, test suites and anything that may take more than a minute, then read the result with command_job"`
 }
@@ -72,7 +72,7 @@ type commandOutput struct {
 func (c Command) tool() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        "run_command",
-		Description: "Run a shell command on the user's computer and return its combined output and exit code.",
+		Description: "Run a shell command on the host computer as the account running this service, and return combined output and exit code. The project directory only sets the starting directory; the command can access other files, programs and network resources allowed to that account.",
 	}
 }
 
@@ -91,7 +91,7 @@ func (c Command) Prompts() []string {
 
 // PromptList describes the prompts registered by Command.
 func (c Command) PromptList() []PromptInfo {
-	return []PromptInfo{{Name: "commands", Description: "Run a shell command on this computer."}}
+	return []PromptInfo{{Name: "commands", Description: "Run shell commands on the host computer with the service account permissions. The starting project directory is not a filesystem sandbox."}}
 }
 
 // Register adds the run_command tool and its slash prompt.
@@ -103,7 +103,7 @@ func (c Command) Register(server *mcp.Server) {
 	if c.Jobs != nil {
 		c.Jobs.register(server)
 	}
-	if prompt, handler := buildPluginPrompt("commands", "Run Command", "Run a shell command on this computer.", c.Tools()); prompt != nil {
+	if prompt, handler := buildPluginPrompt("commands", "Run Host Command", "Run shell commands on the host computer with the service account permissions. The starting project directory is not a filesystem sandbox.", c.Tools()); prompt != nil {
 		server.AddPrompt(prompt, handler)
 	}
 }

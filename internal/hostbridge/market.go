@@ -34,9 +34,25 @@ type Market struct {
 
 // CommunityMarket is the public plugin repository.
 var CommunityMarket = Market{
-	IndexURL:      "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/index.json",
-	ArchivePrefix: "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/dist/",
-	IconPrefix:    "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/plugins/",
+	IndexURL:      "https://raw.githubusercontent.com/larito001/cage-plugins/main/index.json",
+	ArchivePrefix: "https://raw.githubusercontent.com/larito001/cage-plugins/main/dist/",
+	IconPrefix:    "https://raw.githubusercontent.com/larito001/cage-plugins/main/plugins/",
+}
+
+// Forked indexes may retain upstream asset URLs. Resolve those assets from
+// our fork before validation; never fetch them from the upstream repository.
+func (m Market) resolveForkAssets(entry MarketEntry) MarketEntry {
+	if m != CommunityMarket {
+		return entry
+	}
+	const upstream = "https://raw.githubusercontent.com/Lee-xeo/cage-plugins/main/"
+	if rest, ok := strings.CutPrefix(entry.Archive, upstream+"dist/"); ok {
+		entry.Archive = m.ArchivePrefix + rest
+	}
+	if rest, ok := strings.CutPrefix(entry.Icon, upstream+"plugins/"); ok {
+		entry.Icon = m.IconPrefix + rest
+	}
+	return entry
 }
 
 // MarketEntry is one plugin in the list.
@@ -251,6 +267,7 @@ func (m Market) Fetch(ctx context.Context, client *http.Client) ([]MarketEntry, 
 	seen := map[string]int{}
 	allPlats := map[string]bool{}
 	for _, entry := range index.Plugins {
+		entry = m.resolveForkAssets(entry)
 		if entry.Kind == "" {
 			entry.Kind = KindHost
 		}

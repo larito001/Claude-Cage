@@ -19,8 +19,8 @@ const permissions = {
   input: { title: "控制键盘和鼠标", text: "模拟键盘输入和鼠标操作。", icon: Keyboard },
   network: { title: "访问网络", text: "从这台电脑连接网络上的服务。", icon: Globe2 },
 };
-const builtIn = { commands: { title: "命令", description: "在已打开的项目文件夹中运行命令，较长的命令可在后台运行并稍后读取结果。" } };
-const toolNotes = { run_command: "在项目文件夹中运行一条命令", command_job: "读取或停止后台运行的命令" };
+const builtIn = { commands: { title: "主机命令执行（环境外）", description: "让隔离环境内的 AI 在环境外的主机上执行命令，以运行服务的主机用户权限访问文件、程序和网络。项目文件夹只限定启动目录，不限制文件访问范围；支持后台任务。" } };
+const toolNotes = { run_command: "在主机执行命令；项目目录只是启动位置，不是文件访问边界", command_job: "查询主机后台命令的状态和输出，或停止该命令" };
 const knownIcons = { commands: SquareTerminal, clock: Clock };
 const sources = { builtin: "内置", default: "默认预装", local: "手动安装", catalog: "随应用附带", market: "插件市场" };
 const runtimeNames = { uv: "uv", uvx: "uv", npx: "Node.js (npx)", node: "Node.js", python3: "Python 3", python: "Python", powershell: "PowerShell" };
@@ -678,14 +678,14 @@ function Grants({ model, plugin, onConfirm }) {
       await change({ plugin: plugin.name, always: false, ...(project ? { project } : {}) }, key);
     };
     const allow = async () => {
-      if (!project || !await onConfirm({ title: "在这个项目中始终允许运行命令？", confirm: "始终允许",
-        body: translate("之后 AI 助手在 {0} 中运行命令时不再询问。命令以你的系统账户权限在这台电脑上运行，可以随时在这里撤销。", project) })) return;
+      if (!project || !await onConfirm({ title: "始终允许从这个项目启动主机命令？", confirm: "始终允许",
+        body: translate("之后从 {0} 启动主机命令时不再询问。命令以运行服务的主机用户权限执行，仍可访问该用户有权访问的其他目录、程序和网络；此授权不提供项目隔离，可随时撤销。", project) })) return;
       await change({ plugin: plugin.name, always: true, project }, key);
     };
     return (
       <section className="plugin-grants" aria-label={tr("授权")}>
         <div className="plugin-grants-head">
-          <div><strong>{tr("授权")}</strong><p>{tr("在确认窗口中选择“始终允许”，或在下方选择已打开的项目，在这些项目中运行命令就不再询问。")}</p></div>
+          <div><strong>{tr("授权")}</strong><p>{tr("“始终允许”按命令的启动项目记住授权，之后从该项目启动命令不再询问。它不限制命令只能访问该项目的文件。")}</p></div>
           {projects.length > 1 && <button type="button" disabled={Boolean(busy)} onClick={() => revoke("")}>{tr("全部撤销")}</button>}
         </div>
         {open.length > 0 && <div className="plugin-grant-add">
@@ -889,7 +889,7 @@ function Detail({ model, name, onConfirm, onPage }) {
         </div>
       </header>
       {plugin && !on && <div className="plugin-banner" role="status"><CircleAlert size={17} /><div>
-        <strong>{plugin.built_in && name === "commands" ? tr("命令已停用") : tr("插件已停用")}</strong>
+        <strong>{plugin.built_in && name === "commands" ? tr("主机命令执行已停用") : tr("插件已停用")}</strong>
         <p>{plugin.built_in && name === "commands" ? tr("AI 助手将不能在这台电脑上运行命令。打开上方开关即可恢复。") : tr("插件不会运行，AI 助手也看不到它提供的工具。打开上方开关即可恢复。")}</p>
       </div></div>}
       {plugin && on && plugin.needs_settings && <div className="plugin-banner" role="status"><CircleAlert size={17} /><div>
@@ -1126,7 +1126,7 @@ function SettingsPage({ model, status, onConfirm }) {
       {view.problems?.length > 0 && <div className="plugin-banner problem" role="alert"><TriangleAlert size={17} /><div><strong>{tr("部分插件未能加载")}</strong>{view.problems.map(problem => <p key={problem}>{problem}</p>)}</div></div>}
       <section className="plugin-card">
         <h3>{tr("可操作的文件夹")}</h3>
-        <p className="plugin-card-lead">{remote ? tr("远程命令插件只能在远程主机这些已打开的项目文件夹中运行。") : tr("命令插件只能在这些已打开的项目文件夹中运行。")}</p>
+        <p className="plugin-card-lead">{remote ? tr("命令在远程主机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问远程服务用户有权访问的其他文件、程序和网络。") : tr("命令在隔离环境外的本机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问主机用户有权访问的其他文件、程序和网络。")}</p>
         {view.folders.length ? <ul className="plugin-folder-list">
           {view.folders.map(folder => <li key={folder}><Folder size={16} /><code>{folder}</code></li>)}
         </ul> : <div className="plugin-empty compact"><FolderOpen size={22} /><p>{tr("还没有打开项目。打开项目后，它的文件夹会出现在这里。")}</p></div>}

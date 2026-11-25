@@ -2,7 +2,7 @@
 
 Cage 采用与开放插件市场解耦的协作方式：
 
-- **为 Claude 新增 MCP 能力，或为 Cage 制作自定义扩展页面**：请直接前往开放插件市场仓库 [cage-plugins](https://github.com/Lee-xeo/cage-plugins) 提交插件（开发规范见 [docs/plugins.md](../docs/plugins.md)），无需在 Cage 主仓库提 Issue。
+- **为 Claude 新增 MCP 能力，或为 Cage 制作自定义扩展页面**：请直接前往开放插件市场仓库 [cage-plugins](https://github.com/larito001/cage-plugins) 提交插件（开发规范见 [docs/plugins.md](../docs/plugins.md)），无需在 Cage 主仓库提 Issue。
 - **改进 Cage 本体（隔离环境、网络、工作台、跨平台桌面端与文档）**：采用“贡献 Issue 审核 → 邀请成为协作者 → 提交 PR → 审查合入”的流程。仓库仅允许协作者创建 PR；修复代码、改进功能和修改文档都从明确的贡献方案开始。
 
 ## 提交方案并等待审核
