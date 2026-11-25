@@ -70,6 +70,74 @@ func TestDefaultPluginsBundledAndDigestMatchesDeployed(t *testing.T) {
 	if err != nil || deployedCtrlDigest != ctrlDigest || ctrlDigest != ctrl.Digest {
 		t.Fatalf("use-cage digest mismatch: %s vs %s vs %s (%v)", deployedCtrlDigest, ctrlDigest, ctrl.Digest, err)
 	}
+
+	exitCheck, ok := DefaultPluginByName("ai-exit-check")
+	if !ok {
+		t.Fatal("expected ai-exit-check in bundled defaults")
+	}
+	if exitCheck.Manifest.Kind != KindGuest || len(exitCheck.Manifest.Permissions) != 0 {
+		t.Fatalf("unexpected ai-exit-check manifest: %+v", exitCheck.Manifest)
+	}
+	if len(exitCheck.I18n) != 15 {
+		t.Fatalf("ai-exit-check i18n languages = %d, want 15", len(exitCheck.I18n))
+	}
+	exitDigest, err := InstallDefaultPlugin("ai-exit-check", dir)
+	if err != nil {
+		t.Fatalf("InstallDefaultPlugin(ai-exit-check): %v", err)
+	}
+	deployedExitDigest, err := PluginDigest(filepath.Join(dir, "ai-exit-check"), "ai-exit-check")
+	if err != nil || deployedExitDigest != exitDigest || exitDigest != exitCheck.Digest {
+		t.Fatalf("ai-exit-check digest mismatch: %s vs %s vs %s (%v)", deployedExitDigest, exitDigest, exitCheck.Digest, err)
+	}
+}
+
+func TestAIExitCheckToolWordingIsNeutral(t *testing.T) {
+	var python string
+	for _, name := range []string{"python3", "python"} {
+		if p, err := exec.LookPath(name); err == nil {
+			if exec.Command(p, "-c", "import sys").Run() == nil {
+				python = p
+				break
+			}
+		}
+	}
+	if python == "" {
+		t.Skip("working python3/python unavailable")
+	}
+	installRoot := t.TempDir()
+	if _, err := InstallDefaultPlugin("ai-exit-check", installRoot); err != nil {
+		t.Fatal(err)
+	}
+	pluginDir := filepath.Join(installRoot, "ai-exit-check")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, python, filepath.Join(pluginDir, "server.py"))
+	cmd.Dir = pluginDir
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil)
+	session, err := client.Connect(ctx, &mcp.CommandTransport{Command: cmd, TerminateDuration: 2 * time.Second}, nil)
+	if err != nil {
+		t.Fatalf("connect ai-exit-check: %v", err)
+	}
+	defer session.Close()
+
+	listed, err := session.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatalf("ListTools: %v", err)
+	}
+	if len(listed.Tools) != 2 {
+		t.Fatalf("got %d tools, want 2", len(listed.Tools))
+	}
+	for _, tool := range listed.Tools {
+		if word, found := CheckWording(tool); found {
+			t.Fatalf("ai-exit-check tool %s violates CheckWording with %q", tool.Name, word)
+		}
+	}
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "list_exit_routes", Arguments: map[string]any{}})
+	if err != nil || res.IsError {
+		t.Fatalf("list_exit_routes failed: %v %+v", err, res)
+	}
 }
 
 func TestUseCageToolWordingIsNeutral(t *testing.T) {

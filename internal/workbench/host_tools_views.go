@@ -249,19 +249,38 @@ func (s *Server) callHostTool(w http.ResponseWriter, r *http.Request) {
 		hostCallError(w, http.StatusForbidden, hostCallNotAllowed, "这个页面不属于已启用的插件")
 		return
 	}
-	s.mu.Lock()
-	tools := s.hostTools
-	s.mu.Unlock()
-	var plugin *hostbridge.External
-	if tools != nil {
+	findLoadedPlugin := func() (*hostbridge.External, string) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		tools := s.hostTools
+		if tools == nil {
+			return nil, ""
+		}
 		for _, loaded := range tools.plugins {
 			if loaded.Manifest.Name == body.Plugin {
-				plugin = loaded
+				return loaded, ""
 			}
+		}
+		return nil, tools.pluginProblems[body.Plugin]
+	}
+	plugin, problem := findLoadedPlugin()
+	if view.Server != "" && plugin == nil && problem == "" && !s.clientOnly {
+		s.mu.Lock()
+		canAutostart := !s.closing && (s.ready || manifest.Kind != hostbridge.KindGuest)
+		s.mu.Unlock()
+		if canAutostart && s.op.TryLock() {
+			s.closeHostTools()
+			s.ensureHostTools()
+			s.op.Unlock()
+			plugin, problem = findLoadedPlugin()
 		}
 	}
 	if view.Server == "" || plugin == nil {
-		hostCallError(w, http.StatusConflict, hostCallUnavailable, "插件没有在运行，或这个页面没有可调用的服务")
+		msg := "插件没有在运行，或这个页面没有可调用的服务"
+		if problem != "" {
+			msg = "插件未能启动：" + problem
+		}
+		hostCallError(w, http.StatusConflict, hostCallUnavailable, msg)
 		return
 	}
 	// By what is running, not what the folder says now. A plugin on this
