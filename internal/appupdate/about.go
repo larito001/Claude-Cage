@@ -88,7 +88,7 @@ func checkSource(ctx context.Context, client *http.Client, current string) Check
 	var latest struct {
 		SHA string `json:"sha"`
 	}
-	if err := metadata(ctx, client, repositoryAPI+"/commits/main", &latest); err != nil {
+	if err := metadata(ctx, client, repositoryAPI+"/commits/"+sourceBranch, &latest); err != nil {
 		return checkFailure(err)
 	}
 	if !validCommit(latest.SHA) {

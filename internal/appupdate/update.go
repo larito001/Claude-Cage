@@ -31,6 +31,7 @@ import (
 )
 
 const repository = catalog.Repository
+const sourceBranch = catalog.SourceBranch
 const releasesURL = catalog.ReleasesURL
 const maxArchive = catalog.MaxArchive
 const metadataTimeout = 2 * time.Minute
@@ -186,7 +187,7 @@ func allowedURL(u *url.URL, redirect bool) bool {
 		if path == u.Path {
 			return false
 		}
-		if path == "releases" || path == "commits/main" {
+		if path == "releases" || path == "commits/"+sourceBranch {
 			return true
 		}
 		if comparison, ok := strings.CutPrefix(path, "compare/"); ok {

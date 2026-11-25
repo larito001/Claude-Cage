@@ -24,7 +24,7 @@ func TestHostUpdateUsesProxyWithoutCageProfile(t *testing.T) {
 		if strings.Contains(r.UserAgent(), "Cage") {
 			t.Error("product identity in request")
 		}
-		if strings.HasSuffix(r.URL.Path, "/commits/main") {
+		if strings.HasSuffix(r.URL.Path, "/commits/"+sourceBranch) {
 			io.WriteString(w, `{"sha":"`+commit+`"}`)
 		} else {
 			io.WriteString(w, `[{"tag_name":"v0.2.0-rc.1","prerelease":true}]`)
@@ -88,7 +88,7 @@ func TestUpdateTransportFallsBackOnlyOnConnectionFailure(t *testing.T) {
 		openManaged: func(ctx context.Context) (*http.Client, error) {
 			fallbacks.Add(1)
 			return aboutClient(t, func(r *http.Request) (int, any) {
-				if strings.HasSuffix(r.URL.Path, "/commits/main") {
+				if strings.HasSuffix(r.URL.Path, "/commits/"+sourceBranch) {
 					return 200, map[string]string{"sha": strings.Repeat("b", 40)}
 				}
 				return 200, []release{{Tag: "v0.2.0"}}

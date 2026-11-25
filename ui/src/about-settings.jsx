@@ -5,7 +5,8 @@ import "./about-settings.css";
 import { activeInterfaceLanguage, useTranslation } from "./interface-language.mjs";
 import { localizeBackendMessage } from "./backend-message.mjs";
 
-const repository = "https://github.com/Lee-xeo/Claude-Cage";
+const repository = "https://github.com/larito001/Claude-Cage";
+const sourceBranch = "allcage";
 const sourceMessages = {
   current: "已与主分支同步",
   available: "主分支有新提交",
@@ -22,7 +23,7 @@ const releaseMessages = {
 };
 
 function RepositoryLink({ kind, onError, children }) {
-  const url = `${repository}/${kind === "source" ? "commits/main" : "releases"}`;
+  const url = `${repository}/${kind === "source" ? `commits/${sourceBranch}` : "releases"}`;
   return <a href={url} target="_blank" rel="noopener noreferrer" onClick={async event => {
     if (!nativeAvailable()) return;
     event.preventDefault();

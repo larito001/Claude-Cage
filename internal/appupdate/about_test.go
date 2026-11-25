@@ -50,7 +50,7 @@ func TestAboutSourceComparisonDirection(t *testing.T) {
 		t.Run(test.relation, func(t *testing.T) {
 			client := aboutClient(t, func(r *http.Request) (int, any) {
 				switch r.URL.Path {
-				case "/repos/" + repository + "/commits/main":
+				case "/repos/" + repository + "/commits/" + sourceBranch:
 					return 200, map[string]any{"sha": head}
 				case "/repos/" + repository + "/compare/" + base + "..." + head:
 					return 200, map[string]any{"status": test.relation, "ahead_by": 3, "behind_by": 2}
@@ -87,7 +87,7 @@ func TestAboutChecksPreservePartialSuccess(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 	client = aboutClient(t, func(r *http.Request) (int, any) {
-		if strings.HasSuffix(r.URL.Path, "/commits/main") {
+		if strings.HasSuffix(r.URL.Path, "/commits/"+sourceBranch) {
 			return 200, map[string]any{"sha": strings.Repeat("a", 40)}
 		}
 		return 429, nil
@@ -99,7 +99,7 @@ func TestAboutChecksPreservePartialSuccess(t *testing.T) {
 }
 
 func TestAboutMetadataRejectsUntrustedPaths(t *testing.T) {
-	for _, path := range []string{"commits/other", "compare/../../main", "compare/" + strings.Repeat("a", 40) + "...main", "issues", "../Other/releases"} {
+	for _, path := range []string{"commits/other", "commits/main", "compare/../../" + sourceBranch, "compare/" + strings.Repeat("a", 40) + "..." + sourceBranch, "issues", "../Other/releases"} {
 		u, _ := url.Parse(repositoryAPI + "/" + path)
 		if allowedURL(u, false) {
 			t.Fatalf("accepted %s", u)
