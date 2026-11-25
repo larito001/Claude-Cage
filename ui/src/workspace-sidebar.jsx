@@ -243,11 +243,6 @@ export function WorkspaceSidebar({
                     ? accountDesktops.panes.some((p) => p.provider === item.id)
                     : desktopProvider === item.id)
                 }
-                installerSelected={
-                  desktopOpen &&
-                  accountDesktops.panes.length === 0 &&
-                  desktopProvider === item.id
-                }
                 onOpenInstaller={
                   onProviderDesktop ? () => onProviderDesktop(item.id) : undefined
                 }

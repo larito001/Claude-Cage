@@ -216,7 +216,6 @@ export function ProviderDesktopList({
   model,
   disabled,
   selected,
-  installerSelected = false,
   onOpenInstaller,
   onRename,
 }) {
@@ -235,17 +234,40 @@ export function ProviderDesktopList({
       ?.querySelector(".terminal-row-actions button:not(:disabled)")
       ?.focus();
   };
+  const ensureInstalledBeforeStart = async () => {
+    try {
+      const app = await api(`/desktop-apps/${provider}`);
+      if (app && app.installed === false) {
+        onOpenInstaller?.();
+        return false;
+      }
+    } catch {
+      /* Let normal start report connection/runtime state if probe fails. */
+    }
+    return true;
+  };
   const choose = async () => {
+    if (!(await ensureInstalledBeforeStart())) return;
     const ok = await model.act({ id: accountID }, "start", false, true, null, provider);
     if (ok) setCreating(false);
-    else onOpenInstaller?.();
   };
   return (
     <div className="account-desktop-nav">
       <button
         className={"sidebar-link " + (selected ? "selected" : "")}
         aria-expanded={isExpanded}
-        onClick={() => model.toggleProvider(provider)}
+        onClick={async () => {
+          const willExpand = !isExpanded;
+          model.toggleProvider(provider);
+          if (willExpand && instances.length === 0 && !disabled) {
+            try {
+              const app = await api(`/desktop-apps/${provider}`);
+              if (app && app.installed === false) onOpenInstaller?.();
+            } catch {
+              /* Ignore offline state when expanding sidebar. */
+            }
+          }
+        }}
       >
         <Monitor size={17} />
         {label}{" "}
@@ -253,19 +275,6 @@ export function ProviderDesktopList({
       </button>
       {isExpanded && (
         <div className="account-desktop-list">
-          {onOpenInstaller && (
-            <div className={`account-desktop-row ${installerSelected ? "active" : ""}`}>
-              <button
-                type="button"
-                className="sidebar-link"
-                disabled={disabled}
-                onClick={onOpenInstaller}
-              >
-                <Monitor size={16} />
-                <span className="account-desktop-label">{tr("更新 / 修复安装")}</span>
-              </button>
-            </div>
-          )}
           {catalog?.supported &&
             instances.map((a) => {
               const active = selected && panes.some((p) => p.id === a.id);
@@ -285,8 +294,8 @@ export function ProviderDesktopList({
                     className="sidebar-link"
                     disabled={Boolean(pending) || disabled}
                     onClick={async () => {
-                      const ok = await model.act(a, "start", false, false, null, provider);
-                      if (!ok) onOpenInstaller?.();
+                      if (!(await ensureInstalledBeforeStart())) return;
+                      await model.act(a, "start", false, false, null, provider);
                     }}
                     onContextMenu={focusRowActions}
                     onKeyDown={(event) => {
