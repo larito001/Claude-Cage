@@ -29,6 +29,7 @@ import { api } from "./api";
 import "./settings.css";
 import { SafetyMessage } from "./safety-message";
 import { AppearanceSettings } from "./appearance-settings";
+import { ProviderIcon } from "./agent-icon";
 import { NotificationSettings } from "./notification-settings";
 import { ProxySettings } from "./proxy-settings";
 import { ExitPolicyFields } from "./exit-policy";
@@ -603,7 +604,10 @@ export function SettingsPanel({
                   </div>
                   <div className="settings-row">
                     <div className="settings-row-copy">
-                      <strong>{tr("Claude 终端启动命令")}</strong>
+                      <strong className="settings-provider-label">
+                        <ProviderIcon provider="claude" size={15} />
+                        {tr("Claude 终端启动命令")}
+                      </strong>
                     </div>
                     <div className="settings-row-control settings-row-control--wide">
                       <input
@@ -620,7 +624,10 @@ export function SettingsPanel({
                   </div>
                   <div className="settings-row">
                     <div className="settings-row-copy">
-                      <strong>{tr("Antigravity 终端启动命令")}</strong>
+                      <strong className="settings-provider-label">
+                        <ProviderIcon provider="antigravity" size={15} />
+                        {tr("Antigravity 终端启动命令")}
+                      </strong>
                     </div>
                     <div className="settings-row-control settings-row-control--wide">
                       <input
@@ -637,7 +644,10 @@ export function SettingsPanel({
                   </div>
                   <div className="settings-row">
                     <div className="settings-row-copy">
-                      <strong>{tr("Codex 终端启动命令")}</strong>
+                      <strong className="settings-provider-label">
+                        <ProviderIcon provider="codex" size={15} />
+                        {tr("Codex 终端启动命令")}
+                      </strong>
                     </div>
                     <div className="settings-row-control settings-row-control--wide">
                       <input
@@ -656,7 +666,10 @@ export function SettingsPanel({
                 <div className="settings-card">
                   {typeof current.reuse_claude_login === "boolean" && <label className="settings-row settings-switch-row" title={tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}>
                     <span className="settings-row-copy">
-                      <strong>{tr("使用无痕标签页登录 Claude")}</strong>
+                      <strong className="settings-provider-label">
+                        <ProviderIcon provider="claude" size={15} />
+                        {tr("使用无痕标签页登录 Claude")}
+                      </strong>
                       <small>{tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}</small>
                     </span>
                     <input type="checkbox" role="switch" checked={!draft.reuse_claude_login}
@@ -664,7 +677,10 @@ export function SettingsPanel({
                   </label>}
                   {typeof current.reuse_antigravity_login === "boolean" && <label className="settings-row settings-switch-row" title={tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}>
                     <span className="settings-row-copy">
-                      <strong>{tr("使用无痕标签页登录 Antigravity")}</strong>
+                      <strong className="settings-provider-label">
+                        <ProviderIcon provider="antigravity" size={15} />
+                        {tr("使用无痕标签页登录 Antigravity")}
+                      </strong>
                       <small>{tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}</small>
                     </span>
                     <input type="checkbox" role="switch" checked={!draft.reuse_antigravity_login}
@@ -672,7 +688,10 @@ export function SettingsPanel({
                   </label>}
                   {typeof current.reuse_codex_login === "boolean" && <label className="settings-row settings-switch-row" title={tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}>
                     <span className="settings-row-copy">
-                      <strong>{tr("使用无痕标签页登录 Codex")}</strong>
+                      <strong className="settings-provider-label">
+                        <ProviderIcon provider="codex" size={15} />
+                        {tr("使用无痕标签页登录 Codex")}
+                      </strong>
                       <small>{tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}</small>
                     </span>
                     <input type="checkbox" role="switch" checked={!draft.reuse_codex_login}

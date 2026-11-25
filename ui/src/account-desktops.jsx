@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect, useCallback, forwardRef, useImperat
 import {
   ChevronDown,
   ChevronRight,
-  Monitor,
   Columns2,
   PanelLeftOpen,
   Pencil,
@@ -13,7 +12,7 @@ import {
 import RFB from "../.generated/novnc/core/rfb.js";
 import { InlineSelect } from "./inline-select";
 import { api, native, nativeAvailable } from "./api";
-import { AccountIconNumber } from "./agent-icon";
+import { AgentIcon, ProviderIcon } from "./agent-icon";
 import { BrowserUploads } from "./browser-uploads";
 import { ProjectDialog } from "./project-dialog";
 import { sendFiles } from "./file-transfer";
@@ -36,11 +35,14 @@ import {
 
 const entry = (id) => "/desktop-instances/" + id;
 
-function DesktopAccountLabel({ account }) {
+function DesktopAccountLabel({ account, provider = "claude" }) {
   return <>
-    <Monitor size={20} strokeWidth={1.75} aria-hidden="true">
-      {account.number > 0 && <AccountIconNumber number={account.number} y={10} />}
-    </Monitor>
+    <AgentIcon
+      provider={account?.provider || provider || "claude"}
+      accountNumber={account?.number > 0 ? account.number : undefined}
+      size={18}
+      decorative
+    />
     <span className="account-desktop-label">{account.label}</span>
   </>;
 }
@@ -286,7 +288,7 @@ export function ProviderDesktopList({
           }
         }}
       >
-        <Monitor size={17} />
+        <ProviderIcon provider={provider} size={17} />
         {label}{" "}
         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
       </button>
@@ -319,7 +321,7 @@ export function ProviderDesktopList({
                       if (event.key === "F10" && event.shiftKey) focusRowActions(event);
                     }}
                   >
-                    <DesktopAccountLabel account={a} />
+                    <DesktopAccountLabel account={a} provider={provider} />
                     {pending === a.id || a.running ? (
                       <span className="account-desktop-status" aria-hidden="true">
                         {pending === a.id ? "…" : "●"}
@@ -447,7 +449,7 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
         aria-expanded={expanded}
         onClick={model.toggle}
       >
-        <Monitor size={17} />
+        <ProviderIcon provider="claude" size={17} />
         Claude Desktop{" "}
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
       </button>
@@ -519,7 +521,7 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
                       if (event.key === "F10" && event.shiftKey) focusRowActions(event);
                     }}
                   >
-                    <DesktopAccountLabel account={a} />
+                    <DesktopAccountLabel account={a} provider="claude" />
                     {pending === a.id || a.running ? <span className="account-desktop-status" aria-hidden="true">{pending === a.id ? "…" : "●"}</span> : null}
                   </button>
                   {hasRowActions && (

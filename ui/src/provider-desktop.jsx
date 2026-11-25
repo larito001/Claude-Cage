@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, Monitor, PanelLeftOpen, Plus, RefreshCw } from "lucide-react";
+import { Download, PanelLeftOpen, Plus, RefreshCw } from "lucide-react";
 import { api } from "./api";
+import { ProviderIcon } from "./agent-icon";
 import { SafetyMessage } from "./safety-message";
 import { providerSpec } from "./providers.mjs";
 import { useWindowVisibility } from "./window-visibility";
@@ -158,7 +159,7 @@ export function ProviderDesktopView({
       )}
       <div className="desktop-screen">
         <div className="desktop-empty">
-          <Monitor size={36} />
+          <ProviderIcon provider={provider} size={40} />
           <h2>
             {appState?.installed
               ? spec.desktopLabel
@@ -176,7 +177,7 @@ export function ProviderDesktopView({
               >
                 {appState.installed ? (
                   providerInstances.length > 0 ? (
-                    <Monitor size={16} />
+                    <ProviderIcon provider={provider} size={16} monochrome />
                   ) : (
                     <Plus size={16} />
                   )

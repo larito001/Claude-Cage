@@ -6,6 +6,7 @@ import {
   isAgentTerminalTab,
   isProviderLoginTerminal,
   providerSpec,
+  tabProviderId,
   terminalProvider,
   validBrowserSpace,
 } from "./providers.mjs";
@@ -36,4 +37,10 @@ test("provider registry exposes claude, antigravity, and codex with isolated spa
   assert.equal(isAgentTerminalTab({ terminalKind: "antigravity" }), true);
   assert.equal(isAgentTerminalTab({ terminalKind: "codex" }), true);
   assert.equal(isAgentTerminalTab({ terminalKind: "shell" }), false);
+
+  assert.equal(tabProviderId({ terminalKind: "claude" }), "claude");
+  assert.equal(tabProviderId({ terminalKind: "antigravity-login" }), "antigravity");
+  assert.equal(tabProviderId({ provider: "codex", terminalKind: "shell" }), "codex");
+  assert.equal(tabProviderId({ cli_session_id: "s1" }), "claude");
+  assert.equal(tabProviderId({ terminalKind: "shell" }), "");
 });

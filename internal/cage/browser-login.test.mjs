@@ -227,3 +227,36 @@ test("formatCDPDiagnostic rewrites only fixed CDP methods and leaves hostnames u
     "Browser command timed out: Page/navigate at example.com",
   );
 });
+
+test("Antigravity OAuth callback URL is captured once for matching state without leaking to public tab info", async () => {
+  const browser = new LoginBrowser(async (method) => {
+    if (method === "Target.createBrowserContext") return { browserContextId: "ctx-agy" };
+    if (method === "Target.createTarget") return { targetId: "tab-agy" };
+  });
+  const loginId = "e".repeat(24);
+  const authURL =
+    "https://accounts.google.com/o/oauth2/auth?redirect_uri=https%3A%2F%2Fantigravity.google%2Foauth-callback&response_type=code&state=state-xyz";
+  await browser.open(loginId, authURL, async () => "session");
+
+  // Mismatched state is ignored.
+  browser.tab({
+    targetId: "tab-agy",
+    browserContextId: "ctx-agy",
+    url: "https://antigravity.google/oauth-callback?state=wrong&code=4/wrong",
+  });
+  assert.equal(browser.consumeCallback(loginId), "");
+
+  // Matching state + code is captured privately and consumed once.
+  const callbackURL = "https://antigravity.google/oauth-callback?state=state-xyz&code=4/0AtestCode123";
+  const publicTab = browser.tab({
+    targetId: "tab-agy",
+    browserContextId: "ctx-agy",
+    url: callbackURL,
+  });
+  assert.equal(publicTab.url, "https://antigravity.google");
+  assert.equal(publicTab.title, "账号授权");
+  assert.equal(browser.consumeCallback("f".repeat(24)), "");
+  assert.equal(browser.consumeCallback(loginId), callbackURL);
+  assert.equal(browser.consumeCallback(loginId), "");
+  await browser.finish(loginId);
+});

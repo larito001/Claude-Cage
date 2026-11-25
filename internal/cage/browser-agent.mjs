@@ -992,6 +992,9 @@ const server = http.createServer(async (req, res) => {
         await loginBrowser.finish(input.login);
         return { ok: true };
       }
+      if (req.url === "/login-callback") {
+        return { callback: loginBrowser.consumeCallback(input.login) };
+      }
       if (req.url === "/homepage") {
         const url = checkedURL(input.url);
         if (url === "about:blank") throw new Error("Homepage must be an HTTP(S) URL");

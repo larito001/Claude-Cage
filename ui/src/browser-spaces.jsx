@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Globe2, Layers, Shield } from "lucide-react";
 import { api } from "./api";
 import { InlineSelect } from "./inline-select";
+import { ProviderIcon } from "./agent-icon";
 import { PROVIDERS, browserSpaceSpec } from "./providers.mjs";
 import { useTranslation } from "./interface-language.mjs";
 
@@ -59,7 +60,7 @@ export function BrowserSpaceBadge({ space }) {
       className={`browser-space-badge browser-space-${spec.id}`}
       title={tr("{0} 浏览器空间", spec.name)}
     >
-      <Layers size={12} aria-hidden="true" />
+      <ProviderIcon provider={spec.id} size={13} />
       {tr("{0} 浏览器空间", spec.name)}
     </span>
   );
@@ -126,6 +127,7 @@ export function BrowserSpaceMenuSection({
               onClick={() => onOpenSpace?.(provider.id, provider.homeURL)}
               title={tr("{0} 浏览器空间", provider.name)}
             >
+              <ProviderIcon provider={provider.id} size={13} />
               <span>{provider.shortBadge}</span>
               {count > 0 && <small>{count}</small>}
             </button>

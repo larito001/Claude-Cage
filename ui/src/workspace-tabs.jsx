@@ -17,13 +17,13 @@ import {
   X,
 } from "lucide-react";
 import { dropAfter, tabName } from "./workspace-state.mjs";
-import { AgentIcon } from "./agent-icon";
-import { browserSpaceSpec, isAgentTerminalTab } from "./providers.mjs";
+import { AgentIcon, ProviderIcon } from "./agent-icon";
+import { browserSpaceSpec, isAgentTerminalTab, tabProviderId } from "./providers.mjs";
 import { useTranslation } from "./interface-language.mjs";
 
-export function TabIcon({ kind, favicon, agent, accountNumber, size = 16 }) {
+export function TabIcon({ kind, favicon, agent, provider, accountNumber, size = 16 }) {
   const [failed, setFailed] = useState("");
-  if (kind === "terminal" && agent) return <AgentIcon accountNumber={accountNumber} size={Math.max(20, size)} />;
+  if (kind === "terminal" && agent) return <AgentIcon provider={provider} accountNumber={accountNumber} size={Math.max(20, size)} />;
   if (kind === "terminal") return <TerminalSquare size={Math.max(20, size)} />;
   if (kind === "editor") return <FileCode2 size={size} />;
   if (kind === "browser-settings") return <Settings size={size} />;
@@ -409,9 +409,13 @@ export function WorkspaceTabs({
               >
                 <TabIcon kind={tab.kind} favicon={tab.favicon} size={15}
                   agent={isAgentTerminalTab(tab)}
+                  provider={tabProviderId(tab)}
                   accountNumber={tab.claudeAccountNumber} />
                 {(horizontal || vertical) && !tab.incognito && tab.space && browserSpaceSpec(tab.space) && (
-                  <small className="browser-tab-space-tag">{browserSpaceSpec(tab.space).shortBadge}</small>
+                  <small className={`browser-tab-space-tag browser-space-${tab.space}`}>
+                    <ProviderIcon provider={tab.space} size={11} />
+                    <span>{browserSpaceSpec(tab.space).shortBadge}</span>
+                  </small>
                 )}
                 <span>{title}</span>
                 {tab.claudeLabel && <small className="claude-tab-profile">{tab.claudeLabel}</small>}
@@ -493,7 +497,8 @@ export function WorkspaceTabs({
                       }}
                     >
                       <TabIcon kind={tab.kind} favicon={tab.favicon}
-                        agent={tab.terminalKind === "claude" || tab.terminalKind === "claude-login" || Boolean(tab.cli_session_id) || Boolean(tab.claude_account_id)}
+                        agent={isAgentTerminalTab(tab)}
+                        provider={tabProviderId(tab)}
                         accountNumber={tab.claudeAccountNumber} />
                       <span>{tabName(tab, saved, undefined, tr)}</span>
                       {tab.id === active && (

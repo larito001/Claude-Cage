@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { api } from "./api";
+import { ProviderIcon } from "./agent-icon";
 import { InlineSelect } from "./inline-select";
 import { PROVIDERS, providerSpec } from "./providers.mjs";
 import { translate, useTranslation } from "./interface-language.mjs";
@@ -83,6 +84,7 @@ export function AccountProviderTabs({ activeProvider, onSelect, counts = {} }) {
             className={`provider-account-tab provider-${item.id} ${selected ? "selected" : ""}`}
             onClick={() => onSelect(item.id)}
           >
+            <ProviderIcon provider={item.id} size={15} />
             <span>{item.name}</span>
             {typeof count === "number" && <small>{count}</small>}
           </button>
@@ -111,7 +113,7 @@ function ProviderBadgeAvatar({ spec }) {
       className={`claude-profile-avatar provider-avatar provider-avatar-${spec.id}`}
       aria-hidden="true"
     >
-      {spec.shortBadge.slice(0, 2).toUpperCase()}
+      <ProviderIcon provider={spec.id} size={22} />
     </span>
   );
 }
@@ -735,14 +737,17 @@ export function ProviderAccountsPanel({
             busy={busy || environmentBusy || Boolean(environment)}
             onJoin={() =>
               perform(() =>
-                load({ action: "join", identity: detected.subject || detected.email }),
+                load({
+                  action: "join",
+                  identity: detected.identity || detected.subject || detected.email,
+                }),
               )
             }
             onDismiss={() =>
               perform(() =>
                 load({
                   action: "dismiss_default",
-                  identity: detected.subject || detected.email,
+                  identity: detected.identity || detected.subject || detected.email,
                 }),
               )
             }

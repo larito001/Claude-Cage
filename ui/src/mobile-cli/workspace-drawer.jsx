@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from "react";
-import { Folder, FolderOpen, Globe2, LoaderCircle, LogOut, Monitor, Plus, Settings, Sparkles } from "lucide-react";
+import { Folder, FolderOpen, Globe2, LoaderCircle, LogOut, Monitor, Plus, Settings } from "lucide-react";
 import { InlineSelect } from "./inline-select";
 import { SessionRow, sortSessions } from "./session-row";
+import { ProviderIcon } from "../agent-icon";
+
+const ClaudeToolIcon = ({ size = 19 }) => <ProviderIcon provider="claude" size={size} />;
 
 export const workspaceTools = [
   {id:"browser", name:"浏览器", icon:Globe2},
-  {id:"claude", name:"Claude.ai", icon:Sparkles},
-  {id:"desktop", name:"Claude Desktop", icon:Monitor},
+  {id:"claude", name:"Claude.ai", icon:ClaudeToolIcon},
+  {id:"desktop", name:"Claude Desktop", icon:ClaudeToolIcon},
 ];
 
 export function CodeNavigation({catalog, project, sessions, current, creating, onProject, onSession, onNew, onAction, formatTime}) {

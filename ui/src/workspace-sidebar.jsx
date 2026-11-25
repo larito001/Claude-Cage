@@ -10,7 +10,6 @@ import {
   Folder,
   FolderOpen,
   Globe2,
-  Monitor,
   MoreHorizontal,
   Network,
   PanelLeftClose,
@@ -28,8 +27,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { EnvironmentShield } from "./environment-shield";
+import { ProviderIcon } from "./agent-icon";
 import logo from "./logo.png";
-import claudeLogo from "./claude-logo.svg";
 import { dropAfter, isClientProjectPath, moveItem, orderedProjects as sortProjects, projectName } from "./workspace-state.mjs";
 import { WorkspaceTabs } from "./workspace-tabs";
 import { projectSessionRows, sessionKey, unassignedTerminalTabs } from "./session-order.mjs";
@@ -368,7 +367,7 @@ export function WorkspaceSidebar({
           </button>
           <div className="sidebar-space-shortcuts" role="group" aria-label={tr("隔离浏览器空间")}>
             <button
-              className={`icon-button sidebar-claude-shortcut ${activeBrowserSpace === "claude" ? "active" : ""}`}
+              className={`icon-button sidebar-claude-shortcut sidebar-space-icon ${activeBrowserSpace === "claude" ? "active" : ""}`}
               onClick={
                 onOpenBrowserSpace
                   ? () => onOpenBrowserSpace("claude", "https://claude.ai/")
@@ -378,19 +377,19 @@ export function WorkspaceSidebar({
               aria-label="claude.ai"
               title={tr("打开 claude.ai")}
             >
-              <img src={claudeLogo} width="18" height="18" alt="" />
+              <ProviderIcon provider="claude" size={17} />
             </button>
             {PROVIDERS.filter((item) => item.id !== "claude").map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className={`sidebar-space-pill ${activeBrowserSpace === item.id ? "active" : ""}`}
+                className={`icon-button sidebar-space-icon sidebar-space-${item.id} ${activeBrowserSpace === item.id ? "active" : ""}`}
                 onClick={() => onOpenBrowserSpace?.(item.id, item.homeURL)}
                 disabled={!ready || busy}
                 aria-label={tr("{0} 浏览器空间", item.name)}
                 title={tr("{0} 浏览器空间", item.name)}
               >
-                {item.shortBadge}
+                <ProviderIcon provider={item.id} size={17} />
               </button>
             ))}
           </div>
@@ -438,7 +437,7 @@ export function WorkspaceSidebar({
               onClick={onClaudeDesktop}
               disabled={!running || busy}
             >
-              <Monitor size={17} />
+              <ProviderIcon provider="claude" size={17} />
               Claude Desktop
               {defaultDesktopRunning ? <span className="account-desktop-status" aria-hidden="true">●</span> : null}
             </button>

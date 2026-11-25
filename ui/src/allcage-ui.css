@@ -49,23 +49,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
   border-radius: 9px;
-  color: #fff;
+  border: 1px solid var(--line-subtle);
+  background: var(--chrome);
+  flex: none;
 }
 
 .provider-avatar-antigravity {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: color-mix(in srgb, #3186ff 10%, var(--chrome));
+  border-color: color-mix(in srgb, #3186ff 24%, var(--line-subtle));
 }
 
 .provider-avatar-codex {
-  background: linear-gradient(135deg, #10a37f, #0d8a6a);
+  background: color-mix(in srgb, #635bff 10%, var(--chrome));
+  border-color: color-mix(in srgb, #635bff 24%, var(--line-subtle));
 }
 
 .provider-avatar-claude {
-  background: linear-gradient(135deg, #d97757, #c25f3f);
+  background: color-mix(in srgb, #d97757 10%, var(--chrome));
+  border-color: color-mix(in srgb, #d97757 24%, var(--line-subtle));
 }
 
 .sidebar-space-shortcuts {
@@ -73,6 +75,21 @@
   align-items: center;
   gap: 2px;
   margin-left: auto;
+}
+
+.sidebar-space-icon {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.sidebar-space-icon.active {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: var(--selected);
 }
 
 .sidebar-space-pill {
@@ -111,7 +128,7 @@
 .browser-space-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   height: 22px;
   padding: 0 8px;
   border-radius: 999px;
@@ -135,13 +152,14 @@
 }
 
 .browser-space-badge.browser-space-codex {
-  border-color: color-mix(in srgb, #10a37f 45%, var(--line));
-  color: color-mix(in srgb, #10a37f 75%, var(--strong));
+  border-color: color-mix(in srgb, #635bff 45%, var(--line));
+  color: color-mix(in srgb, #635bff 75%, var(--strong));
 }
 
 .browser-tab-space-tag {
   display: inline-flex;
   align-items: center;
+  gap: 3px;
   padding: 0 5px;
   height: 16px;
   border-radius: 4px;
@@ -151,6 +169,18 @@
   border: 1px solid var(--line-subtle);
   color: var(--muted);
   flex: none;
+}
+
+.terminal-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.settings-provider-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .browser-space-menu-section {

@@ -738,10 +738,11 @@ function App() {
     authorizeProviderAccount("claude", id, proxyNode, false);
   const authorizeProviderAccount = async (provider, id, proxyNode, deviceAuth = false) => {
     const spec = providerSpec(provider) || providerSpec("claude");
+    const foregroundTerminal = Boolean(deviceAuth);
     browserDismissed.current = false;
     const result = await api("/terminals", {
       kind: spec.loginKind,
-      background_login: true,
+      background_login: !foregroundTerminal,
       ...(spec.id === "claude"
         ? id
           ? { claude_account_id: id }
@@ -751,6 +752,10 @@ function App() {
             ...(deviceAuth ? { device_auth: true } : {}),
           }),
     });
+    if (foregroundTerminal) {
+      showTerminal(result);
+      return result.id;
+    }
     accountLoginProvider.current = spec.id;
     accountLogin.current = result.id;
     setEnrollmentID(result.id);
@@ -1738,7 +1743,7 @@ function App() {
         : "";
     const location = split && tab ? `heading-${tab.id}` : "heading";
     return <TerminalHeader tab={tab} project={tr(projectName(path, groups, tr("新项目")))} metadata={metadata}
-      contentWorkspace={path} terminalDetail={detail} terminalDetailHint={tab?.claude_account_source === "default"
+      contentWorkspace={path} terminalProvider={info?.provider || ""} terminalDetail={detail} terminalDetailHint={tab?.claude_account_source === "default"
         ? "此终端按启动时的普通终端登录标记。若普通终端已换号，请重新打开工作会话确认身份。" : detail}
       busy={busy} onHome={() => setHome(true)}
       sidebarButton={sidebarButton(paneSide(tab?.id))} exitButton={expandButton(tab)}

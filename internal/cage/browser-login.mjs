@@ -95,6 +95,21 @@ export function formatCDPDiagnostic(error) {
   return message.replace(cdpMethodPattern, "$1/$2");
 }
 
+function extractOAuthCallbackExpectation(url) {
+  const redirects = url.searchParams.getAll("redirect_uri");
+  if (redirects.length !== 1) return null;
+  let cb;
+  try { cb = new URL(redirects[0]); } catch { return null; }
+  if (cb.protocol !== "https:" || cb.port || !antigravityHosts.has(cb.hostname) || !cb.pathname.startsWith("/oauth-callback")) {
+    return null;
+  }
+  return {
+    origin: cb.origin,
+    pathname: cb.pathname,
+    state: url.searchParams.get("state") || "",
+  };
+}
+
 // A login controls only its own targets. Even in a regular profile, redirects
 // and popup URLs must never expose codes or state to the controller.
 export class LoginBrowser {
@@ -117,6 +132,19 @@ export class LoginBrowser {
       this.targets.set(raw.targetId, entry);
       entry.targets.add(raw.targetId);
     }
+    if (entry?.expectedCallback && !entry.callbackURL && typeof raw.url === "string") {
+      try {
+        const landed = new URL(raw.url);
+        if (
+          landed.origin === entry.expectedCallback.origin &&
+          landed.pathname === entry.expectedCallback.pathname &&
+          landed.searchParams.get("code") &&
+          (!entry.expectedCallback.state || landed.searchParams.get("state") === entry.expectedCallback.state)
+        ) {
+          entry.callbackURL = raw.url;
+        }
+      } catch {}
+    }
     if (entry?.external) return { ...raw, routeScoped: true };
     let origin = "about:blank";
     try {
@@ -126,11 +154,20 @@ export class LoginBrowser {
     return { ...raw, login: true, incognito: entry?.private ?? previous?.incognito, url: origin, title: "账号授权" };
   }
 
+  consumeCallback(login) {
+    const entry = this.logins.get(login);
+    if (!entry || !entry.callbackURL) return "";
+    const captured = entry.callbackURL;
+    entry.callbackURL = "";
+    return captured;
+  }
+
   async open(login, address, activate, { private: privateLogin = true, route, account, external = false } = {}) {
     if (typeof login !== "string" || !/^[a-f0-9-]{16,64}$/.test(login)) throw new Error("登录任务无效");
     const url = new URL(address);
     if (url.protocol !== "https:" || url.username || url.password || url.port ||
         !(external && route || officialHosts.has(url.hostname) || isClaudeSignIn(address, true))) throw new Error("仅可打开官方登录地址");
+    const expectedCallback = extractOAuthCallbackExpectation(url);
     // Reuse the regular browser for the default route. A bound account can
     // restore only the selected account's cookies.
     const key = account || route;
@@ -159,7 +196,7 @@ export class LoginBrowser {
         if (!privateLogin && profileKey) this.accountProfiles.set(profileKey, profile);
       }
       if (profile) profile.users++;
-      const entry = { login, key, profileKey, external, private: privateLogin, profile, targets: new Set() };
+      const entry = { login, key, profileKey, external, private: privateLogin, profile, expectedCallback, callbackURL: "", targets: new Set() };
       this.logins.set(login, entry);
       if (privateLogin) this.contexts.set(profile.browserContextId, entry);
       if (!external) {

@@ -79,3 +79,13 @@ export function isAgentTerminalTab(tab) {
   if (tab.cli_session_id || tab.claude_account_id || tab.provider_account_id) return true;
   return Boolean(terminalProvider(tab.terminalKind));
 }
+
+export function tabProviderId(tab) {
+  if (!tab) return "";
+  const explicit = String(tab.provider || "").trim().toLowerCase();
+  if (BY_ID.has(explicit)) return explicit;
+  const byKind = terminalProvider(tab.terminalKind);
+  if (byKind) return byKind.id;
+  if (tab.cli_session_id || tab.claude_account_id || tab.historySession) return "claude";
+  return "";
+}

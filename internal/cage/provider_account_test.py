@@ -32,6 +32,7 @@ class ProviderAccountTests(unittest.TestCase):
 
     def test_antigravity_isolation_and_credential_snapshot(self):
         agy = helper.ADAPTERS["antigravity"]
+        (self.home / ".gitconfig").write_text("[user]\nname = Test\n")
         with patch.object(Path, "home", return_value=self.home):
             base = helper.account_base("antigravity", "1" * 24)
             cfg = agy.config_dir(base)
@@ -41,19 +42,54 @@ class ProviderAccountTests(unittest.TestCase):
             self.assertNotIn("GEMINI_API_KEY", env)
             self.assertNotIn("GOOGLE_APPLICATION_CREDENTIALS", env)
             self.assertEqual(env["AGY_CLI_FORCE_FILE_TOKEN_STORAGE"], "1")
-            self.assertEqual(env["ANTIGRAVITY_GEMINI_DIR"], str(cfg))
+            self.assertEqual(Path(env["ANTIGRAVITY_GEMINI_DIR"]).resolve(), cfg.resolve())
+            if os.name != "nt":
+                isolated_home = Path(env["HOME"])
+                self.assertEqual((isolated_home / ".gemini").resolve(), cfg.resolve())
+                self.assertEqual((isolated_home / ".gitconfig").resolve(), (self.home / ".gitconfig").resolve())
 
-            (cfg / "auth.json").write_text(json.dumps({
-                "email": "Dev@Example.test",
-                "access_token": "secret-access-token",
-                "refresh_token": "secret-refresh-token",
-                "expiry": time.time() + 3600,
+            token_file = cfg / "antigravity-cli" / "antigravity-oauth-token"
+            token_file.write_text(json.dumps({
+                "token": {
+                    "access_token": "secret-access-token",
+                    "token_type": "Bearer",
+                    "refresh_token": "secret-refresh-token",
+                    "expiry": "2099-11-25T20:03:03.0686532+09:00",
+                    "expires_in": 3599,
+                },
+                "auth_method": "consumer",
+                "id_token_email": "Dev@Example.test",
             }))
             snap = agy.identity(cfg)
             self.assertTrue(snap["logged_in"])
             self.assertEqual(snap["email"], "dev@example.test")
             self.assertEqual(snap["auth_state"], "credentials_present")
             self.assertNotIn("secret-access-token", json.dumps(snap))
+
+    def test_archive_login_copies_oauth_token_into_managed_slot(self):
+        with patch.object(Path, "home", return_value=self.home):
+            default_cli = self.home / ".gemini" / "antigravity-cli"
+            (default_cli / "cache").mkdir(parents=True)
+            (default_cli / "antigravity-oauth-token").write_text(json.dumps({
+                "token": {
+                    "access_token": "secret-agy-tok",
+                    "refresh_token": "refresh-agy-tok",
+                    "expiry": "2099-01-01T00:00:00Z",
+                },
+                "auth_method": "consumer",
+                "id_token_email": "oauth@example.test",
+            }))
+            (default_cli / "cache" / "acp-auth-state.json").write_text('{"methodId":"google-login"}')
+            expected = helper.compute_subject("oauth@example.test", "")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                rc = helper.run_provider(["antigravity", "archive-login", "d" * 24, "default", expected])
+            self.assertEqual(rc, 0)
+            result = json.loads(out.getvalue())
+            self.assertTrue(result["logged_in"])
+            self.assertEqual(result["email"], "oauth@example.test")
+            copied_state = self.home / ".local/share/cage/antigravity-accounts" / ("d" * 24) / "config/antigravity-cli/cache/acp-auth-state.json"
+            self.assertTrue(copied_state.is_file())
 
     def test_codex_isolation_file_store_and_jwt_identity(self):
         codex = helper.ADAPTERS["codex"]
@@ -68,6 +104,8 @@ class ProviderAccountTests(unittest.TestCase):
             self.assertNotIn("OPENAI_API_KEY", env)
             self.assertNotIn("CODEX_API_KEY", env)
             self.assertEqual(env["CODEX_HOME"], str(cfg))
+            self.assertNotIn("--device-auth", codex.login_command("/usr/bin/codex", [], scoped=True))
+            self.assertIn("--device-auth", codex.login_command("/usr/bin/codex", ["--device-auth"], scoped=False))
 
             jwt_tok = make_jwt({
                 "email": "CodexUser@example.test",

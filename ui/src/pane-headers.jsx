@@ -9,6 +9,7 @@ import { BrowserCookies } from "./browser-cookies";
 import { BrowserHistory } from "./browser-history";
 import { BrowserAddressBar } from "./browser-address-bar";
 import { BrowserSpaceMenuSection } from "./browser-spaces";
+import { ProviderIcon } from "./agent-icon";
 import { tabName } from "./workspace-state.mjs";
 import { shortcut } from "./platform.mjs";
 import logo from "./logo.png";
@@ -23,7 +24,7 @@ export const ExpandSidebar = ({ onClick }) => { const tr = useTranslation(); ret
 export const ExpandPane = ({ onClick }) => { const tr = useTranslation(); return  <button className="icon-button expand-pane"
   aria-label={tr("退出分屏")} title={tr("在整个工作区显示此页")} onClick={onClick}><Maximize2 size={14} /></button>; };
 
-export function TerminalHeader({ tab, contentWorkspace, project, metadata, terminalDetail, terminalDetailHint,
+export function TerminalHeader({ tab, contentWorkspace, project, metadata, terminalProvider, terminalDetail, terminalDetailHint,
   onHome, busy, onClose, sidebarButton, exitButton, location, triggerRef, menu }) {
   const tr = useTranslation();
   // Matches closeTab: only a running conversation terminal is archived; an ended one is just closed.
@@ -47,7 +48,12 @@ export function TerminalHeader({ tab, contentWorkspace, project, metadata, termi
             <span className="current-title" title={tabName(tab, metadata, project, tr)}>
               {tabName(tab, metadata, project, tr)}
             </span>
-            {terminalDetail && <span className="terminal-detail" title={terminalDetailHint}>{terminalDetail}</span>}
+            {terminalDetail && (
+              <span className="terminal-detail" title={terminalDetailHint}>
+                {terminalProvider && <ProviderIcon provider={terminalProvider} size={13} />}
+                <span>{terminalDetail}</span>
+              </span>
+            )}
           </>
         )}
       </div>

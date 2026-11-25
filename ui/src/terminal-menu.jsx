@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, TerminalSquare } from "lucide-react";
-import { AgentIcon } from "./agent-icon";
+import { AgentIcon, ProviderIcon } from "./agent-icon";
 import { InlineSelect } from "./inline-select";
 import { useTranslation } from "./interface-language.mjs";
 import { PROVIDERS, providerSpec } from "./providers.mjs";
@@ -168,7 +168,10 @@ export function TerminalMenu({
         aria-label={tr("新建 {0} 终端", activeSpec.cliName)}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <strong style={{ fontSize: "0.84rem" }}>{activeSpec.cliName}</strong>
+          <strong style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.84rem" }}>
+            <ProviderIcon provider={activeSpec.id} size={16} />
+            {activeSpec.cliName}
+          </strong>
           <button
             type="button"
             className="text-button"
@@ -260,7 +263,7 @@ export function TerminalMenu({
           disabled={busy || atLimit}
           onClick={() => configureProvider(spec.id)}
         >
-          <AgentIcon />
+          <AgentIcon provider={spec.id} size={17} decorative />
           {tr("{0} 终端", spec.name)}
         </button>
       ))}

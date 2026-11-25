@@ -31,7 +31,25 @@ PRIVATE_MODE = 0o700
 ACCOUNT_ID_RE = re.compile(r"^[0-9a-f]{24}$")
 EMAIL_RE = re.compile(r"^[^\s@\x00-\x1f]+@[^\s@\x00-\x1f]+\.[^\s@\x00-\x1f]+$")
 OPEN = "/usr/local/libexec/cage-cli/bin/cage-open" if sys.platform == "darwin" else "/usr/local/bin/cage-open"
-CLI_CHANNEL_ROOT = Path(os.environ.get("CAGE_CLI_STATE_ROOT") or (Path.home() / ".local/share/cage/cli-channels"))
+def user_home():
+    home = Path.home()
+    if os.name != "nt":
+        try:
+            resolved = home.resolve()
+            if (
+                resolved.name == "home"
+                and len(resolved.parents) >= 6
+                and resolved.parents[1].name == "antigravity-accounts"
+                and resolved.parents[2].name == "cage"
+                and resolved.parents[4].name == ".local"
+            ):
+                return resolved.parents[5]
+        except OSError:
+            pass
+    return home
+
+
+CLI_CHANNEL_ROOT = Path(os.environ.get("CAGE_CLI_STATE_ROOT") or (user_home() / ".local/share/cage/cli-channels"))
 NOTIFY_ENV_VAR = "__WORKBENCH_NOTIFY_CHANNEL"
 
 _controller_context = {
@@ -141,7 +159,7 @@ def validate_account_id(account_id):
 
 def account_base(provider_id, account_id):
     validate_account_id(account_id)
-    root = Path.home() / ".local/share/cage" / f"{provider_id}-accounts"
+    root = user_home() / ".local/share/cage" / f"{provider_id}-accounts"
     root.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
     if account_id == DEFAULT:
         return root / DEFAULT
@@ -226,7 +244,43 @@ class AntigravityAdapter:
     )
 
     def config_dir(self, base):
-        return Path.home() / ".gemini" if base.name == DEFAULT else base / "config"
+        return user_home() / ".gemini" if base.name == DEFAULT else base / "config"
+
+    def account_home(self, base):
+        return user_home() if base.name == DEFAULT else base / "home"
+
+    def ensure_home(self, base, config_dir):
+        if base.name == DEFAULT or os.name == "nt":
+            return
+        real = user_home()
+        home_dir = self.account_home(base)
+        home_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        config_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        gemini_link = home_dir / ".gemini"
+        if gemini_link.is_symlink():
+            try:
+                same_target = gemini_link.resolve() == config_dir.resolve()
+            except OSError:
+                same_target = False
+            if not same_target:
+                gemini_link.unlink()
+                gemini_link.symlink_to(config_dir, target_is_directory=True)
+        elif not gemini_link.exists():
+            gemini_link.symlink_to(config_dir, target_is_directory=True)
+        try:
+            entries = list(real.iterdir())
+        except OSError:
+            entries = []
+        for item in entries:
+            if item.name == ".gemini":
+                continue
+            link = home_dir / item.name
+            if link.exists() or link.is_symlink():
+                continue
+            try:
+                link.symlink_to(item, target_is_directory=item.is_dir())
+            except OSError:
+                pass
 
     def ensure_hooks(self, config_dir):
         hooks_dir = config_dir / "config"
@@ -257,7 +311,8 @@ class AntigravityAdapter:
 
     def ensure_profile(self, config_dir):
         cli_dir = config_dir / "antigravity-cli"
-        cli_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        cache_dir = cli_dir / "cache"
+        cache_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
         (config_dir / "config").mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
         settings_file = cli_dir / "settings.json"
         if not settings_file.exists():
@@ -269,6 +324,16 @@ class AntigravityAdapter:
                     "allowNonWorkspaceAccess": True,
                 },
             )
+        onboarding_file = cache_dir / "onboarding.json"
+        if not onboarding_file.exists():
+            atomic_write_json(
+                onboarding_file,
+                {
+                    "consumerOnboardingComplete": True,
+                    "enterpriseOnboardingComplete": True,
+                    "onboardingComplete": True,
+                },
+            )
         self.ensure_hooks(config_dir)
 
     def environment(self, base):
@@ -276,12 +341,19 @@ class AntigravityAdapter:
         if os.name != "nt":
             for ssh_key in ("SSH_CLIENT", "SSH_CONNECTION", "SSH_TTY"):
                 env.pop(ssh_key, None)
+        real = user_home()
         parts = [p for p in env.get("PATH", os.defpath).split(os.pathsep) if p and p != self.shim_dir]
-        env["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), *parts])
+        env["PATH"] = os.pathsep.join([str(real / ".local/bin"), *parts])
         if base.name == DEFAULT:
+            if os.name != "nt":
+                env["HOME"] = str(real)
             env.pop("ANTIGRAVITY_GEMINI_DIR", None)
             return _runtime["environment"](env)
-        env["ANTIGRAVITY_GEMINI_DIR"] = str(self.config_dir(base))
+        config_dir = self.config_dir(base)
+        self.ensure_home(base, config_dir)
+        if os.name != "nt":
+            env["HOME"] = str(self.account_home(base))
+        env["ANTIGRAVITY_GEMINI_DIR"] = str(config_dir)
         env["AGY_CLI_FORCE_FILE_TOKEN_STORAGE"] = "1"
         for key in self.external_env_keys:
             env.pop(key, None)
@@ -289,6 +361,8 @@ class AntigravityAdapter:
 
     def auth_candidates(self, config_dir):
         return [
+            config_dir / "antigravity-cli" / "antigravity-oauth-token",
+            config_dir / "antigravity-oauth-token",
             config_dir / "auth.json",
             config_dir / "antigravity-cli" / "auth.json",
             config_dir / "config" / "auth.json",
@@ -334,11 +408,13 @@ class AntigravityAdapter:
         if not EMAIL_RE.fullmatch(email) or len(email) > 254:
             return {**absent, "auth_state": "identity_missing"}
         subject = compute_subject(email, "")
+        auth_method = field("auth_method", "authMethod").lower()
+        plan = "enterprise" if auth_method == "enterprise" else "antigravity"
         return {
             "logged_in": True,
             "email": email,
             "organization": "",
-            "plan": "antigravity",
+            "plan": plan,
             "usage_status": "unavailable",
             "auth_state": "refresh_required" if expired or not access else "credentials_present",
             "subject": subject,
@@ -350,10 +426,20 @@ class AntigravityAdapter:
             return False
         rel = selected.relative_to(source_dir)
         atomic_copy_private(selected, target_dir / rel)
+        for extra_rel in (
+            Path("antigravity-cli/cache/onboarding.json"),
+            Path("antigravity-cli/cache/acp-auth-state.json"),
+        ):
+            extra = source_dir / extra_rel
+            if extra.is_file() and not extra.is_symlink() and not extra.parent.is_symlink():
+                try:
+                    atomic_copy_private(extra, target_dir / extra_rel)
+                except OSError:
+                    pass
         return True
 
     def desktop_emails(self):
-        home = Path.home()
+        home = user_home()
         directories = [home / ".config/Antigravity"]
         profiles = home / ".local/share/desktop-profiles"
         if profiles.is_dir():
@@ -497,8 +583,9 @@ class CodexAdapter:
         return []
 
     def login_command(self, binary, extra_args, scoped=False):
+        _ = scoped
         cmd = [_runtime["path"](binary), "-c", 'cli_auth_credentials_store="file"', "login"]
-        if "--device-auth" in extra_args or scoped:
+        if "--device-auth" in extra_args:
             cmd.append("--device-auth")
         return cmd
 
@@ -568,7 +655,7 @@ def extract_stream_login_url(raw_text):
     return match.group(0) if match else ""
 
 
-def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker):
+def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker, callback_poll_cmd=None):
     import errno
     import fcntl
     import pty
@@ -595,15 +682,15 @@ def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker):
     old_attrs = termios.tcgetattr(stdin_fd)
     proc = None
     buf_lock = threading.Lock()
-    state = {"text": "", "scheduled": False}
+    state = {"text": "", "scheduled": False, "callback_sent": False, "closed": False}
 
     def trigger_fallback():
         time.sleep(0.35)
-        if opened_marker.exists():
+        if opened_marker.exists() or state["closed"]:
             return
         with buf_lock:
             url = extract_stream_login_url(state["text"])
-        if not url or opened_marker.exists():
+        if not url or opened_marker.exists() or state["closed"]:
             return
         try:
             opened_marker.write_bytes(b"1")
@@ -619,6 +706,35 @@ def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker):
             stderr=subprocess.DEVNULL,
         )
 
+    def poll_browser_callback():
+        while not state["closed"] and not state["callback_sent"]:
+            time.sleep(0.75)
+            if state["closed"] or state["callback_sent"] or not opened_marker.exists():
+                continue
+            if proc is not None and proc.poll() is not None:
+                return
+            try:
+                res = subprocess.run(
+                    callback_poll_cmd,
+                    env=os.environ,
+                    timeout=5,
+                    check=False,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                )
+            except (OSError, subprocess.SubprocessError):
+                continue
+            landed = (res.stdout or "").strip()
+            if landed.startswith("https://antigravity.google") and "code=" in landed and not state["callback_sent"]:
+                state["callback_sent"] = True
+                try:
+                    os.write(master_fd, (landed + "\n").encode("utf-8"))
+                except OSError:
+                    pass
+                return
+
     try:
         tty.setraw(stdin_fd)
         proc = subprocess.Popen(
@@ -626,12 +742,14 @@ def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker):
             stdin=slave_fd,
             stdout=slave_fd,
             stderr=slave_fd,
-            cwd=Path.home(),
+            cwd=user_home(),
             env=env,
             close_fds=True,
         )
         os.close(slave_fd)
         slave_fd = -1
+        if callback_poll_cmd:
+            threading.Thread(target=poll_browser_callback, daemon=True).start()
         watch_fds = [stdin_fd, master_fd]
         while master_fd in watch_fds:
             try:
@@ -665,9 +783,11 @@ def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker):
                 if not user_in:
                     watch_fds.remove(stdin_fd)
                 else:
+                    state["callback_sent"] = True
                     os.write(master_fd, user_in)
         return proc.wait()
     finally:
+        state["closed"] = True
         if slave_fd >= 0:
             try:
                 os.close(slave_fd)
@@ -790,8 +910,13 @@ def run_provider(args):
         try:
             cmd = adapter.login_command(binary, rest, scoped=bool(scoped))
             if os.name != "nt" and launcher_path and opened_marker and sys.stdin.isatty() and sys.stdout.isatty():
-                return run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker)
-            return subprocess.call(cmd, cwd=Path.home(), env=env)
+                poll_cmd = (
+                    [scoped or OPEN, *owner_args, "--login-id", account_id, "--poll-login-callback"]
+                    if provider_id == "antigravity"
+                    else None
+                )
+                return run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker, callback_poll_cmd=poll_cmd)
+            return subprocess.call(cmd, cwd=user_home(), env=env)
         finally:
             if opener_dir:
                 shutil.rmtree(opener_dir, ignore_errors=True)

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Download,
-  Monitor,
   PanelLeftOpen,
   RefreshCw,
 } from "lucide-react";
+import { ProviderIcon } from "./agent-icon";
 import { BrowserUploads } from "./browser-uploads";
 import { ProjectDialog } from "./project-dialog";
 import { api, nativeAvailable } from "./api";
@@ -177,7 +177,7 @@ export function ClaudeDesktop({
           />
         ) : (
           <div className="desktop-empty">
-            <Monitor size={36} />
+            <ProviderIcon provider="claude" size={40} />
             <h2>
               {desktop?.installed
                 ? "Claude Desktop"
@@ -199,7 +199,7 @@ export function ClaudeDesktop({
                   onClick={() => run(desktop.installed ? "start" : "install")}
                 >
                   {desktop.installed ? (
-                    <Monitor size={16} />
+                    <ProviderIcon provider="claude" size={16} monochrome />
                   ) : (
                     <Download size={16} />
                   )}
