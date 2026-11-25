@@ -74,6 +74,30 @@ func hostPluginsOff(p Preferences) []string {
 	return strings.Split(p.HostPluginsOff, ",")
 }
 
+func hostToolsProvidersMap(p Preferences) map[string]bool {
+	out := map[string]bool{"claude": true, "antigravity": true, "codex": true}
+	if p.HostToolsProvidersOff == "" {
+		return out
+	}
+	for _, raw := range strings.Split(p.HostToolsProvidersOff, ",") {
+		id := strings.TrimSpace(raw)
+		if _, ok := out[id]; ok {
+			out[id] = false
+		}
+	}
+	return out
+}
+
+func formatHostToolsProvidersOff(providers map[string]bool) string {
+	var off []string
+	for _, id := range []string{"claude", "antigravity", "codex"} {
+		if enabled, ok := providers[id]; ok && !enabled {
+			off = append(off, id)
+		}
+	}
+	return strings.Join(off, ",")
+}
+
 // hostToolsConfigInterval is how often a running environment is checked for
 // Claude profiles created since the entry was written.
 const hostToolsConfigInterval = time.Minute
@@ -642,8 +666,11 @@ func (s *Server) writeHostToolsConfig(ctx context.Context, token, action string)
 	if err != nil {
 		return err
 	}
+	s.mu.Lock()
+	providers := hostToolsProvidersMap(s.preferences)
+	s.mu.Unlock()
 	cmd := s.sshCommand(ctx, "-T", s.sshTarget(), "--", "exec python3 - computer "+action)
-	cmd.Stdin = strings.NewReader(hostToolsConfigInput(entry))
+	cmd.Stdin = strings.NewReader(hostToolsConfigInputForProviders(entry, providers))
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err = cmd.Run(); err != nil {
@@ -659,8 +686,14 @@ func (s *Server) writeHostToolsConfig(ctx context.Context, token, action string)
 // hostToolsConfigInput is the script preceded by the values it reads back
 // from its own source, so the entry is never part of a command line.
 func hostToolsConfigInput(entry []byte) string {
+	return hostToolsConfigInputForProviders(entry, map[string]bool{"claude": true, "antigravity": true, "codex": true})
+}
+
+func hostToolsConfigInputForProviders(entry []byte, providers map[string]bool) string {
 	// A JSON string of ASCII is also a Python string literal.
 	literal, _ := json.Marshal(string(entry))
 	relay, _ := json.Marshal(hostToolsRelayScript)
-	return "ENTRY = " + string(literal) + "\nRELAY = " + string(relay) + "\n" + hostToolsConfigScript
+	providersBytes, _ := json.Marshal(providers)
+	providersLiteral, _ := json.Marshal(string(providersBytes))
+	return "ENTRY = " + string(literal) + "\nRELAY = " + string(relay) + "\nPROVIDERS = " + string(providersLiteral) + "\n" + hostToolsConfigScript
 }

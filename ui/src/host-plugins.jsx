@@ -85,9 +85,9 @@ const contributionText = item => contributions(item).map(entry => entry.title).j
 // contributions is a first-version one: one MCP server.
 export function purposes(item) {
   const contributes = item?.contributes;
-  if (!contributes) return ["Claude 工具"];
+  if (!contributes) return ["AI 工具"];
   const list = [];
-  if (contributes.mcp_servers?.length) list.push("Claude 工具");
+  if (contributes.mcp_servers?.length) list.push("AI 工具");
   if (contributes.views?.length) list.push("界面扩展");
   if (contributes.desktop_apps?.length) list.push("桌面应用");
   return list;
@@ -328,7 +328,7 @@ async function installPlugin(model, entry, onConfirm) {
     ? translate("插件在 Cage 环境中以普通用户身份运行，它声明需要：{0}。", permissionText(offer.permissions))
     : translate("插件以你的系统账户权限在这台电脑上运行，它声明需要：{0}。调用前会弹窗征求你的同意，你可以选择始终允许。", permissionText(offer.permissions));
   // A plugin with tools can be allowed for good at install: the user's nod is remembered.
-  const offerAlways = !replace && offer.source === "market" && purposes(offer).includes("Claude 工具");
+  const offerAlways = !replace && offer.source === "market" && purposes(offer).includes("AI 工具");
   const answer = offer.source === "market" ? await onConfirm({
     title: replace ? translate("更新「{0}」到 {1}？", pluginTitle(offer), offer.version) : translate("安装「{0}」？", pluginTitle(offer)),
     body: [runs, adds && translate("它还会添加：{0}。", adds), translate("只安装你信任的插件。"), replace && translate("旧版本会移到数据目录的 plugins-removed 中保留。")].filter(Boolean).join(" "),
@@ -527,7 +527,7 @@ export function HostPluginsSidebar({ visible, model, page, onPage, onBack, onCon
         <button type="button" className={`plugin-market-entry ${inDrafts ? "selected" : ""}`} aria-current={inDrafts ? "page" : undefined}
           onClick={() => onPage({ kind: "drafts" })}>
           <span className="plugin-market-entry-icon"><FileCode2 size={18} /></span>
-          <span><strong>{tr("待审核草稿")}</strong><small>{draftCount ? tr("{0} 个自定义插件待审核", draftCount) : tr("审核 Claude 创建的插件")}</small></span>
+          <span><strong>{tr("待审核草稿")}</strong><small>{draftCount ? tr("{0} 个自定义插件待审核", draftCount) : tr("审核 AI 助手创建的插件")}</small></span>
           {draftCount > 0 && <em aria-hidden="true">{draftCount}</em>}
           <ChevronRight size={15} className="trailing-icon" />
         </button>
@@ -679,7 +679,7 @@ function Grants({ model, plugin, onConfirm }) {
     };
     const allow = async () => {
       if (!project || !await onConfirm({ title: "在这个项目中始终允许运行命令？", confirm: "始终允许",
-        body: translate("之后 Claude 在 {0} 中运行命令时不再询问。命令以你的系统账户权限在这台电脑上运行，可以随时在这里撤销。", project) })) return;
+        body: translate("之后 AI 助手在 {0} 中运行命令时不再询问。命令以你的系统账户权限在这台电脑上运行，可以随时在这里撤销。", project) })) return;
       await change({ plugin: plugin.name, always: true, project }, key);
     };
     return (
@@ -723,7 +723,7 @@ function Grants({ model, plugin, onConfirm }) {
       <div className="plugin-grants-head">
         <div>
           <strong>{tr("授权")}</strong>
-          <p>{always ? tr("Claude 和插件页面调用它的工具时不再询问。插件更新后如果需要新的权限，会重新询问。") : tr("Claude 或插件页面每次调用它的工具前，都会弹窗询问。")}</p>
+          <p>{always ? tr("AI 助手和插件页面调用它的工具时不再询问。插件更新后如果需要新的权限，会重新询问。") : tr("AI 助手或插件页面每次调用它的工具前，都会弹窗询问。")}</p>
         </div>
         <div className="plugin-segmented" role="radiogroup" aria-label={tr("调用工具时")}>
           <button type="button" role="radio" aria-checked={!always} disabled={Boolean(busy)} onClick={() => always && change({ plugin: plugin.name, always: false }, key)}>{tr("每次询问")}</button>
@@ -756,7 +756,7 @@ function PluginSettings({ model, plugin, onConfirm }) {
     }
     const giving = settings.some(item => item.type === "secret" && secrets[item.id]);
     if (guest && giving && !await onConfirm({ title: translate("把密钥交给环境内的插件？"), danger: true, confirm: translate("仍然保存"),
-      body: translate("这个插件在 Cage 环境中运行，密钥会离开这台电脑，以环境变量交给它的程序。环境内以同一用户运行的其他程序，包括 Claude，也可能读取到它。只在你信任这个插件时继续。") })) return;
+      body: translate("这个插件在 Cage 环境中运行，密钥会离开这台电脑，以环境变量交给它的程序。环境内以同一用户运行的其他程序，包括 AI 助手，也可能读取到它。只在你信任这个插件时继续。") })) return;
     const saved = await change({ plugin: plugin.name, settings: body, ...(guest && giving ? { confirm_guest_secrets: true } : {}) }, key);
     setFailed(!saved);
     if (saved) { setSecrets({}); setCleared([]); }
@@ -890,7 +890,7 @@ function Detail({ model, name, onConfirm, onPage }) {
       </header>
       {plugin && !on && <div className="plugin-banner" role="status"><CircleAlert size={17} /><div>
         <strong>{plugin.built_in && name === "commands" ? tr("命令已停用") : tr("插件已停用")}</strong>
-        <p>{plugin.built_in && name === "commands" ? tr("Claude 将不能在这台电脑上运行命令。打开上方开关即可恢复。") : tr("插件不会运行，Claude 也看不到它提供的工具。打开上方开关即可恢复。")}</p>
+        <p>{plugin.built_in && name === "commands" ? tr("AI 助手将不能在这台电脑上运行命令。打开上方开关即可恢复。") : tr("插件不会运行，AI 助手也看不到它提供的工具。打开上方开关即可恢复。")}</p>
       </div></div>}
       {plugin && on && plugin.needs_settings && <div className="plugin-banner" role="status"><CircleAlert size={17} /><div>
         <strong>{tr("插件需要配置")}</strong>
@@ -911,7 +911,7 @@ function Detail({ model, name, onConfirm, onPage }) {
         <div className="plugin-page-main" role="tabpanel">
           {tab === "settings" && plugin?.settings?.length ? <PluginSettings key={JSON.stringify(plugin.settings)} model={model} plugin={plugin} onConfirm={onConfirm} />
           : tab === "contributions" && added.length ? <>
-            <p className="plugin-page-lead">{tr("除了提供给 Claude 的工具，插件还会在应用中添加这些内容。")}</p>
+            <p className="plugin-page-lead">{tr("除了提供给 AI 助手的工具，插件还会在应用中添加这些内容。")}</p>
             <ul className="plugin-permission-list">
               {added.map(({ key, icon: Icon, title, text }) => <li key={key}><span><Icon size={17} /></span><div><strong>{title}</strong><p>{text}</p></div></li>)}
             </ul>
@@ -922,7 +922,7 @@ function Detail({ model, name, onConfirm, onPage }) {
             </li>)}
           </ul> : <div className="plugin-empty compact">
             <Wrench size={22} />
-            <p>{!plugin ? tr("安装并运行后，这里会列出插件提供给 Claude 的工具。") : plugin.needs_settings ? tr("填写必填设置后，这里会列出插件提供的工具。") : plugin.problem ? tr("插件无法加载，没有可用的工具。") : !on ? tr("启用插件后，这里会列出它提供的工具。") : !view.enabled ? tr("开启主机工具后，这里会列出插件提供的工具。") : tr("插件运行后，这里会列出它提供的工具。")}</p>
+            <p>{!plugin ? tr("安装并运行后，这里会列出插件提供给 AI 助手的工具。") : plugin.needs_settings ? tr("填写必填设置后，这里会列出插件提供的工具。") : plugin.problem ? tr("插件无法加载，没有可用的工具。") : !on ? tr("启用插件后，这里会列出它提供的工具。") : !view.enabled ? tr("开启主机工具后，这里会列出插件提供的工具。") : tr("插件运行后，这里会列出它提供的工具。")}</p>
           </div> : <>
             {plugin && <Grants model={model} plugin={plugin} onConfirm={onConfirm} />}
             <p className="plugin-page-lead">{tr("权限由插件自行声明，供你在安装前判断。")}</p>
@@ -967,21 +967,35 @@ function Detail({ model, name, onConfirm, onPage }) {
   );
 }
 
+const HOST_TOOL_PROVIDERS = [
+  { id: "claude", name: "Claude", detail: "Claude Code · Claude Desktop" },
+  { id: "antigravity", name: "Antigravity", detail: "agy CLI · Antigravity Desktop" },
+  { id: "codex", name: "Codex", detail: "codex CLI · Codex Desktop" },
+];
+
 function SettingsPage({ model, status, onConfirm }) {
   const tr = useTranslation();
   const { view, busy, change, syncStatus, bridgeStatus, triggerSync, toggleBridge } = model;
   const remote = isRemoteClient();
   const hostName = getClientContext().name || tr("远程主机");
   const waiting = view.enabled && !view.running;
+  const providers = {
+    claude: view.providers?.claude !== false,
+    antigravity: view.providers?.antigravity !== false,
+    codex: view.providers?.codex !== false,
+  };
   const toggle = async () => {
     if (!view.enabled && !await onConfirm({
-      title: remote ? translate("允许远程主机「{0}」上的 Claude 使用插件？", hostName) : "允许 Claude 使用这台电脑？",
+      title: remote ? translate("允许远程主机「{0}」上的 AI 助手使用插件？", hostName) : "允许 AI 助手使用这台电脑？",
       body: remote
-        ? translate("开启后，远程环境内的 Claude 可以通过插件在远程主机「{0}」上执行命令或调用工具。每次需要审批时，确认窗口会弹在你面前的这台电脑上，并明确标出远程主机名称。", hostName)
-        : "开启后，环境内的 Claude 可以通过插件在这台电脑上操作，例如在已打开的项目文件夹中运行命令。命令以你的系统账户权限运行，不受环境的隔离保护。每次操作前，系统会弹出确认窗口，由你决定是否允许。",
+        ? translate("开启后，远程环境内的 AI 助手（Claude、Antigravity、Codex）可以通过插件在远程主机「{0}」上执行命令或调用工具。每次需要审批时，确认窗口会弹在你面前的这台电脑上，并明确标出远程主机名称。", hostName)
+        : "开启后，环境内的 AI 助手（Claude、Antigravity、Codex）可以通过插件在这台电脑上操作，例如在已打开的项目文件夹中运行命令。命令以你的系统账户权限运行，不受环境的隔离保护。每次操作前，系统会弹出确认窗口，由你决定是否允许。",
       confirm: "开启",
     })) return;
     await change({ enabled: !view.enabled }, "toggle");
+  };
+  const toggleProvider = async (providerId) => {
+    await change({ providers: { [providerId]: !providers[providerId] } }, `provider:${providerId}`);
   };
   const state = !view.available ? { tone: "problem", label: "此环境不支持" } : view.running ? { tone: "online", label: "已开启，插件正在运行" }
     : waiting ? { tone: "waiting", label: status?.ready ? "已开启，正在启动插件" : "已开启，环境启动后生效" } : { tone: "", label: "未开启" };
@@ -995,7 +1009,7 @@ function SettingsPage({ model, status, onConfirm }) {
     const next = !item.shared;
     if (next && !await onConfirm({
       title: translate("向远程主机「{0}」临时共享本机插件「{1}」？", hostName, item.display_name || item.name),
-      body: translate("开启后，远程主机「{0}」环境内的 Claude 可通过加密隧道调用你这台电脑上的「{1}」。调用时会先在本机弹出确认窗口并在本机执行，断开远程连接后自动收回。", hostName, item.display_name || item.name),
+      body: translate("开启后，远程主机「{0}」环境内的 AI 助手可通过加密隧道调用你这台电脑上的「{1}」。调用时会先在本机弹出确认窗口并在本机执行，断开远程连接后自动收回。", hostName, item.display_name || item.name),
       confirm: "共享",
     })) return;
     await toggleBridge(item.name, next);
@@ -1006,14 +1020,37 @@ function SettingsPage({ model, status, onConfirm }) {
         <div className="plugin-master-row">
           <span className="plugin-master-icon"><Blocks size={24} /></span>
           <div>
-            <h2>{remote ? tr("允许远程主机「{0}」的 Claude 使用插件", hostName) : tr("允许 Claude 使用这台电脑")}</h2>
-            <p>{remote ? tr("插件通过 MCP 把远程主机与环境内的能力提供给远程 Claude Code 和 Claude 桌面应用，审批窗口会回流到你本机桌面。") : tr("插件通过 MCP 把这台电脑的能力提供给环境内的 Claude Code 和 Claude 桌面应用。")}</p>
+            <h2>{remote ? tr("允许远程主机「{0}」的 AI 助手使用插件", hostName) : tr("允许 AI 助手使用这台电脑")}</h2>
+            <p>{remote ? tr("插件通过 MCP 把远程主机与环境内的能力提供给远程 Claude、Antigravity 与 Codex（CLI 及桌面应用），审批窗口会回流到你本机桌面。") : tr("插件通过 MCP 把这台电脑的能力提供给环境内的 Claude、Antigravity 与 Codex（CLI 及桌面应用）。")}</p>
           </div>
           {view.available && <label className="plugin-switch">
-            <input role="switch" type="checkbox" aria-label={remote ? tr("允许远程主机使用插件") : tr("允许 Claude 使用这台电脑")} checked={view.enabled} disabled={Boolean(busy)} onChange={toggle} />
+            <input role="switch" type="checkbox" aria-label={remote ? tr("允许远程主机使用插件") : tr("允许 AI 助手使用这台电脑")} checked={view.enabled} disabled={Boolean(busy)} onChange={toggle} />
             <span aria-hidden="true" />
           </label>}
         </div>
+        {view.available && (
+          <div className="plugin-provider-grid" role="group" aria-label={tr("可接入本机工具的客户端")}>
+            {HOST_TOOL_PROVIDERS.map(item => (
+              <div key={item.id} className={`plugin-provider-item ${view.enabled && providers[item.id] ? "active" : ""}`}>
+                <div className="plugin-provider-text">
+                  <strong>{item.name}</strong>
+                  <small>{item.detail}</small>
+                </div>
+                <label className="plugin-switch small">
+                  <input
+                    role="switch"
+                    type="checkbox"
+                    aria-label={tr("为 {0} 启用插件", item.name)}
+                    checked={Boolean(providers[item.id])}
+                    disabled={Boolean(busy) || !view.enabled}
+                    onChange={() => toggleProvider(item.id)}
+                  />
+                  <span aria-hidden="true" />
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="plugin-master-footer">
           <StateChip state={state} />
           {view.enabled && <button type="button" disabled={Boolean(busy) || !status?.ready} onClick={() => change({ reload: true }, "reload")}>
@@ -1056,7 +1093,7 @@ function SettingsPage({ model, status, onConfirm }) {
       {remote && bridgeStatus?.supported && (
         <section className="plugin-card">
           <h3>{tr("共享本机插件给当前远程")}</h3>
-          <p className="plugin-card-lead">{tr("把本机桌面插件（如 Blender、桌面控制）通过加密隧道临时提供给远程 Claude。调用时会在你本机弹窗审批并在本机执行，断开连接自动收回。")}</p>
+          <p className="plugin-card-lead">{tr("把本机桌面插件（如 Blender、桌面控制）通过加密隧道临时提供给远程 AI 助手。调用时会在你本机弹窗审批并在本机执行，断开连接自动收回。")}</p>
           {bridgeStatus.error && <p className="error-message">{bridgeStatus.error}</p>}
           {bridgeStatus.plugins?.length ? (
             <ul className="plugin-bridge-list">
@@ -1219,7 +1256,7 @@ function DraftCard({ draft, model, onConfirm, onPage }) {
       {draft.protected && (
         <div className="plugin-banner problem" role="alert">
           <TriangleAlert size={16} />
-          <div><strong>{tr("无法覆盖内置核心插件")}</strong><p>{tr("标识符与内置插件冲突，请让 Claude 更改名称后重新提交。")}</p></div>
+          <div><strong>{tr("无法覆盖内置核心插件")}</strong><p>{tr("标识符与内置插件冲突，请让 AI 助手更改名称后重新提交。")}</p></div>
         </div>
       )}
 
@@ -1310,7 +1347,7 @@ function DraftsPage({ model, status, onConfirm, onPage }) {
       <header className="plugin-market-head">
         <div>
           <h2>{tr("待审核草稿")}</h2>
-          <p>{tr("环境内的 Claude 可以通过「插件工坊」编写、校验并提交自定义 MCP 工具与侧栏页面。所有草稿必须经你审查源码与权限并点击安装后才会生效。")}</p>
+          <p>{tr("环境内的 AI 助手可以通过「插件工坊」编写、校验并提交自定义 MCP 工具与侧栏页面。所有草稿必须经你审查源码与权限并点击安装后才会生效。")}</p>
         </div>
         <div className="plugin-market-tools">
           <button type="button" disabled={Boolean(busy) || drafts?.loading} onClick={() => loadDrafts()}>
@@ -1323,13 +1360,13 @@ function DraftsPage({ model, status, onConfirm, onPage }) {
         <div className="plugin-empty">
           <FileCode2 size={28} />
           <strong>{tr("等待环境启动")}</strong>
-          <p>{tr("环境启动后，Claude 提交的自定义插件草稿会显示在这里。")}</p>
+          <p>{tr("环境启动后，AI 助手提交的自定义插件草稿会显示在这里。")}</p>
         </div>
       ) : items.length === 0 ? (
         <div className="plugin-empty">
           <FileCode2 size={28} />
           <strong>{tr("暂无待审核草稿")}</strong>
-          <p>{tr("直接告诉环境里的 Claude 你需要什么能力或侧栏页面，它会使用默认的「插件工坊」生成代码、自动测试并提交到这里供你一键安装。")}</p>
+          <p>{tr("直接告诉环境里的 AI 助手你需要什么能力或侧栏页面，它会使用默认的「插件工坊」生成代码、自动测试并提交到这里供你一键安装。")}</p>
         </div>
       ) : (
         <div className="plugin-draft-list">

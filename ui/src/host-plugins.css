@@ -335,6 +335,47 @@
 .plugin-master-row p { margin: 6px 0 0; color: var(--muted); font-size: 0.9643rem; line-height: 1.6; }
 .plugin-master-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 14px; background: var(--chrome); color: var(--muted); transition: background 160ms, color 160ms; }
 .plugin-master.on .plugin-master-icon { background: color-mix(in srgb, var(--success) 14%, var(--paper)); color: var(--success); }
+.plugin-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 24px 20px;
+}
+.plugin-provider-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chrome);
+  opacity: 0.72;
+  transition: border-color 160ms, background 160ms, opacity 160ms;
+}
+.plugin-provider-item.active {
+  background: var(--paper);
+  border-color: color-mix(in srgb, var(--success) 38%, var(--line));
+  opacity: 1;
+}
+.plugin-provider-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plugin-provider-text strong {
+  color: var(--strong);
+  font-size: 0.9286rem;
+  font-weight: 600;
+}
+.plugin-provider-text small {
+  color: var(--muted);
+  font-size: 0.7857rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .plugin-master-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; padding: 12px 24px; border-top: 1px solid var(--line); background: var(--chrome); }
 .plugin-master-footer .plugin-state { font-size: 0.9643rem; }
 
@@ -374,6 +415,7 @@
   .plugin-page-body { grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .plugin-page-aside { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--line); }
   .plugin-facts { grid-template-columns: minmax(0, 1fr); }
+  .plugin-provider-grid { grid-template-columns: minmax(0, 1fr); padding: 0 20px 16px; }
 }
 @container (max-width: 460px) {
   .plugin-hero { flex-direction: column; }

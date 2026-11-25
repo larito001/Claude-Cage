@@ -380,7 +380,7 @@ func formatRemoteApprovalDialog(hostName string, p remoteApprovalPrompt) (title,
 			"远程主机　" + label + "\n项目「" + project + "」\n目录　" + p.Dir + "\n\n" + p.Command +
 				"\n\n命令将以远程主机的系统账户权限在该服务器上运行。「始终允许」会记住远程主机上对该项目的授权，以后在该项目中运行命令不再询问；可在插件页随时撤销。"
 	}
-	title = fmt.Sprintf("允许远程主机「%s」上的 Claude 使用插件？", label)
+	title = fmt.Sprintf("允许远程主机「%s」上的 AI 助手使用插件？", label)
 	source := ""
 	if p.FromView {
 		title = fmt.Sprintf("允许远程主机「%s」上的插件页面使用工具？", label)

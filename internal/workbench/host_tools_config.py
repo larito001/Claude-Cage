@@ -46,12 +46,16 @@ def antigravity_mcp_files(home):
     default = home / ".gemini"
     if default.is_dir():
         files.append(default / "config/mcp_config.json")
+        if (default / "antigravity").is_dir():
+            files.append(default / "antigravity/mcp_config.json")
     accounts = home / ".local/share/cage/antigravity-accounts"
     files += [d / "config/mcp_config.json" for d in sorted(accounts.glob("*/config")) if d.is_dir()]
     desktops = home / ".local/share/desktop-profiles"
     for d in sorted(desktops.glob("*/home/.gemini")):
         if d.is_dir():
             files.append(d / "config/mcp_config.json")
+            if (d / "antigravity").is_dir():
+                files.append(d / "antigravity/mcp_config.json")
     return files
 
 
@@ -186,40 +190,10 @@ def relay_files(home, name):
     return home / ".local/share/mcp-relay/relay.py", home / ".config/mcp-relay" / (name + ".json")
 
 
-def configure(home, name, entry, relay):
-    for file in profile_files(home):
-        add_server(file, name, entry, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
-    desktops = desktop_config_dirs(home)
-    agy_files = antigravity_mcp_files(home)
-    codex_files = codex_toml_files(home)
-    if not desktops and not agy_files and not codex_files:
+def _cleanup_unused_relay(home, name, active_relay):
+    if active_relay:
         return
     program, endpoint = relay_files(home, name)
-    write_private(program, relay)
-    write_private(endpoint, json.dumps({"url": entry["url"], "headers": entry.get("headers", {})}))
-    local = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
-    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == local["args"]
-    for desktop in desktops:
-        add_server(desktop / "claude_desktop_config.json", name, local, ours_relay)
-    for file in agy_files:
-        add_server(file, name, local, ours_relay)
-    for file in codex_files:
-        add_toml_server(file, name, local)
-
-
-def unconfigure(home, name, entry):
-    """Takes back what configure wrote, leaving the user's own servers."""
-    for file in profile_files(home):
-        remove_server(file, name, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
-    program, endpoint = relay_files(home, name)
-    args = [str(program), str(endpoint)]
-    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == args
-    for desktop in desktop_config_dirs(home):
-        remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
-    for file in antigravity_mcp_files(home):
-        remove_server(file, name, ours_relay)
-    for file in codex_toml_files(home):
-        remove_toml_server(file, name)
     try:
         endpoint.unlink()
     except FileNotFoundError:
@@ -237,8 +211,82 @@ def unconfigure(home, name, entry):
             pass
 
 
+def configure(home, name, entry, relay, providers=None):
+    enabled = {"claude": True, "antigravity": True, "codex": True}
+    if isinstance(providers, dict):
+        for key in enabled:
+            if key in providers:
+                enabled[key] = bool(providers[key])
+
+    ours_http = lambda current: isinstance(current, dict) and current.get("url") == entry["url"]
+    if enabled["claude"]:
+        for file in profile_files(home):
+            add_server(file, name, entry, ours_http)
+    else:
+        for file in profile_files(home):
+            remove_server(file, name, ours_http)
+
+    program, endpoint = relay_files(home, name)
+    local = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
+    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == local["args"]
+
+    desktops = desktop_config_dirs(home)
+    agy_files = antigravity_mcp_files(home)
+    codex_files = codex_toml_files(home)
+
+    need_relay = (
+        (enabled["claude"] and bool(desktops))
+        or (enabled["antigravity"] and bool(agy_files))
+        or (enabled["codex"] and bool(codex_files))
+    )
+    if need_relay:
+        write_private(program, relay)
+        write_private(endpoint, json.dumps({"url": entry["url"], "headers": entry.get("headers", {})}))
+
+    if enabled["claude"]:
+        for desktop in desktops:
+            add_server(desktop / "claude_desktop_config.json", name, local, ours_relay)
+    else:
+        for desktop in desktops:
+            remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
+
+    if enabled["antigravity"]:
+        for file in agy_files:
+            add_server(file, name, local, ours_relay)
+    else:
+        for file in agy_files:
+            remove_server(file, name, ours_relay)
+
+    if enabled["codex"]:
+        for file in codex_files:
+            add_toml_server(file, name, local)
+    else:
+        for file in codex_files:
+            remove_toml_server(file, name)
+
+    _cleanup_unused_relay(home, name, need_relay)
+
+
+def unconfigure(home, name, entry):
+    """Takes back what configure wrote, leaving the user's own servers."""
+    for file in profile_files(home):
+        remove_server(file, name, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
+    program, endpoint = relay_files(home, name)
+    args = [str(program), str(endpoint)]
+    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == args
+    for desktop in desktop_config_dirs(home):
+        remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
+    for file in antigravity_mcp_files(home):
+        remove_server(file, name, ours_relay)
+    for file in codex_toml_files(home):
+        remove_toml_server(file, name)
+    _cleanup_unused_relay(home, name, False)
+
+
 if __name__ == "__main__":
     if sys.argv[2] == "remove":
         unconfigure(Path.home(), sys.argv[1], json.loads(ENTRY))  # noqa: F821
     else:
-        configure(Path.home(), sys.argv[1], json.loads(ENTRY), RELAY)  # noqa: F821
+        raw_providers = globals().get("PROVIDERS")
+        parsed_providers = json.loads(raw_providers) if isinstance(raw_providers, str) else None
+        configure(Path.home(), sys.argv[1], json.loads(ENTRY), RELAY, parsed_providers)  # noqa: F821

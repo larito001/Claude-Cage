@@ -600,7 +600,7 @@ func (m *clientPluginBridgeManager) setShared(ctx context.Context, name string, 
 		return m.snapshot(), errors.New("这个插件不支持当前本机系统或版本")
 	}
 	if len(manifest.ServerCommand()) == 0 {
-		return m.snapshot(), errors.New("这个插件没有提供可供 Claude 调用的 MCP 工具")
+		return m.snapshot(), errors.New("这个插件没有提供可供 AI 助手调用的 MCP 工具")
 	}
 	if hostbridge.CommandUsesProjectDir(manifest.ServerCommand()) {
 		return m.snapshot(), errors.New("依赖本机当前项目目录的插件暂不支持反向桥接")

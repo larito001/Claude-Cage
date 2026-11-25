@@ -198,6 +198,36 @@ class HostToolsConfigTests(unittest.TestCase):
         self.assertEqual(json.loads((agy_desktop / "home/.gemini/config/mcp_config.json").read_text()), {})
         self.assertEqual((codex_account / "config.toml").read_text(), 'model = "o3"\n')
 
+    def test_per_provider_selection_toggles_individual_providers(self):
+        (self.home / ".gemini").mkdir(parents=True)
+        (self.home / ".codex").mkdir(parents=True)
+        (self.home / ".codex/config.toml").write_text('model = "o3"\n')
+
+        config.configure(
+            self.home,
+            "computer",
+            ENTRY,
+            "# relay\n",
+            {"claude": False, "antigravity": True, "codex": False},
+        )
+        self.assertFalse((self.home / ".claude.json").exists())
+        self.assertIn(
+            "computer",
+            json.loads((self.home / ".gemini/config/mcp_config.json").read_text())["mcpServers"],
+        )
+        self.assertNotIn("[mcp_servers.computer]", (self.home / ".codex/config.toml").read_text())
+
+        config.configure(
+            self.home,
+            "computer",
+            ENTRY,
+            "# relay\n",
+            {"claude": True, "antigravity": False, "codex": True},
+        )
+        self.assertIn("computer", json.loads((self.home / ".claude.json").read_text())["mcpServers"])
+        self.assertEqual(json.loads((self.home / ".gemini/config/mcp_config.json").read_text()), {})
+        self.assertIn("[mcp_servers.computer]", (self.home / ".codex/config.toml").read_text())
+
 
 if __name__ == "__main__":
     unittest.main()

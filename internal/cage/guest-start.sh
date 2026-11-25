@@ -39,6 +39,7 @@ sudo tee /etc/fonts/conf.d/71-english-cjk-fallback.conf >/dev/null <<'FONTCONFIG
 FONTCONFIG
 mkdir -p "$HOME/.config/claude-cage"
 chmod 700 "$HOME/.config/claude-cage"
+mkdir -p -m 0700 "$HOME/.gemini" "$HOME/.codex"
 if ! grep -qE '^password:[[:space:]]*[^[:space:]]+' "$HOME/.config/claude-cage/code-server.yaml" 2>/dev/null; then
   (umask 077; tmp=$(mktemp "$HOME/.config/claude-cage/.code-server.yaml.XXXXXX"); printf 'auth: password\npassword: %s\ncert: false\n' "$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')" > "$tmp"; sync "$tmp" 2>/dev/null || true; mv -f "$tmp" "$HOME/.config/claude-cage/code-server.yaml"; sync "$HOME/.config/claude-cage" 2>/dev/null || true)
 fi

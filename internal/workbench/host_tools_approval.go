@@ -52,7 +52,7 @@ func (a *hostApprovals) approve(ctx context.Context, request hostbridge.CommandR
 		Command: request.Command,
 	}
 	return a.decide(ctx, hostGrantProject+request.Project, []string{"commands"}, request.Command+request.Dir, len(request.Command),
-		"允许 Claude 在这台电脑上运行命令？", hostApprovalMessage(request), prompt)
+		"允许 AI 助手在这台电脑上运行命令？", hostApprovalMessage(request), prompt)
 }
 
 // approveTool asks about one call to a plugin's tool. "Always" covers that
@@ -62,7 +62,7 @@ func (a *hostApprovals) approveTool(ctx context.Context, request hostbridge.Tool
 		return nil
 	}
 	forceAsk := a.neverAlways[request.Plugin+"/"+request.Tool]
-	title, source := "允许 Claude 使用这台电脑上的插件？", ""
+	title, source := "允许 AI 助手使用这台电脑上的插件？", ""
 	if request.FromView {
 		title, source = "允许插件页面使用它的工具？", "\n来源　插件自己的页面"
 	}

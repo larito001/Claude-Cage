@@ -335,6 +335,49 @@ class AntigravityAdapter:
                 },
             )
         self.ensure_hooks(config_dir)
+        self.sync_managed_mcp(config_dir)
+
+    def sync_managed_mcp(self, config_dir):
+        default_mcp = user_home() / ".gemini/config/mcp_config.json"
+        target_mcp = config_dir / "config/mcp_config.json"
+        if default_mcp.resolve() == target_mcp.resolve() or target_mcp.is_symlink():
+            return
+        relay_prog = str(user_home() / ".local/share/mcp-relay/relay.py")
+        relay_ep = str(user_home() / ".config/mcp-relay/computer.json")
+        expected_args = [relay_prog, relay_ep]
+        shared_entry = None
+        try:
+            if default_mcp.is_file() and not default_mcp.is_symlink():
+                src = json.loads(default_mcp.read_text(encoding="utf-8"))
+                cand = (src.get("mcpServers") or {}).get("computer") if isinstance(src, dict) else None
+                if isinstance(cand, dict) and cand.get("args") == expected_args:
+                    shared_entry = cand
+        except (OSError, ValueError):
+            shared_entry = None
+        try:
+            dst = json.loads(target_mcp.read_text(encoding="utf-8")) if target_mcp.is_file() else {}
+            if not isinstance(dst, dict):
+                return
+        except (OSError, ValueError):
+            return
+        servers = dst.get("mcpServers")
+        if not isinstance(servers, dict):
+            servers = {}
+        current = servers.get("computer")
+        is_ours = isinstance(current, dict) and current.get("args") == expected_args
+        if shared_entry is not None:
+            if current is None or is_ours:
+                if current != shared_entry:
+                    servers["computer"] = shared_entry
+                    dst["mcpServers"] = servers
+                    atomic_write_json(target_mcp, dst)
+        elif is_ours:
+            del servers["computer"]
+            if servers:
+                dst["mcpServers"] = servers
+            else:
+                dst.pop("mcpServers", None)
+            atomic_write_json(target_mcp, dst)
 
     def environment(self, base):
         env = os.environ.copy()
@@ -560,6 +603,32 @@ class CodexAdapter:
         if "screen_reader_detection_done" not in updated:
             suffix = "" if not updated or updated.endswith("\n") else "\n"
             updated = updated + suffix + "\n[tui]\nscreen_reader_detection_done = true\n"
+        default_toml = user_home() / ".codex/config.toml"
+        if default_toml.resolve() != toml_file.resolve():
+            start_marker = "# cage-managed-mcp-start:computer\n"
+            end_marker = "# cage-managed-mcp-end:computer\n"
+            shared_block = ""
+            try:
+                if default_toml.is_file() and not default_toml.is_symlink():
+                    src_toml = default_toml.read_text(encoding="utf-8")
+                    if start_marker in src_toml and end_marker in src_toml:
+                        _, mid = src_toml.split(start_marker, 1)
+                        body, _ = mid.split(end_marker, 1)
+                        shared_block = start_marker + body + end_marker
+            except OSError:
+                shared_block = ""
+            if shared_block:
+                if start_marker in updated and end_marker in updated:
+                    before, rest = updated.split(start_marker, 1)
+                    _, after = rest.split(end_marker, 1)
+                    updated = before + shared_block + after
+                elif "[mcp_servers.computer]" not in updated:
+                    sep = "" if not updated or updated.endswith("\n\n") else ("\n" if updated.endswith("\n") else "\n\n")
+                    updated = updated + sep + shared_block
+            elif start_marker in updated and end_marker in updated:
+                before, rest = updated.split(start_marker, 1)
+                _, after = rest.split(end_marker, 1)
+                updated = (before.rstrip("\n") + ("\n\n" if before.strip() and after.strip() else "\n" if (before.strip() or after.strip()) else "") + after.lstrip("\n"))
         if updated != existing:
             with tempfile.NamedTemporaryFile(dir=config_dir, delete=False, mode="w", encoding="utf-8") as tmp:
                 tmp.write(updated)

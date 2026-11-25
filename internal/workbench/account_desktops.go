@@ -267,7 +267,7 @@ func (s *Server) changeAccountDesktop(parent context.Context, instance string, a
 				prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/code\"", instance)
 			}
 		case "antigravity":
-			prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/home/.gemini/config\"", instance)
+			prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/home/.gemini/config\" \"$HOME/.local/share/desktop-profiles/%s/home/.gemini/antigravity\"", instance, instance)
 		case "codex":
 			prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/home/.codex\"", instance)
 		}

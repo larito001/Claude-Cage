@@ -33,7 +33,8 @@ type Preferences struct {
 	// HostPluginsOff names the plugins the user turned off, separated by
 	// commas; "commands" is the built-in one. One string keeps preferences
 	// comparable.
-	HostPluginsOff             string `json:"host_plugins_off,omitempty"`
+	HostPluginsOff        string `json:"host_plugins_off,omitempty"`
+	HostToolsProvidersOff string `json:"host_tools_providers_off,omitempty"`
 	MobileRelay                string `json:"mobile_relay,omitempty"`
 	Workspace                  string `json:"workspace"`
 	BrowserHomeURL             string `json:"browser_home_url"`

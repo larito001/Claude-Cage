@@ -150,10 +150,11 @@ func hostPluginUnavailable(reason string) string {
 
 type hostToolsView struct {
 	// Available is false where the tools cannot run at all.
-	Available bool `json:"available"`
-	Enabled   bool `json:"enabled"`
-	Running   bool `json:"running"`
-	Headless  bool `json:"headless,omitempty"`
+	Available bool            `json:"available"`
+	Enabled   bool            `json:"enabled"`
+	Running   bool            `json:"running"`
+	Providers map[string]bool `json:"providers,omitempty"`
+	Headless  bool            `json:"headless,omitempty"`
 	Platform  string `json:"platform,omitempty"`
 	// Directory is where the user puts plugin folders.
 	Directory    string                 `json:"directory"`
@@ -181,7 +182,7 @@ func (s *Server) hostPluginDir() string { return filepath.Join(s.profile, "plugi
 
 func (s *Server) hostToolsView() hostToolsView {
 	s.mu.Lock()
-	enabled, tools, off := s.preferences.HostTools, s.hostTools, hostPluginsOff(s.preferences)
+	enabled, tools, off, providers := s.preferences.HostTools, s.hostTools, hostPluginsOff(s.preferences), hostToolsProvidersMap(s.preferences)
 	var pluginProblems, missingPrograms map[string]string
 	var problems []string
 	if tools != nil {
@@ -193,6 +194,7 @@ func (s *Server) hostToolsView() hostToolsView {
 		Available:    !s.clientOnly,
 		Enabled:      enabled,
 		Running:      tools != nil && tools.serving,
+		Providers:    providers,
 		Headless:     s.hostIsHeadless(),
 		Platform:     runtime.GOOS,
 		Directory:    s.hostPluginDir(),
@@ -412,8 +414,9 @@ func (s *Server) getHostTools(w http.ResponseWriter, r *http.Request) {
 // Only this computer's own window may: the tools act on this computer.
 func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Enabled *bool  `json:"enabled"`
-		Reload  bool   `json:"reload"`
+		Enabled   *bool           `json:"enabled"`
+		Providers map[string]bool `json:"providers"`
+		Reload    bool            `json:"reload"`
 		Install        string `json:"install"`
 		RestoreDefault string `json:"restore_default"`
 		Remove         string `json:"remove"`
@@ -468,7 +471,32 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 		}
 		s.mu.Lock()
 		s.preferences.HostTools = next.HostTools
+		previous = s.preferences
 		s.mu.Unlock()
+	}
+	providersChanged := false
+	if body.Providers != nil {
+		merged := hostToolsProvidersMap(previous)
+		for key, val := range body.Providers {
+			if key != "claude" && key != "antigravity" && key != "codex" {
+				http.Error(w, "不支持的 AI 助手类型", http.StatusBadRequest)
+				return
+			}
+			merged[key] = val
+		}
+		encodedOff := formatHostToolsProvidersOff(merged)
+		if encodedOff != previous.HostToolsProvidersOff {
+			next := previous
+			next.HostToolsProvidersOff = encodedOff
+			if err := writePrivate(filepath.Join(s.profile, "workbench.json"), next); err != nil {
+				requestError(w, err)
+				return
+			}
+			s.mu.Lock()
+			s.preferences.HostToolsProvidersOff = encodedOff
+			s.mu.Unlock()
+			providersChanged = true
+		}
 	}
 	if body.Plugin != "" && body.Always != nil {
 		if err := s.setHostPluginAlways(body.Plugin, body.Project, *body.Always); err != nil {
@@ -519,6 +547,9 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 	}
 	if ready || !s.hostToolsView().Enabled {
 		s.ensureHostTools()
+		if providersChanged && ready && s.hostToolsServing() {
+			s.syncHostToolsConfigNow(r.Context())
+		}
 	}
 	jsonReply(w, s.hostToolsView())
 }

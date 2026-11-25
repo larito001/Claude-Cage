@@ -867,7 +867,7 @@ func (s *Server) proposedWithOptions(w http.ResponseWriter, r *http.Request) (sa
 	input.AntigravityTerminalCommand = antigravityTerminalCommand(s.preferences)
 	input.CodexTerminalCommand = codexTerminalCommand(s.preferences)
 	input.TransferAllowUnclean = s.preferences.TransferAllowUnclean
-	hostTools, hostPluginsOff := s.preferences.HostTools, s.preferences.HostPluginsOff
+	hostTools, hostPluginsOff, hostToolsProvidersOff := s.preferences.HostTools, s.preferences.HostPluginsOff, s.preferences.HostToolsProvidersOff
 	input.Clock12Hour = s.preferences.Clock12Hour
 	input.BrowserHomeURL = browserHomeURL(s.preferences)
 	input.InstallTLS12Compat = s.preferences.InstallTLS12Compat
@@ -885,7 +885,7 @@ func (s *Server) proposedWithOptions(w http.ResponseWriter, r *http.Request) (sa
 	}
 	// The tools that act on this computer have their own route, open only to
 	// this computer's window; saving settings never changes them.
-	input.HostTools, input.HostPluginsOff = hostTools, hostPluginsOff
+	input.HostTools, input.HostPluginsOff, input.HostToolsProvidersOff = hostTools, hostPluginsOff, hostToolsProvidersOff
 	old, err := loadConfig(s.configPath)
 	if err != nil {
 		requestError(w, err)
