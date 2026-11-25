@@ -10,7 +10,7 @@ import { useAppearance } from "./appearance";
 import { terminalTheme, systemCodeFont } from "./appearance-state.mjs";
 import { Terminal } from "../.generated/xterm.mjs";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { claudeLoginLink, isClaudeLoginLink } from "./terminal-login-link.mjs";
+import { terminalLoginLink, isTerminalLoginLink, normalizeTerminalCopyText, extractTerminalLoginLink } from "./terminal-login-link.mjs";
 import { FitAddon } from "@xterm/addon-fit";
 import RFB from "../.generated/novnc/core/rfb.js";
 import { api, writeClipboard, nativeAvailable } from "./api";
@@ -283,14 +283,32 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     socket = useRef();
   const [connected, setConnected] = useState(false),
     [attempt, setAttempt] = useState(0),
-    [preparing, setPreparing] = useState(Boolean(session.cli_session_id && !session.closed));
-  const revealStartup = useRef();
+    [preparing, setPreparing] = useState(Boolean(session.cli_session_id && !session.closed)),
+    [detectedLoginURL, setDetectedLoginURL] = useState(""),
+    [contextMenu, setContextMenu] = useState(null);
+  const revealStartup = useRef(),
+    actionsRef = useRef(null);
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
   const focusedRef = useRef(focused);
   focusedRef.current = focused;
   useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    const onKey = (event) => { if (event.key === "Escape") close(); };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("blur", close);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("blur", close);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [contextMenu]);
+  useEffect(() => {
     let disposed = false, emittingPaste = false, inputChain = Promise.resolve();
+    setDetectedLoginURL("");
+    setContextMenu(null);
     const enqueue = (action) => {
       const result = inputChain.then(action);
       inputChain = result;
@@ -298,16 +316,16 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
       result.then(reset, reset);
       return result;
     };
-    const activateLogin = async (_event, uri) => {
-      if (disposed || !visibleRef.current || !focusedRef.current || !isClaudeLoginLink(uri)) return;
+    const activateLogin = async (_event, uri, force = false) => {
+      if (disposed || (!force && (!visibleRef.current || !focusedRef.current)) || !isTerminalLoginLink(uri)) return;
       try {
         const tab = await api(`/terminals/${session.id}/login-link`, { url: uri });
-        if (!disposed && visibleRef.current && focusedRef.current) await onLoginTab?.({ ...tab, url: uri });
+        if (!disposed && (force || (visibleRef.current && focusedRef.current))) await onLoginTab?.({ ...tab, url: uri });
       } catch (error) { if (!disposed) onStatus(error.message); }
     };
     const terminal = new Terminal({
       linkHandler: { activate(event, uri) {
-        if (isClaudeLoginLink(uri)) return void activateLogin(event, uri);
+        if (isTerminalLoginLink(uri)) return void activateLogin(event, uri);
         // Keep xterm's user confirmation for other explicit HTTP(S) links.
         if (window.confirm(translate("打开此终端链接？\n{0}", uri))) window.open(uri, "_blank", "noopener,noreferrer");
       } },
@@ -322,10 +340,28 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     });
     const fitter = new FitAddon();
     terminal.loadAddon(fitter);
-    terminal.loadAddon(new WebLinksAddon(activateLogin, { urlRegex: claudeLoginLink }));
+    terminal.loadAddon(new WebLinksAddon(activateLogin, { urlRegex: terminalLoginLink }));
     terminal.open(box.current);
     instance.current = terminal;
     fit.current = fitter;
+    let loginScanTimer = null;
+    const scanForLoginLink = () => {
+      loginScanTimer = null;
+      if (disposed) return;
+      const buffer = terminal.buffer.active;
+      const end = buffer.length;
+      const start = Math.max(0, end - Math.max(terminal.rows * 2, 48));
+      const lines = [];
+      for (let row = start; row < end; row++) {
+        lines.push(buffer.getLine(row)?.translateToString(true) || "");
+      }
+      const found = extractTerminalLoginLink(lines);
+      setDetectedLoginURL(prev => (found ? found : prev));
+    };
+    const writeParsed = terminal.onWriteParsed(() => {
+      if (disposed || loginScanTimer !== null) return;
+      loginScanTimer = setTimeout(scanForLoginLink, 120);
+    });
     const ws = new WebSocket(
       runtimeSocketURL(`/terminals/${session.id}/stream`),
     );
@@ -480,7 +516,7 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     host.addEventListener("dragover", onDragOver);
     host.addEventListener("drop", onDrop);
     const copySelection = () => {
-      const text = terminal.getSelection();
+      const text = normalizeTerminalCopyText(terminal.getSelection());
       if (!text) {
         // Claude owns its TUI selection while mouse reporting is enabled. CSI-u
         // preserves Ctrl+Shift+C, which cannot be represented as plain Ctrl+C.
@@ -495,10 +531,21 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
         .then(() => onStatus("已复制终端选中文本"))
         .catch(() => onStatus("无法写入本机剪贴板"));
     };
+    actionsRef.current = {
+      openLogin: (url) => void activateLogin(null, url, true),
+      copyLink: (url) => {
+        if (!url) return;
+        void writeClipboard(url)
+          .then(() => onStatus("已复制"))
+          .catch(() => onStatus("无法写入本机剪贴板"));
+      },
+      copy: copySelection,
+      paste: () => receive(readClipboardContent()),
+    };
     const onCopy = (event) => {
       if (!visibleRef.current || !focusedRef.current) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      const text = terminal.getSelection();
+      const text = normalizeTerminalCopyText(terminal.getSelection());
       if (text) event.clipboardData?.setData("text/plain", text);
       copySelection();
     };
@@ -576,9 +623,12 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     return () => {
       disposed = true;
       clearTimeout(inputTimer);
+      clearTimeout(loginScanTimer);
       pendingInput = [];
       clearTimeout(startupTimer);
       revealStartup.current = null;
+      actionsRef.current = null;
+      writeParsed.dispose();
       startupRender.dispose();
       clipboardHandler.dispose();
       host.removeEventListener("paste", onPaste, true);
@@ -609,12 +659,63 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     instance.current.options.fontSize = appearance.codeFontSize;
     if (visibleRef.current) fit.current?.fit();
   }, [theme, variant, appearance.codeFontSize]);
+  const openContextMenu = (event) => {
+    if (!visible) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = Math.max(8, Math.min(rect.width - 188, event.clientX - rect.left));
+    const y = Math.max(8, Math.min(rect.height - 148, event.clientY - rect.top));
+    setContextMenu({ x, y });
+  };
   return (
-    <div className={`terminal-view ${visible ? "" : "concealed"}`}>
+    <div className={`terminal-view ${visible ? "" : "concealed"}`} onContextMenu={openContextMenu}>
       {session.workspace_notice && <p className="connection-banner" role="status">{session.workspace_notice}</p>}
       {visible && session.cli_session_id && <SessionAccount id={session.cli_session_id} request={terminalAccountRequest} compact
         onChanged={onAccountChanged} />}
+      {detectedLoginURL && connected && !session.closed && (
+        <div className="terminal-login-banner" role="status">
+          <span className="terminal-login-label">{tr("账号授权")}</span>
+          <div className="terminal-login-actions">
+            <button type="button" onClick={() => actionsRef.current?.openLogin(detectedLoginURL)}>
+              <ArrowUpRight size={13} />
+              {tr("打开授权页面")}
+            </button>
+            <button type="button" onClick={() => actionsRef.current?.copyLink(detectedLoginURL)}>
+              <Clipboard size={13} />
+              {tr("复制链接")}
+            </button>
+          </div>
+        </div>
+      )}
       <div className={`terminal-host ${preparing ? "terminal-preparing" : ""}`} ref={box} aria-hidden={preparing || undefined} />
+      {contextMenu && (
+        <div
+          className="terminal-context-menu"
+          role="menu"
+          style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {detectedLoginURL && !session.closed && (
+            <>
+              <button type="button" role="menuitem" onClick={() => { setContextMenu(null); actionsRef.current?.openLogin(detectedLoginURL); }}>
+                <ArrowUpRight size={13} />
+                {tr("打开授权页面")}
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setContextMenu(null); actionsRef.current?.copyLink(detectedLoginURL); }}>
+                <Clipboard size={13} />
+                {tr("复制链接")}
+              </button>
+            </>
+          )}
+          <button type="button" role="menuitem" onClick={() => { setContextMenu(null); actionsRef.current?.copy(); instance.current?.focus(); }}>
+            {tr("复制")}
+          </button>
+          <button type="button" role="menuitem" onClick={() => { setContextMenu(null); actionsRef.current?.paste(); instance.current?.focus(); }}>
+            {tr("粘贴")}
+          </button>
+        </div>
+      )}
       {preparing && (
         <div className="terminal-startup" role="status">
           <span>{tr("正在准备 Claude 会话…")}</span>

@@ -50,7 +50,7 @@ export function isClaudeSignIn(address, explicitLogin = false) {
     return /^\/(?:login|auth|auth-success|oauth|oauth-callback|sso|sso-callback|desktop\/(?:authorize|callback)|api\/auth)(?:\/|$)/.test(url.pathname);
   }
   if (codexHosts.has(url.hostname)) {
-    return /^\/(?:login|auth|oauth|authorize|u\/login|sso|sso-callback|magic-link|codex|activate|desktop\/(?:authorize|callback)|api\/(?:auth|accounts))(?:\/|$)/.test(url.pathname);
+    return /^\/(?:login|auth|oauth|authorize|u\/login|sso|sso-callback|magic-link|codex|activate|device|desktop\/(?:authorize|callback)|api\/(?:auth|accounts))(?:\/|$)/.test(url.pathname);
   }
   const provider = (url.hostname === "api.workos.com" && url.pathname.startsWith("/sso/")) ||
     (url.hostname === "accounts.google.com" && /^(?:\/o\/oauth2\/|\/AccountChooser(?:\/|$))/.test(url.pathname)) ||

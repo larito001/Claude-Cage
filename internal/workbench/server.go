@@ -87,6 +87,7 @@ type Server struct {
 	diagnosticWindow                                 time.Time
 	diagnosticCount                                  int
 	guestThemeMu                                     sync.Mutex
+	verifiedGuestCLIs                                map[string]bool
 	tickets                                          map[string]time.Time
 	remoteDesktopTickets                             map[string]bool
 	browserControl                                   *browserClient

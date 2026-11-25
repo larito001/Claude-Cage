@@ -1,11 +1,13 @@
 package workbench
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -369,6 +371,17 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 	}
 	if input.AutoHandoff != nil && input.Kind != "claude" {
 		return nil, errors.New("只有 Claude Code 会话可选择自动接续")
+	}
+	if spec, isLogin, _, ok := terminalProviderKind(input.Kind); ok && s.vmRunning() && !s.busy() {
+		s.mu.Lock()
+		updateReq := s.guestUpdateRequired
+		launcher := providerTerminalCommand(s.preferences, spec.ID)
+		s.mu.Unlock()
+		if !updateReq && (isLogin || usesOfficialProviderBinary(launcher, spec.CLI.Binary)) {
+			if err := s.ensureGuestProviderCLI(s.lifetimeContext(), spec); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if input.Kind == "claude" && input.sharedID == "" {
 		s.mu.Lock()
@@ -936,4 +949,54 @@ func terminalScript(workspace, kind, command string) string {
 		return prefix + "bash -l"
 	}
 	return prefix + "CAGE_TERMINAL_COMMAND=" + shellescape.Quote(command) + " bash -lic " + shellescape.Quote("eval \"$CAGE_TERMINAL_COMMAND\"; unset CAGE_TERMINAL_COMMAND; exec bash -il")
+}
+
+func (s *Server) resetVerifiedGuestCLIs() {
+	s.mu.Lock()
+	s.verifiedGuestCLIs = nil
+	s.mu.Unlock()
+}
+
+func (s *Server) ensureGuestProviderCLI(ctx context.Context, spec cage.ProviderSpec) error {
+	binary := strings.TrimSpace(spec.CLI.Binary)
+	if binary == "" || s.configPath == "" {
+		return nil
+	}
+	if _, err := os.Stat(s.configPath); err != nil {
+		return nil
+	}
+	s.mu.Lock()
+	verified := s.verifiedGuestCLIs[binary]
+	tls12Compat := s.preferences.InstallTLS12Compat
+	s.mu.Unlock()
+	if verified {
+		return nil
+	}
+	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	_, checkErr := s.guestControl(checkCtx, `PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" DISABLE_AUTOUPDATER=1 `+shellescape.Quote(binary)+` --version </dev/null >/dev/null 2>&1`, "")
+	cancel()
+	if checkErr == nil {
+		s.mu.Lock()
+		if s.verifiedGuestCLIs == nil {
+			s.verifiedGuestCLIs = make(map[string]bool)
+		}
+		s.verifiedGuestCLIs[binary] = true
+		s.mu.Unlock()
+		return nil
+	}
+	diagnostics.Log("info", "cli-auto-install", fmt.Sprintf("provider=%s binary=%s missing in running guest; installing via maintenance channel", spec.ID, binary))
+	installCtx, installCancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer installCancel()
+	var output bytes.Buffer
+	if err := RunMaintenanceScript(installCtx, s.configPath, cage.SingleToolInstallScript(binary, tls12Compat), &output, &output); err != nil {
+		diagnostics.Log("error", "cli-auto-install", fmt.Sprintf("provider=%s binary=%s install failed: %v", spec.ID, binary, err))
+		return fmt.Errorf("检测到环境中尚未安装 %s CLI (%s)，自动安装失败：%w", spec.Name, binary, err)
+	}
+	s.mu.Lock()
+	if s.verifiedGuestCLIs == nil {
+		s.verifiedGuestCLIs = make(map[string]bool)
+	}
+	s.verifiedGuestCLIs[binary] = true
+	s.mu.Unlock()
+	return nil
 }

@@ -132,7 +132,7 @@ def sign_in(url):
         roots = ("/login", "/auth", "/auth-success", "/oauth", "/oauth-callback", "/sso", "/sso-callback", "/desktop/authorize", "/desktop/callback", "/api/auth")
         return any(raw_path == root or raw_path.startswith(root + "/") for root in roots)
     if url.hostname in codex:
-        roots = ("/login", "/auth", "/oauth", "/authorize", "/u/login", "/sso", "/sso-callback", "/magic-link", "/codex", "/activate", "/desktop/authorize", "/desktop/callback", "/api/auth", "/api/accounts")
+        roots = ("/login", "/auth", "/oauth", "/authorize", "/u/login", "/sso", "/sso-callback", "/magic-link", "/codex", "/activate", "/device", "/desktop/authorize", "/desktop/callback", "/api/auth", "/api/accounts")
         return any(raw_path == root or raw_path.startswith(root + "/") for root in roots)
     provider = ((url.hostname == "api.workos.com" and raw_path.startswith("/sso/")) or
                 (url.hostname == "accounts.google.com" and (raw_path.startswith("/o/oauth2/") or raw_path == "/AccountChooser" or raw_path.startswith("/AccountChooser/"))) or

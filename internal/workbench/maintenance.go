@@ -211,11 +211,12 @@ func StartGuestServices(ctx context.Context, configPath string, stdout, stderr i
 	if v := resolvedGuestTheme(filepath.Dir(configPath)); v != "" {
 		themePrefix = "export " + cage.GuestThemeEnv + "=" + v + "\n"
 	}
+	tlsPrefix := cage.InstallTLS12Prelude(prefs.InstallTLS12Compat || os.Getenv(cage.InstallTLS12Env) == "1")
 	cfg, err := cage.Load(configPath)
 	if err != nil {
 		return err
 	}
-	return runMaintenanceScript(ctx, configPath, cfg, "export CAGE_DISPLAY_SCALE="+scale+"\n"+themePrefix+cfg.StartScript(), stdout, stderr)
+	return runMaintenanceScript(ctx, configPath, cfg, tlsPrefix+"export CAGE_DISPLAY_SCALE="+scale+"\n"+themePrefix+cfg.StartScript(), stdout, stderr)
 }
 
 func RunMaintenanceScript(ctx context.Context, configPath, script string, stdout, stderr io.Writer) error {

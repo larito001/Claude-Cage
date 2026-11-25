@@ -373,6 +373,7 @@ func (s *Server) runCage(args ...string) error {
 	return nil
 }
 func (s *Server) startEnvironment(syncTimezone bool) error {
+	s.resetVerifiedGuestCLIs()
 	s.desktopViews.reset()
 	s.browserViews.reset()
 	s.controlSession.close()
@@ -577,6 +578,7 @@ func (s *Server) stopEnvironment() (returned error) {
 	}
 	s.mu.Lock()
 	s.ready = false
+	s.verifiedGuestCLIs = nil
 	s.credentials = guestCredentials{}
 	s.guestManifest = nil
 	s.setGuestUpdateLocked(false, "")

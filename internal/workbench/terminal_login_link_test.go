@@ -76,3 +76,27 @@ func TestClaudeAuthorizationURL(t *testing.T) {
 		}
 	}
 }
+
+func TestTerminalAuthorizationURLMultiProvider(t *testing.T) {
+	for _, valid := range []string{
+		"https://claude.ai/oauth/authorize?x=1",
+		"https://accounts.google.com/o/oauth2/auth?client_id=123&redirect_uri=https%3A%2F%2Fantigravity.google%2Foauth-callback&response_type=code",
+		"https://antigravity.google/oauth/authorize?state=1",
+		"https://auth.openai.com/oauth/authorize?client_id=app_1&response_type=code",
+		"https://auth.openai.com/codex/device",
+		"https://chatgpt.com/activate",
+	} {
+		if !terminalAuthorizationURL(valid) {
+			t.Fatalf("rejected %q", valid)
+		}
+	}
+	for _, invalid := range []string{
+		"https://accounts.google.com/o/oauth2/auth",
+		"http://auth.openai.com/codex/device",
+		"https://chatgpt.com/c/123",
+	} {
+		if terminalAuthorizationURL(invalid) {
+			t.Fatalf("accepted %q", invalid)
+		}
+	}
+}

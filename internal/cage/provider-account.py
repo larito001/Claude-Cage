@@ -273,6 +273,9 @@ class AntigravityAdapter:
 
     def environment(self, base):
         env = os.environ.copy()
+        if os.name != "nt":
+            for ssh_key in ("SSH_CLIENT", "SSH_CONNECTION", "SSH_TTY"):
+                env.pop(ssh_key, None)
         parts = [p for p in env.get("PATH", os.defpath).split(os.pathsep) if p and p != self.shim_dir]
         env["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), *parts])
         if base.name == DEFAULT:
@@ -380,7 +383,7 @@ class AntigravityAdapter:
                 continue
         return sorted(emails)[:128]
 
-    def login_command(self, binary, _extra_args):
+    def login_command(self, binary, _extra_args, scoped=False):
         return [_runtime["path"](binary), "acp", "--login"]
 
     def run_command(self, binary, extra_args, _is_default):
@@ -424,6 +427,9 @@ class CodexAdapter:
 
     def environment(self, base):
         env = os.environ.copy()
+        if os.name != "nt":
+            for ssh_key in ("SSH_CLIENT", "SSH_CONNECTION", "SSH_TTY"):
+                env.pop(ssh_key, None)
         parts = [p for p in env.get("PATH", os.defpath).split(os.pathsep) if p and p != self.shim_dir]
         env["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), *parts])
         if base.name == DEFAULT:
@@ -490,9 +496,9 @@ class CodexAdapter:
     def desktop_emails(self):
         return []
 
-    def login_command(self, binary, extra_args):
+    def login_command(self, binary, extra_args, scoped=False):
         cmd = [_runtime["path"](binary), "-c", 'cli_auth_credentials_store="file"', "login"]
-        if "--device-auth" in extra_args:
+        if "--device-auth" in extra_args or scoped:
             cmd.append("--device-auth")
         return cmd
 
@@ -541,6 +547,148 @@ def handle_notify(provider_id, rest):
             record_channel_event(conn, "turn_completed")
         return 0
     return 0
+
+
+LOGIN_URL_RE = re.compile(
+    r"https://(?:"
+    r"accounts\.google\.com/(?:o/oauth2|AccountChooser)[^\s\"'<>\\\x00-\x1f]+|"
+    r"antigravity\.google(?:\.com)?/(?:login|auth|oauth)[^\s\"'<>\\\x00-\x1f]*|"
+    r"(?:auth|auth0)\.openai\.com/(?:oauth/authorize|authorize|u/login|codex/device|device|activate)[^\s\"'<>\\\x00-\x1f]*|"
+    r"(?:chatgpt\.com|chat\.openai\.com)/(?:activate|auth/)[^\s\"'<>\\\x00-\x1f]*"
+    r")",
+    re.IGNORECASE,
+)
+ANSI_ESCAPE_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[@-Z\\-_])")
+
+
+def extract_stream_login_url(raw_text):
+    cleaned = ANSI_ESCAPE_RE.sub("", raw_text)
+    collapsed = re.sub(r"\r?\n[ \t]*", "", cleaned)
+    match = LOGIN_URL_RE.search(collapsed) or LOGIN_URL_RE.search(cleaned)
+    return match.group(0) if match else ""
+
+
+def run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker):
+    import errno
+    import fcntl
+    import pty
+    import select
+    import termios
+    import threading
+    import tty
+
+    stdin_fd = sys.stdin.fileno()
+    stdout_fd = sys.stdout.fileno()
+    master_fd, slave_fd = pty.openpty()
+
+    def sync_winsize(_signum=None, _frame=None):
+        try:
+            winsize = fcntl.ioctl(stdin_fd, termios.TIOCGWINSZ, b"\x00" * 8)
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+        except OSError:
+            pass
+
+    sync_winsize()
+    old_winch = signal.getsignal(signal.SIGWINCH) if hasattr(signal, "SIGWINCH") else None
+    if hasattr(signal, "SIGWINCH"):
+        signal.signal(signal.SIGWINCH, sync_winsize)
+    old_attrs = termios.tcgetattr(stdin_fd)
+    proc = None
+    buf_lock = threading.Lock()
+    state = {"text": "", "scheduled": False}
+
+    def trigger_fallback():
+        time.sleep(0.35)
+        if opened_marker.exists():
+            return
+        with buf_lock:
+            url = extract_stream_login_url(state["text"])
+        if not url or opened_marker.exists():
+            return
+        try:
+            opened_marker.write_bytes(b"1")
+        except OSError:
+            pass
+        subprocess.run(
+            [launcher_path, url],
+            env=os.environ,
+            timeout=12,
+            check=False,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    try:
+        tty.setraw(stdin_fd)
+        proc = subprocess.Popen(
+            cmd,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            cwd=Path.home(),
+            env=env,
+            close_fds=True,
+        )
+        os.close(slave_fd)
+        slave_fd = -1
+        watch_fds = [stdin_fd, master_fd]
+        while master_fd in watch_fds:
+            try:
+                ready, _, _ = select.select(watch_fds, [], [], 0.25)
+            except InterruptedError:
+                continue
+            if master_fd in ready:
+                try:
+                    data = os.read(master_fd, 4096)
+                except OSError as exc:
+                    if exc.errno == errno.EIO:
+                        data = b""
+                    else:
+                        raise
+                if not data:
+                    watch_fds.remove(master_fd)
+                else:
+                    os.write(stdout_fd, data)
+                    if not state["scheduled"] and not opened_marker.exists():
+                        with buf_lock:
+                            state["text"] = (state["text"] + data.decode("utf-8", "ignore"))[-16384:]
+                            found = extract_stream_login_url(state["text"])
+                        if found:
+                            state["scheduled"] = True
+                            threading.Thread(target=trigger_fallback, daemon=True).start()
+            if stdin_fd in ready:
+                try:
+                    user_in = os.read(stdin_fd, 1024)
+                except OSError:
+                    user_in = b""
+                if not user_in:
+                    watch_fds.remove(stdin_fd)
+                else:
+                    os.write(master_fd, user_in)
+        return proc.wait()
+    finally:
+        if slave_fd >= 0:
+            try:
+                os.close(slave_fd)
+            except OSError:
+                pass
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
+        try:
+            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, old_attrs)
+        except OSError:
+            pass
+        if hasattr(signal, "SIGWINCH") and old_winch is not None:
+            signal.signal(signal.SIGWINCH, old_winch)
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
 
 
 def run_provider(args):
@@ -614,13 +762,23 @@ def run_provider(args):
 
     if mode == "login":
         opener_dir = None
+        launcher_path = None
+        opened_marker = None
         if os.name != "nt":
             launcher_path = _runtime["launcher"](scoped or OPEN, executable=True, arguments=[*owner_args, "--login-id", account_id])
-            env["BROWSER"] = launcher_path
+            opener_dir = tempfile.mkdtemp(prefix="xdg-")
+            os.chmod(opener_dir, PRIVATE_MODE)
+            opened_marker = Path(opener_dir) / "opened"
+            quoted_launcher = "'" + str(launcher_path).replace("'", "'\\''") + "'"
+            quoted_marker = "'" + str(opened_marker).replace("'", "'\\''") + "'"
+            wrapper_path = Path(opener_dir) / "xdg-open"
+            wrapper_path.write_text(
+                f"#!/bin/sh\n: > {quoted_marker} 2>/dev/null || true\nexec {quoted_launcher} \"$@\"\n",
+                encoding="utf-8",
+            )
+            os.chmod(wrapper_path, 0o700)
+            env["BROWSER"] = str(wrapper_path)
             if sys.platform != "darwin":
-                opener_dir = tempfile.mkdtemp(prefix="xdg-")
-                os.chmod(opener_dir, PRIVATE_MODE)
-                os.symlink(launcher_path, Path(opener_dir) / "xdg-open")
                 env["PATH"] = opener_dir + (os.pathsep + env["PATH"] if env.get("PATH") else "")
 
         def interrupted(_signum, _frame):
@@ -630,7 +788,9 @@ def run_provider(args):
             signal.signal(signal.SIGHUP, interrupted)
         signal.signal(signal.SIGTERM, interrupted)
         try:
-            cmd = adapter.login_command(binary, rest)
+            cmd = adapter.login_command(binary, rest, scoped=bool(scoped))
+            if os.name != "nt" and launcher_path and opened_marker and sys.stdin.isatty() and sys.stdout.isatty():
+                return run_login_pty_with_auto_open(cmd, env, launcher_path, opened_marker)
             return subprocess.call(cmd, cwd=Path.home(), env=env)
         finally:
             if opener_dir:
@@ -648,8 +808,20 @@ def run_provider(args):
                 )
 
     if mode == "run":
-        if os.name != "nt" and (owner_args or scoped or sys.platform == "darwin"):
-            env["BROWSER"] = _runtime["launcher"](scoped or OPEN, executable=True, arguments=owner_args, login_config=config_dir)
+        if os.name != "nt":
+            run_launcher = _runtime["launcher"](scoped or OPEN, executable=True, arguments=owner_args, login_config=config_dir)
+            env["BROWSER"] = run_launcher
+            if sys.platform != "darwin" and (owner_args or scoped):
+                xdg_dir = Path(_runtime["path"](config_dir)).parent / "xdg-bin" if "path" in _runtime else config_dir / ".xdg-bin"
+                try:
+                    xdg_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+                    xdg_shim = xdg_dir / "xdg-open"
+                    if xdg_shim.is_symlink() or xdg_shim.exists():
+                        xdg_shim.unlink()
+                    xdg_shim.symlink_to(run_launcher)
+                    env["PATH"] = str(xdg_dir) + (os.pathsep + env["PATH"] if env.get("PATH") else "")
+                except OSError:
+                    pass
         notify_conn = valid_notify_connection(_controller_context.get("CAGE_NOTIFY_CONNECTION", ""))
         if notify_conn:
             env[NOTIFY_ENV_VAR] = notify_conn

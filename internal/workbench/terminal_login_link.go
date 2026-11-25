@@ -43,13 +43,16 @@ func terminalAuthorizationURL(raw string) bool {
 	path := strings.TrimSuffix(u.EscapedPath(), "/")
 	switch host {
 	case "antigravity.google", "antigravity.google.com":
-		return u.RawQuery != "" && (path == "/login" || path == "/auth" || path == "/oauth" || strings.HasPrefix(path, "/oauth/"))
+		return u.RawQuery != "" && (path == "/login" || path == "/auth" || path == "/oauth" || path == "/oauth-callback" || strings.HasPrefix(path, "/oauth/"))
 	case "accounts.google.com":
 		return u.RawQuery != "" && (strings.HasPrefix(path, "/o/oauth2") || path == "/AccountChooser" || strings.HasPrefix(path, "/AccountChooser/"))
 	case "auth.openai.com", "auth0.openai.com":
+		if path == "/codex/device" || strings.HasPrefix(path, "/codex/") || path == "/device" || path == "/activate" {
+			return true
+		}
 		return u.RawQuery != "" && (path == "/authorize" || path == "/oauth/authorize" || strings.HasPrefix(path, "/u/login"))
 	case "chatgpt.com", "chat.openai.com":
-		return path == "/activate" || strings.HasPrefix(path, "/auth/")
+		return path == "/activate" || path == "/codex/device" || strings.HasPrefix(path, "/auth/")
 	}
 	return false
 }

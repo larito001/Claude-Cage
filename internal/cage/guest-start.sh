@@ -58,6 +58,18 @@ if ! dpkg-query -W -f='${Status}' chromium-l10n 2>/dev/null | grep -qx 'install 
     -o APT::Update::Error-Mode=any update </dev/null
   sudo env DEBIAN_FRONTEND=noninteractive APT_CONFIG="${CAGE_APT_CONFIG:-/dev/null}" apt-get install -y --no-install-recommends --no-remove chromium-l10n </dev/null
 fi
+# Ensure all three official AI CLIs are installed and runnable on first start or
+# after a base migration / account reset while the maintenance channel is open.
+export PATH="$HOME/.local/bin:$PATH"
+for cage_cli_tool in claude agy codex; do
+  if ! PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" DISABLE_AUTOUPDATER=1 "$cage_cli_tool" --version </dev/null >/dev/null 2>&1; then
+    printf 'Detected missing or broken %s CLI; installing via Cage maintenance channel...\n' "$cage_cli_tool"
+    if ! CAGE_SETUP_PROGRESS=1 cage_install_tool "$cage_cli_tool"; then
+      printf 'Warning: could not install %s CLI during startup; Cage will retry when opening its terminal.\n' "$cage_cli_tool" >&2
+    fi
+  fi
+done
+unset cage_cli_tool
 # Publish per-VM control credentials for the browser process and SSH owner only.
 sudo env CAGE_DISPLAY_SCALE="${CAGE_DISPLAY_SCALE:-2}" CAGE_WORKSPACE="$PWD" CAGE_USER_HOME="$HOME" python3 - <<'PYCONTROL'
 import json, os, secrets, grp, tempfile

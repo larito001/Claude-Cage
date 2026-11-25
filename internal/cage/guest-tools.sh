@@ -175,6 +175,7 @@ cage_install_tool() (
       export npm_config_fetch_retries=3 npm_config_fetch_timeout=120000
       npm install --registry=https://registry.npmjs.org --prefix "$HOME/.local" --global @openai/codex@latest </dev/null
       "$HOME/.local/bin/codex" --version
+      sync "$HOME/.local" 2>/dev/null || sync
       exit 0
       ;;
     agy)
@@ -223,6 +224,7 @@ cage_install_tool() (
     mv -f "$stage" "$HOME/.local/bin/agy"
     trap - EXIT
     "$HOME/.local/bin/agy" install --dir "$HOME/.local/bin" </dev/null >/dev/null 2>&1 || true
+    sync "$HOME/.local/bin/agy" 2>/dev/null || sync
     exit 0
   fi
   if [ "$tool" = claude ]; then
@@ -231,6 +233,7 @@ cage_install_tool() (
     if [ "${CAGE_SETUP_PROGRESS:-}" = 1 ]; then echo "Installing Claude Code..."; fi
     npm install --registry=https://registry.npmjs.org --prefix "$HOME/.local" --global "@anthropic-ai/claude-code@$wanted" </dev/null
     cage_configure_claude_npm_prefix
+    sync "$HOME/.local" 2>/dev/null || sync
     exit 0
   fi
   local cache="$HOME/.cache/cage/downloads/$checksum"

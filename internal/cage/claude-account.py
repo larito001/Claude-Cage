@@ -2657,6 +2657,8 @@ def main(args, *, mobile_settings_fd=None, verify_mobile=None):
     if mode == "login":
         opener_dir = None
         if os.name != "nt":
+            for ssh_key in ("SSH_CLIENT", "SSH_CONNECTION", "SSH_TTY"):
+                env.pop(ssh_key, None)
             launcher_path = _runtime["launcher"](scoped or OPEN, executable=True, arguments=[*owner_args, "--login-id", account_id])
             env["BROWSER"] = launcher_path
             if sys.platform != "darwin":

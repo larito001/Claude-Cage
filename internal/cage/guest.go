@@ -399,6 +399,12 @@ printf 'Cage tool packages are ready; applying browser and editor components.\n'
 `
 }
 
+func SingleToolInstallScript(tool string, tls12Compat bool) string {
+	return "set -euo pipefail\nexport PATH=\"$HOME/.local/bin:$PATH\"\nexport CAGE_SETUP_PROGRESS=1\n" +
+		InstallTLS12Prelude(tls12Compat) + APTBootstrapScript + ToolInstallPrelude() +
+		"\ncage_install_tool " + shellescape.Quote(tool) + "\n"
+}
+
 func (c Config) EnvironmentScript() string {
 	env := fmt.Sprintf("export CAGE_TZ=%s\nexport CAGE_LOCALE=%s\nexport CAGE_LANGUAGE=%s\n", shellescape.Quote(c.Timezone), shellescape.Quote(c.Locale), shellescape.Quote(c.BrowserLanguage))
 	if theme := os.Getenv(GuestThemeEnv); theme == "light" || theme == "dark" {
