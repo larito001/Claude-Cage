@@ -19,6 +19,7 @@ export function TerminalMenu({
   profiles,
   providerStores,
   usesOfficialCLI,
+  usesOfficialProviderCLI,
   onClose,
   onSelect,
 }) {
@@ -115,8 +116,14 @@ export function TerminalMenu({
   const configureProvider = (providerID) => {
     const spec = providerSpec(providerID);
     if (!spec) return;
-    if (providerID === "claude" && !usesOfficialCLI) {
-      onSelect("claude");
+    const official =
+      usesOfficialProviderCLI && typeof usesOfficialProviderCLI[providerID] === "boolean"
+        ? usesOfficialProviderCLI[providerID]
+        : providerID === "claude"
+          ? usesOfficialCLI
+          : true;
+    if (!official) {
+      onSelect(spec.terminalKind);
       return;
     }
     const store = providerStores?.[providerID] || profiles;

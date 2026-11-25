@@ -618,6 +618,40 @@ export function SettingsPanel({
                       />
                     </div>
                   </div>
+                  <div className="settings-row">
+                    <div className="settings-row-copy">
+                      <strong>{tr("Antigravity 终端启动命令")}</strong>
+                    </div>
+                    <div className="settings-row-control settings-row-control--wide">
+                      <input
+                        className="settings-mono-input"
+                        aria-label={tr("Antigravity 终端启动命令")}
+                        value={draft.antigravity_terminal_command ?? "agy"}
+                        onChange={(e) => update("antigravity_terminal_command", e.target.value)}
+                        placeholder="agy"
+                        maxLength={4096}
+                        spellCheck="false"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div className="settings-row">
+                    <div className="settings-row-copy">
+                      <strong>{tr("Codex 终端启动命令")}</strong>
+                    </div>
+                    <div className="settings-row-control settings-row-control--wide">
+                      <input
+                        className="settings-mono-input"
+                        aria-label={tr("Codex 终端启动命令")}
+                        value={draft.codex_terminal_command ?? "codex"}
+                        onChange={(e) => update("codex_terminal_command", e.target.value)}
+                        placeholder="codex"
+                        maxLength={4096}
+                        spellCheck="false"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="settings-card">
                   {typeof current.reuse_claude_login === "boolean" && <label className="settings-row settings-switch-row" title={tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}>
@@ -628,7 +662,23 @@ export function SettingsPanel({
                     <input type="checkbox" role="switch" checked={!draft.reuse_claude_login}
                       onChange={(event) => update("reuse_claude_login", !event.target.checked)} />
                   </label>}
-                  {typeof current.balanced_display === "boolean" && <label className="settings-row settings-switch-row" title={tr("降低浏览器和 Claude Desktop 的清晰度，Linux 环境同时减少 Claude Desktop 的动效。下次启动环境时生效。")}>
+                  {typeof current.reuse_antigravity_login === "boolean" && <label className="settings-row settings-switch-row" title={tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}>
+                    <span className="settings-row-copy">
+                      <strong>{tr("使用无痕标签页登录 Antigravity")}</strong>
+                      <small>{tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}</small>
+                    </span>
+                    <input type="checkbox" role="switch" checked={!draft.reuse_antigravity_login}
+                      onChange={(event) => update("reuse_antigravity_login", !event.target.checked)} />
+                  </label>}
+                  {typeof current.reuse_codex_login === "boolean" && <label className="settings-row settings-switch-row" title={tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}>
+                    <span className="settings-row-copy">
+                      <strong>{tr("使用无痕标签页登录 Codex")}</strong>
+                      <small>{tr("每次授权使用独立的浏览器会话。关闭后可复用登录状态。")}</small>
+                    </span>
+                    <input type="checkbox" role="switch" checked={!draft.reuse_codex_login}
+                      onChange={(event) => update("reuse_codex_login", !event.target.checked)} />
+                  </label>}
+                  {typeof current.balanced_display === "boolean" && <label className="settings-row settings-switch-row" title={tr("降低浏览器和桌面端应用的清晰度，Linux 环境同时减少桌面动效。下次启动环境时生效。")}>
                     <span className="settings-row-copy">
                       <strong>{tr("优先流畅")}</strong>
                       <small>{tr("下次启动环境时生效。")}</small>

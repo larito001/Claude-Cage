@@ -803,6 +803,11 @@ function App() {
     <TerminalMenu choice={terminalChoice} busy={busy} profiles={claudeProfiles} providerStores={providerStores}
       atLimit={liveTerminalCount(tabs) + (enrollmentID ? 1 : 0) >= TERMINAL_LIMIT}
       usesOfficialCLI={(settings?.claude_terminal_command?.trim() || "claude") === "claude"}
+      usesOfficialProviderCLI={{
+        claude: (settings?.claude_terminal_command?.trim() || "claude") === "claude",
+        antigravity: /^agy(?:\s|$)/.test(settings?.antigravity_terminal_command?.trim() || "agy"),
+        codex: /^codex(?:\s|$)/.test(settings?.codex_terminal_command?.trim() || "codex"),
+      }}
       onClose={() => setTerminalChoice(null)}
       onSelect={(kind, accountId, autoHandoff) => createTerminal(terminalChoice.path, kind, accountId, autoHandoff).catch((e) => notify(e.message))} />
   );

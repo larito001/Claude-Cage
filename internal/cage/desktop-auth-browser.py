@@ -144,6 +144,49 @@ def sign_in(url):
     return _valid_callback(redirects[0], claude | google | codex)
 
 
+def sign_in_provider(url):
+    if not sign_in(url):
+        return ""
+    claude = {"claude.ai", "claude.com", "platform.claude.com", "platform.anthropic.com", "console.anthropic.com"}
+    google = {"antigravity.google", "antigravity.google.com"}
+    codex = {"chatgpt.com", "chat.openai.com", "auth.openai.com", "auth0.openai.com", "platform.openai.com"}
+    if url.hostname in claude:
+        return "claude"
+    if url.hostname in google:
+        return "antigravity"
+    if url.hostname in codex:
+        return "codex"
+    redirects = parse_qs(url.query, keep_blank_values=True).get("redirect_uri", [])
+    if len(redirects) == 1:
+        try:
+            cb_host = urlsplit(redirects[0]).hostname or ""
+            if cb_host in google:
+                return "antigravity"
+            if cb_host in codex:
+                return "codex"
+            if cb_host in claude:
+                return "claude"
+        except ValueError:
+            pass
+    try:
+        desktop_prov = (Path.home().parent / "provider").read_text(encoding="utf-8").strip()
+        if desktop_prov in ("claude", "antigravity", "codex"):
+            return desktop_prov
+    except OSError:
+        pass
+    if url.hostname == "accounts.google.com":
+        return "antigravity"
+    return "claude"
+
+
+def login_reuse_enabled(provider):
+    if provider == "antigravity":
+        return Path("/etc/claude-cage/login-browser-mode-antigravity").exists()
+    if provider == "codex":
+        return Path("/etc/claude-cage/login-browser-mode-codex").exists()
+    return Path("/etc/claude-cage/login-browser-mode").exists()
+
+
 def main(address):
     if len(address) > 8192 or any(ord(c) < 32 for c in address):
         return 2
@@ -157,7 +200,8 @@ def main(address):
     lang = resolve_language(os.environ, temporary)
     env = clean_environment(os.environ)
     regular = Path.home() / ".config/chromium"
-    if not sign_in(url) or Path("/etc/claude-cage/login-browser-mode").exists():
+    provider = sign_in_provider(url)
+    if not provider or login_reuse_enabled(provider):
         try:
             save_language_prefs(regular, lang)
         except OSError:

@@ -137,7 +137,7 @@ export function NotificationSettings({ onUpdated }) {
         const result = await native("showNotification", {
           id: "cage-test-" + Date.now(),
           title: tr("Cage 通知测试"),
-          body: tr("Claude Code 完成回复时会像这样提醒你，点击可回到 Cage。"),
+          body: tr("AI 终端完成回复时会像这样提醒你，点击可回到 Cage。"),
           terminal_id: "",
           connection_id: "",
           sound: prefs.sound,
@@ -159,7 +159,7 @@ export function NotificationSettings({ onUpdated }) {
         }
         if (window.Notification.permission === "granted") {
           new window.Notification(tr("Cage 通知测试"), {
-            body: tr("Claude Code 完成回复时会像这样提醒你。"),
+            body: tr("AI 终端完成回复时会像这样提醒你。"),
             silent: !prefs.sound,
           });
           setFeedback(tr("已发送测试通知。"));
@@ -188,11 +188,20 @@ export function NotificationSettings({ onUpdated }) {
     ["off", tr("关闭")],
   ];
 
+  const updateProviderToggle = (providerKey, enabled) => {
+    void persist({
+      providers: {
+        ...prefs.providers,
+        [providerKey]: enabled,
+      },
+    });
+  };
+
   return (
     <section className="notification-settings" aria-label={tr("通知")}>
       <div className="section-title">
         <h3>{tr("通知")}</h3>
-        <p>{tr("在终端中的 Claude Code 完成回复或等待确认时发送系统通知，点击通知可回到对应终端。修改后立即生效，无需重启环境。")}</p>
+        <p>{tr("在终端中的 Claude Code、Antigravity 或 Codex 完成回复或等待确认时发送系统通知，点击通知可回到对应终端。修改后立即生效，无需重启环境。")}</p>
       </div>
 
       {systemStatus && (
@@ -221,7 +230,7 @@ export function NotificationSettings({ onUpdated }) {
                 {permission === "authorized" || permission === "provisional"
                   ? tr("Cage 可以直接通过系统通知中心提醒你。")
                   : permission === "not_determined"
-                    ? tr("授权后，切到其他应用时也能及时收到 Claude Code 完成提醒。")
+                    ? tr("授权后，切到其他应用时也能及时收到 AI 终端完成提醒。")
                     : permission === "denied"
                       ? tr("请在系统设置中为 Cage 打开通知权限，返回后状态会自动刷新。")
                       : permission === "unavailable"
@@ -250,7 +259,7 @@ export function NotificationSettings({ onUpdated }) {
         <div className="notification-row-copy">
           <strong>{tr("回合完成通知")}</strong>
           <small>
-            {tr("Claude Code 结束本轮回复时提醒。选择「仅未聚焦时」会在切换到其他应用或查看其他标签时通知，正在看该终端时不打扰；取消或 API 出错结束时不发送。")}
+            {tr("终端中的 AI 助手结束本轮回复时提醒。选择「仅未聚焦时」会在切换到其他应用或查看其他标签时通知，正在看该终端时不打扰；取消或出错结束时不发送。")}
           </small>
         </div>
         <div className="notification-row-control">
@@ -272,7 +281,7 @@ export function NotificationSettings({ onUpdated }) {
       <div className="notification-row">
         <div className="notification-row-copy">
           <strong>{tr("等待确认通知")}</strong>
-          <small>{tr("终端中的 Claude Code 等待你批准权限或操作时发送系统通知。")}</small>
+          <small>{tr("终端中的 AI 助手等待你批准权限或操作时发送系统通知。")}</small>
         </div>
         <div className="notification-row-control">
           <InlineSelect
@@ -289,6 +298,48 @@ export function NotificationSettings({ onUpdated }) {
           </InlineSelect>
         </div>
       </div>
+
+      <label className="toggle-row">
+        <span>
+          <strong>{tr("Claude Code 终端通知")}</strong>
+          <small>{tr("接收 Claude Code 终端的回合完成与等待确认提醒。")}</small>
+        </span>
+        <input
+          role="switch"
+          type="checkbox"
+          checked={prefs.providers?.claude !== false}
+          disabled={loading || saving || allOff}
+          onChange={(e) => updateProviderToggle("claude", e.target.checked)}
+        />
+      </label>
+
+      <label className="toggle-row">
+        <span>
+          <strong>{tr("Antigravity 终端通知")}</strong>
+          <small>{tr("接收 Antigravity 终端的回合完成与等待确认提醒。")}</small>
+        </span>
+        <input
+          role="switch"
+          type="checkbox"
+          checked={prefs.providers?.antigravity !== false}
+          disabled={loading || saving || allOff}
+          onChange={(e) => updateProviderToggle("antigravity", e.target.checked)}
+        />
+      </label>
+
+      <label className="toggle-row">
+        <span>
+          <strong>{tr("Codex 终端通知")}</strong>
+          <small>{tr("接收 Codex 终端的回合完成与等待确认提醒。")}</small>
+        </span>
+        <input
+          role="switch"
+          type="checkbox"
+          checked={prefs.providers?.codex !== false}
+          disabled={loading || saving || allOff}
+          onChange={(e) => updateProviderToggle("codex", e.target.checked)}
+        />
+      </label>
 
       {soundSupported && <label className="toggle-row">
         <span>

@@ -261,3 +261,76 @@ func TestTerminalAuthorizationURLMultiProviderAndGuestScriptsLF(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiProviderGeneralSettingsAndNotifications(t *testing.T) {
+	s := testServer(t)
+	cfg, err := loadConfig(s.configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := settingsView(cfg, s.preferences)
+	if view.ClaudeTerminalCommand != "claude" || view.AntigravityTerminalCommand != "agy" || view.CodexTerminalCommand != "codex" {
+		t.Fatalf("unexpected default terminal commands: %+v", view.Preferences)
+	}
+	if view.ReuseClaudeLogin || view.ReuseAntigravityLogin || view.ReuseCodexLogin {
+		t.Fatalf("expected incognito login default (reuse=false) for all providers: %+v", view.Preferences)
+	}
+
+	view.AntigravityTerminalCommand = "agy --model gemini-2.5-pro"
+	view.CodexTerminalCommand = "codex -m o3"
+	view.ReuseAntigravityLogin = true
+	view.ReuseCodexLogin = false
+	_, prefs, err := proposedSettings(view, cfg, s.profile)
+	if err != nil {
+		t.Fatalf("proposedSettings valid multi-provider settings: %v", err)
+	}
+	if prefs.AntigravityTerminalCommand != "agy --model gemini-2.5-pro" || prefs.CodexTerminalCommand != "codex -m o3" {
+		t.Fatalf("custom commands not preserved: %+v", prefs)
+	}
+	if !reuseLoginForProvider(prefs, "antigravity") || reuseLoginForProvider(prefs, "codex") || reuseLoginForProvider(prefs, "claude") {
+		t.Fatalf("unexpected reuseLoginForProvider result: %+v", prefs)
+	}
+
+	script := linuxLoginPreferences(prefs)
+	if !strings.Contains(script, "install -m 0644 /dev/null /etc/claude-cage/login-browser-mode-antigravity") ||
+		!strings.Contains(script, "unlink /etc/claude-cage/login-browser-mode-codex") {
+		t.Fatalf("unexpected linuxLoginPreferences script:\n%s", script)
+	}
+
+	bad := view
+	bad.CodexTerminalCommand = "codex\nwhoami"
+	if _, _, err := proposedSettings(bad, cfg, s.profile); err == nil {
+		t.Fatal("expected multiline CodexTerminalCommand to be rejected")
+	}
+
+	// Verify per-provider notification preferences & event provider tagging.
+	w := request(s, "POST", "/api/client/notifications", s.origin,
+		`{"turn_completion":"always","approval":"unfocused","sound":true,"providers":{"claude":true,"antigravity":false,"codex":true}}`, true)
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST /api/client/notifications: %d %s", w.Code, w.Body.String())
+	}
+	savedNotif := loadNotificationPreferences(s.notificationProfileDir())
+	if savedNotif.Providers == nil || !savedNotif.Providers.Claude || savedNotif.Providers.Antigravity || !savedNotif.Providers.Codex {
+		t.Fatalf("unexpected notification provider preferences: %+v", savedNotif.Providers)
+	}
+
+	eventsCh, unsub := s.notifications.subscribe()
+	defer unsub()
+	s.terminals.sessions = map[string]*terminalSession{
+		"agyterm01": {
+			id:           "agyterm01",
+			title:        "Antigravity 1",
+			connectionID: "conn-agy-1",
+			workspace:    "/tmp/agy-demo",
+			kind:         "antigravity",
+			provider:     "antigravity",
+		},
+	}
+	if !s.dispatchGuestNotification(guestChannelEvent{ID: "conn-agy-1:turn:1", Event: "turn_completed", Connection: "conn-agy-1", Seq: 1}) {
+		t.Fatal("expected antigravity guest notification to publish")
+	}
+	ev := <-eventsCh
+	if ev.Provider != "antigravity" || ev.TerminalTitle != "Antigravity 1" {
+		t.Fatalf("unexpected notificationEvent: %+v", ev)
+	}
+}

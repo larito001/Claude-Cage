@@ -7,7 +7,7 @@ import { open } from "node:fs/promises";
 import http from "node:http";
 import { auditBrowser } from "./browser-audit.mjs";
 import { BrowserVault } from "./browser-vault.mjs";
-import { LoginBrowser, isClaudeSignIn } from "./browser-login.mjs";
+import { LoginBrowser, isClaudeSignIn, signInProvider } from "./browser-login.mjs";
 import { PrivateBrowser } from "./browser-private.mjs";
 import { BrowserSpaces, SpaceCookies } from "./browser-spaces.mjs";
 import { browserCookies, AccountLoginCookies } from "./browser-cookies.mjs";
@@ -946,7 +946,13 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.url === "/login-open" || (req.url === "/new" && !input.space && (input.route || isClaudeSignIn(input.url)))) {
         const external = req.url === "/new" && !isClaudeSignIn(input.url);
-        const privateLogin = !external && !existsSync("/etc/claude-cage/login-browser-mode");
+        const provider = signInProvider(input.url, input.provider);
+        const reuseMarker = provider === "antigravity"
+          ? "/etc/claude-cage/login-browser-mode-antigravity"
+          : provider === "codex"
+            ? "/etc/claude-cage/login-browser-mode-codex"
+            : "/etc/claude-cage/login-browser-mode";
+        const privateLogin = !external && (typeof input.private === "boolean" ? input.private : !existsSync(reuseMarker));
         return loginBrowser.open(input.login || randomUUID(), input.url, async tab => {
           targets.set(tab.targetId, loginBrowser.tab(tab));
           await activate(tab.targetId, true);

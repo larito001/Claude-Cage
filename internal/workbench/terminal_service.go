@@ -8,14 +8,31 @@ import (
 	"fmt"
 	"os/exec"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"al.essio.dev/pkg/shellescape"
+	"github.com/google/uuid"
 	"github.com/sylvinus/agent-vm/internal/cage"
 	"github.com/sylvinus/agent-vm/internal/diagnostics"
 )
+
+func providerTerminalCommand(p Preferences, providerID string) string {
+	switch providerID {
+	case "antigravity":
+		return antigravityTerminalCommand(p)
+	case "codex":
+		return codexTerminalCommand(p)
+	default:
+		return claudeTerminalCommand(p)
+	}
+}
+
+func usesOfficialProviderBinary(command, binary string) bool {
+	return command == binary || strings.HasPrefix(command, binary+" ")
+}
 
 const terminalLimit = 12
 
@@ -378,11 +395,18 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 			}
 		}
 	} else if spec, isLogin, _, ok := terminalProviderKind(input.Kind); ok && spec.ID != "claude" && !isLogin {
+		s.mu.Lock()
+		launcher := providerTerminalCommand(s.preferences, spec.ID)
+		s.mu.Unlock()
 		requested := input.AccountID
 		if requested == "" {
 			requested = input.ClaudeAccountID
 		}
 		input.AccountID = requested
+		explicit := requested != "" && requested != "auto"
+		if !usesOfficialProviderBinary(launcher, spec.CLI.Binary) && explicit {
+			return nil, fmt.Errorf("手选账号需要使用官方 %s 启动命令", spec.CLI.Binary)
+		}
 		if requested == "login" {
 			return s.startProviderCodeLogin(spec.ID, input, "")
 		}
@@ -450,6 +474,7 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	closing := s.closing
 	componentUpdate := s.guestUpdateRequired
 	command := claudeTerminalCommand(s.preferences)
+	providerCommand := providerTerminalCommand(s.preferences, providerSpec.ID)
 	s.mu.Unlock()
 	if closing {
 		return nil, errTerminalsClosed
@@ -490,15 +515,18 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	}
 	launchCommand := command
 	if managedOther {
-		launchCommand = providerSpec.CLI.Binary
-		switch providerSpec.ID {
-		case "antigravity":
-			launchCommand += " --dangerously-skip-permissions"
-		case "codex":
-			launchCommand += " --dangerously-bypass-approvals-and-sandbox"
+		launchCommand = providerCommand
+		if launchCommand == providerSpec.CLI.Binary {
+			switch providerSpec.ID {
+			case "antigravity":
+				launchCommand += " --dangerously-skip-permissions"
+			case "codex":
+				launchCommand += " --dangerously-bypass-approvals-and-sandbox"
+			}
 		}
 	}
-	if input.Kind == "claude" && !sharedCLILauncher(command) {
+	if (input.Kind == "claude" && !sharedCLILauncher(command)) ||
+		(managedOther && !isLoginKind && usesOfficialProviderBinary(providerCommand, providerSpec.CLI.Binary)) {
 		directories, err := s.projectAdditionalDirectories(workspace)
 		if err != nil {
 			return nil, err
@@ -510,6 +538,7 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	script := terminalScript(guestPath(workspace), input.Kind, launchCommand)
 	var selection claudeSelection
 	var finished func()
+	notifyConnID := ""
 	if managedClaude {
 		login := input.Kind == "claude-login"
 		if input.loginDraft != nil {
@@ -592,7 +621,10 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 				return nil, fmt.Errorf("%s 账号状态已变化，请重试", providerSpec.Name)
 			}
 		}
-		script = managedProviderTerminalScript(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, isLoginKind, isDeviceAuth)
+		if !isLoginKind {
+			notifyConnID = uuid.NewString()
+		}
+		script = managedProviderTerminalScript(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, notifyConnID, isLoginKind, isDeviceAuth)
 		if isLoginKind && input.loginDraft == nil && selection.ID != "" {
 			provID := providerSpec.ID
 			selID := selection.ID
@@ -638,6 +670,12 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	}
 	if err == nil && ordinaryShell {
 		s.refreshShellLoginWatch()
+	}
+	if err == nil && notifyConnID != "" {
+		session.mu.Lock()
+		session.connectionID = notifyConnID
+		session.mu.Unlock()
+		s.notifications.wake()
 	}
 	if err == nil && conversation != nil {
 		session.mu.Lock()
@@ -759,7 +797,7 @@ func managedClaudeTerminalScript(workspace, command, accountID, subject string, 
 		shellescape.Quote(command) + " bash -lic " + shellescape.Quote(body)
 }
 
-func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, accountID, subject string, login, deviceAuth bool) string {
+func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, accountID, subject, notifyConnID string, login, deviceAuth bool) string {
 	if login {
 		extra := ""
 		if deviceAuth {
@@ -770,6 +808,9 @@ func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, a
 	}
 	env := `export CAGE_PROVIDER_ACCOUNT_ID=` + shellescape.Quote(accountID) +
 		` CAGE_PROVIDER_SUBJECT=` + shellescape.Quote(subject) + "; "
+	if notifyConnID != "" {
+		env += `export CAGE_NOTIFY_CONNECTION=` + shellescape.Quote(notifyConnID) + "; "
+	}
 	if accountID != "default" {
 		switch spec.ID {
 		case "antigravity":

@@ -54,6 +54,25 @@ func terminalAuthorizationURL(raw string) bool {
 	return false
 }
 
+func loginURLProvider(terminalProvider, raw string) string {
+	if terminalProvider == "claude" || terminalProvider == "antigravity" || terminalProvider == "codex" {
+		return terminalProvider
+	}
+	if claudeAuthorizationURL(raw) {
+		return "claude"
+	}
+	u, err := url.Parse(raw)
+	if err == nil {
+		switch strings.ToLower(u.Hostname()) {
+		case "antigravity.google", "antigravity.google.com", "accounts.google.com":
+			return "antigravity"
+		case "auth.openai.com", "auth0.openai.com", "chatgpt.com", "chat.openai.com", "platform.openai.com":
+			return "codex"
+		}
+	}
+	return "claude"
+}
+
 func (s *Server) terminalLoginLink(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		URL  string `json:"url"`
@@ -97,10 +116,11 @@ func (s *Server) terminalLoginLink(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	provider := loginURLProvider(terminal.providerName(), input.URL)
 	s.mu.Lock()
-	reuse := s.preferences.ReuseClaudeLogin
+	reuse := reuseLoginForProvider(s.preferences, provider)
 	s.mu.Unlock()
-	open := map[string]any{"login": login, "url": input.URL, "private": !reuse}
+	open := map[string]any{"login": login, "url": input.URL, "private": !reuse, "provider": provider}
 	if a.Source != "" {
 		open["account"] = a.ID
 	}

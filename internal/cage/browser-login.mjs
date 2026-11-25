@@ -17,6 +17,28 @@ function validOAuthCallback(raw) {
   return false;
 }
 
+export function signInProvider(address, explicitProvider = "") {
+  if (explicitProvider === "claude" || explicitProvider === "antigravity" || explicitProvider === "codex") {
+    return explicitProvider;
+  }
+  let url;
+  try { url = new URL(address); } catch { return "claude"; }
+  if (claudeHosts.has(url.hostname)) return "claude";
+  if (antigravityHosts.has(url.hostname)) return "antigravity";
+  if (codexHosts.has(url.hostname)) return "codex";
+  const redirects = url.searchParams.getAll("redirect_uri");
+  if (redirects.length === 1) {
+    try {
+      const cb = new URL(redirects[0]);
+      if (antigravityHosts.has(cb.hostname)) return "antigravity";
+      if (codexHosts.has(cb.hostname)) return "codex";
+      if (claudeHosts.has(cb.hostname)) return "claude";
+    } catch {}
+  }
+  if (url.hostname === "accounts.google.com") return "antigravity";
+  return "claude";
+}
+
 export function isClaudeSignIn(address, explicitLogin = false) {
   let url;
   try { url = new URL(address); } catch { return false; }

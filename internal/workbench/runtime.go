@@ -167,9 +167,9 @@ func (s *Server) attach() error {
 		return errors.New("环境尚未启动")
 	}
 	s.mu.Lock()
-	reuseLogin := s.preferences.ReuseClaudeLogin
+	loginPrefs := s.preferences
 	s.mu.Unlock()
-	b, err := s.guest(ctx, linuxLoginPreferences(reuseLogin)+"\n"+guestConnectionSnapshot)
+	b, err := s.guest(ctx, linuxLoginPreferences(loginPrefs)+"\n"+guestConnectionSnapshot)
 	if err != nil {
 		return errors.New("环境尚未准备好")
 	}
@@ -663,13 +663,13 @@ func (s *Server) applyWithOptions(v savedProfile, validate, saveStaticDraft bool
 		}
 	}
 	loginPrefsCommitted := false
-	if !changed && oldPrefs.ReuseClaudeLogin != v.Preferences.ReuseClaudeLogin && s.vmRunning() {
-		if err := s.syncLoginPreferences(s.operationContext(), v.Preferences.ReuseClaudeLogin); err != nil {
+	if !changed && !sameLoginPreferences(oldPrefs, v.Preferences) && s.vmRunning() {
+		if err := s.syncLoginPreferences(s.operationContext(), v.Preferences); err != nil {
 			return err
 		}
 		defer func() {
 			if !loginPrefsCommitted {
-				_ = s.syncLoginPreferences(s.operationContext(), oldPrefs.ReuseClaudeLogin)
+				_ = s.syncLoginPreferences(s.operationContext(), oldPrefs)
 			}
 		}()
 	}

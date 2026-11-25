@@ -22,21 +22,25 @@ import (
 )
 
 type Preferences struct {
-	ReuseClaudeLogin     bool `json:"reuse_claude_login"`
-	TransferAllowUnclean bool `json:"transfer_allow_unclean"`
-	BalancedDisplay      bool `json:"balanced_display"`
-	ProjectFileCache     bool `json:"project_file_cache"`
+	ReuseClaudeLogin      bool `json:"reuse_claude_login"`
+	ReuseAntigravityLogin bool `json:"reuse_antigravity_login"`
+	ReuseCodexLogin       bool `json:"reuse_codex_login"`
+	TransferAllowUnclean  bool `json:"transfer_allow_unclean"`
+	BalancedDisplay       bool `json:"balanced_display"`
+	ProjectFileCache      bool `json:"project_file_cache"`
 	// HostTools lets Claude in the environment run commands on this computer.
 	HostTools bool `json:"host_tools,omitempty"`
 	// HostPluginsOff names the plugins the user turned off, separated by
 	// commas; "commands" is the built-in one. One string keeps preferences
 	// comparable.
-	HostPluginsOff        string `json:"host_plugins_off,omitempty"`
-	MobileRelay           string `json:"mobile_relay,omitempty"`
-	Workspace             string `json:"workspace"`
-	BrowserHomeURL        string `json:"browser_home_url"`
-	ClaudeTerminalCommand string `json:"claude_terminal_command"`
-	Keyboard              string `json:"keyboard"`
+	HostPluginsOff             string `json:"host_plugins_off,omitempty"`
+	MobileRelay                string `json:"mobile_relay,omitempty"`
+	Workspace                  string `json:"workspace"`
+	BrowserHomeURL             string `json:"browser_home_url"`
+	ClaudeTerminalCommand      string `json:"claude_terminal_command"`
+	AntigravityTerminalCommand string `json:"antigravity_terminal_command"`
+	CodexTerminalCommand       string `json:"codex_terminal_command"`
+	Keyboard                   string `json:"keyboard"`
 	Clock12Hour           bool   `json:"clock_12_hour"`
 	AutoTimezone          bool   `json:"auto_timezone"`
 	AutoLanguage          bool   `json:"auto_language"`
@@ -71,6 +75,31 @@ func claudeTerminalCommand(p Preferences) string {
 		return "claude"
 	}
 	return strings.TrimSpace(p.ClaudeTerminalCommand)
+}
+
+func antigravityTerminalCommand(p Preferences) string {
+	if strings.TrimSpace(p.AntigravityTerminalCommand) == "" {
+		return "agy"
+	}
+	return strings.TrimSpace(p.AntigravityTerminalCommand)
+}
+
+func codexTerminalCommand(p Preferences) string {
+	if strings.TrimSpace(p.CodexTerminalCommand) == "" {
+		return "codex"
+	}
+	return strings.TrimSpace(p.CodexTerminalCommand)
+}
+
+func reuseLoginForProvider(p Preferences, provider string) bool {
+	switch provider {
+	case "antigravity":
+		return p.ReuseAntigravityLogin
+	case "codex":
+		return p.ReuseCodexLogin
+	default:
+		return p.ReuseClaudeLogin
+	}
 }
 
 func browserHomeURL(p Preferences) string {
@@ -225,6 +254,8 @@ func settingsView(c cage.Config, p Preferences) Settings {
 	}
 	p.BrowserHomeURL = browserHomeURL(p)
 	p.ClaudeTerminalCommand = claudeTerminalCommand(p)
+	p.AntigravityTerminalCommand = antigravityTerminalCommand(p)
+	p.CodexTerminalCommand = codexTerminalCommand(p)
 	return Settings{Preferences: p, DNSURL: c.DNSURL, DNSFallbackURLs: nonNil(c.DNS.FallbackURLs()), DNSPublicFallback: c.DNS.PublicFallback, DNSBootstrapURLs: nonNil(c.DNS.BootstrapURLs()), Timezone: c.Timezone, Locale: c.Locale, BrowserLanguage: c.BrowserLanguage, ExitPolicy: c.ExitPolicy.Normalized()}
 }
 func proposedSettings(input Settings, old cage.Config, profile string) (cage.Config, Preferences, error) {
@@ -249,7 +280,15 @@ func proposedSettings(input Settings, old cage.Config, profile string) (cage.Con
 	if len(p.ClaudeTerminalCommand) > 4096 || strings.ContainsAny(p.ClaudeTerminalCommand, "\x00\r\n") {
 		return c, p, errors.New("Claude 终端命令必须为一行，且不超过 4096 字节")
 	}
+	if len(p.AntigravityTerminalCommand) > 4096 || strings.ContainsAny(p.AntigravityTerminalCommand, "\x00\r\n") {
+		return c, p, errors.New("Antigravity 终端命令必须为一行，且不超过 4096 字节")
+	}
+	if len(p.CodexTerminalCommand) > 4096 || strings.ContainsAny(p.CodexTerminalCommand, "\x00\r\n") {
+		return c, p, errors.New("Codex 终端命令必须为一行，且不超过 4096 字节")
+	}
 	p.ClaudeTerminalCommand = claudeTerminalCommand(p)
+	p.AntigravityTerminalCommand = antigravityTerminalCommand(p)
+	p.CodexTerminalCommand = codexTerminalCommand(p)
 	p.BrowserHomeURL = strings.TrimSpace(browserHomeURL(p))
 	home, e := url.Parse(p.BrowserHomeURL)
 	if e != nil || home == nil || (home.Scheme != "https" && home.Scheme != "http") || home.Hostname() == "" || home.User != nil {

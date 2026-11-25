@@ -856,6 +856,10 @@ func (s *Server) proposedWithOptions(w http.ResponseWriter, r *http.Request) (sa
 	input.BalancedDisplay = s.preferences.BalancedDisplay
 	input.ProjectFileCache = s.preferences.ProjectFileCache
 	input.ReuseClaudeLogin = s.preferences.ReuseClaudeLogin
+	input.ReuseAntigravityLogin = s.preferences.ReuseAntigravityLogin
+	input.ReuseCodexLogin = s.preferences.ReuseCodexLogin
+	input.AntigravityTerminalCommand = antigravityTerminalCommand(s.preferences)
+	input.CodexTerminalCommand = codexTerminalCommand(s.preferences)
 	input.TransferAllowUnclean = s.preferences.TransferAllowUnclean
 	hostTools, hostPluginsOff := s.preferences.HostTools, s.preferences.HostPluginsOff
 	input.Clock12Hour = s.preferences.Clock12Hour

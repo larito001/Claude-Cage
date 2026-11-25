@@ -24,12 +24,15 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 
 DEFAULT = "default"
 PRIVATE_MODE = 0o700
 ACCOUNT_ID_RE = re.compile(r"^[0-9a-f]{24}$")
 EMAIL_RE = re.compile(r"^[^\s@\x00-\x1f]+@[^\s@\x00-\x1f]+\.[^\s@\x00-\x1f]+$")
 OPEN = "/usr/local/libexec/cage-cli/bin/cage-open" if sys.platform == "darwin" else "/usr/local/bin/cage-open"
+CLI_CHANNEL_ROOT = Path(os.environ.get("CAGE_CLI_STATE_ROOT") or (Path.home() / ".local/share/cage/cli-channels"))
+NOTIFY_ENV_VAR = "__WORKBENCH_NOTIFY_CHANNEL"
 
 _controller_context = {
     key: os.environ.pop(key)
@@ -38,6 +41,7 @@ _controller_context = {
         "CAGE_ACCOUNT_BROWSER",
         "CAGE_PROVIDER_SUBJECT",
         "CAGE_PROVIDER_ACCOUNT_ID",
+        "CAGE_NOTIFY_CONNECTION",
     )
     if key in os.environ
 }
@@ -146,6 +150,64 @@ def account_base(provider_id, account_id):
     return base
 
 
+def atomic_write_json(path, value):
+    path.parent.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False, mode="w", encoding="utf-8") as tmp:
+        json.dump(value, tmp, ensure_ascii=False)
+        tmp.write("\n")
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp_name = tmp.name
+    if os.name != "nt":
+        os.chmod(tmp_name, 0o600)
+    os.replace(tmp_name, path)
+
+
+def valid_notify_connection(value):
+    if not isinstance(value, str) or not value:
+        return ""
+    try:
+        return str(uuid.UUID(value.strip()))
+    except (ValueError, AttributeError):
+        return ""
+
+
+def record_channel_event(conn_id, event_kind):
+    conn = valid_notify_connection(conn_id)
+    if not conn or event_kind not in ("turn_completed", "approval_requested"):
+        return
+    folder = CLI_CHANNEL_ROOT / conn
+    folder.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+    state_path = folder / "state.json"
+
+    def _update():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            if not isinstance(state, dict):
+                state = {}
+        except (OSError, ValueError):
+            state = {}
+        state["updated_at"] = time.time()
+        if event_kind == "turn_completed":
+            prev = state.get("turn_done")
+            state["turn_done"] = (prev if isinstance(prev, int) and prev > 0 else 0) + 1
+        elif event_kind == "approval_requested":
+            approvals = state.get("approvals")
+            if not isinstance(approvals, list):
+                approvals = []
+            approvals.append({"id": uuid.uuid4().hex[:16]})
+            state["approvals"] = approvals[-32:]
+        atomic_write_json(state_path, state)
+
+    if os.name == "nt":
+        _update()
+        return
+    import fcntl
+    with (folder / "lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _update()
+
+
 class AntigravityAdapter:
     id = "antigravity"
     name = "Antigravity"
@@ -166,15 +228,48 @@ class AntigravityAdapter:
     def config_dir(self, base):
         return Path.home() / ".gemini" if base.name == DEFAULT else base / "config"
 
+    def ensure_hooks(self, config_dir):
+        hooks_dir = config_dir / "config"
+        hooks_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        hooks_file = hooks_dir / "hooks.json"
+        if hooks_file.is_symlink():
+            return
+        data = {}
+        try:
+            if hooks_file.is_file():
+                parsed = json.loads(hooks_file.read_text(encoding="utf-8"))
+                if isinstance(parsed, dict):
+                    data = parsed
+        except (OSError, ValueError):
+            data = {}
+        desired = {
+            "Stop": [
+                {
+                    "type": "command",
+                    "command": "/usr/local/bin/cage-provider-account antigravity notify",
+                    "timeout": 5,
+                }
+            ]
+        }
+        if data.get("cage-notify") != desired:
+            data["cage-notify"] = desired
+            atomic_write_json(hooks_file, data)
+
     def ensure_profile(self, config_dir):
         cli_dir = config_dir / "antigravity-cli"
         cli_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
         (config_dir / "config").mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
         settings_file = cli_dir / "settings.json"
         if not settings_file.exists():
-            settings_file.write_text("{}\n", encoding="utf-8")
-            if os.name != "nt":
-                os.chmod(settings_file, 0o600)
+            atomic_write_json(
+                settings_file,
+                {
+                    "toolPermission": "always-proceed",
+                    "artifactReviewPolicy": "always-proceed",
+                    "allowNonWorkspaceAccess": True,
+                },
+            )
+        self.ensure_hooks(config_dir)
 
     def environment(self, base):
         env = os.environ.copy()
@@ -402,9 +497,11 @@ class CodexAdapter:
         return cmd
 
     def run_command(self, binary, extra_args, is_default):
+        has_notify = any("notify" in str(arg) for arg in extra_args)
+        notify_flags = [] if has_notify else ["-c", 'notify=["/usr/local/bin/cage-provider-account","codex","notify"]']
         if is_default:
-            return [_runtime["path"](binary), *extra_args]
-        return [_runtime["path"](binary), "-c", 'cli_auth_credentials_store="file"', *extra_args]
+            return [_runtime["path"](binary), *notify_flags, *extra_args]
+        return [_runtime["path"](binary), "-c", 'cli_auth_credentials_store="file"', *notify_flags, *extra_args]
 
 
 ADAPTERS = {
@@ -413,7 +510,42 @@ ADAPTERS = {
 }
 
 
+def handle_notify(provider_id, rest):
+    conn = valid_notify_connection(os.environ.get(NOTIFY_ENV_VAR, ""))
+    if provider_id == "antigravity":
+        raw = sys.stdin.read(256 << 10)
+        sys.stdout.write('{"decision":"allow"}\n')
+        sys.stdout.flush()
+        if not conn:
+            return 0
+        try:
+            payload = json.loads(raw) if raw.strip() else {}
+        except ValueError:
+            payload = {}
+        reason = payload.get("terminationReason") if isinstance(payload, dict) else ""
+        if reason not in ("USER_CANCELED", "ERROR"):
+            record_channel_event(conn, "turn_completed")
+        return 0
+    if provider_id == "codex":
+        if not conn:
+            return 0
+        raw = rest[0] if rest else ""
+        try:
+            payload = json.loads(raw) if raw.strip() else {}
+        except ValueError:
+            payload = {}
+        kind = str(payload.get("type") or "") if isinstance(payload, dict) else ""
+        if "approval" in kind or "permission" in kind:
+            record_channel_event(conn, "approval_requested")
+        elif not kind or "turn-complete" in kind or "turn_complete" in kind:
+            record_channel_event(conn, "turn_completed")
+        return 0
+    return 0
+
+
 def run_provider(args):
+    if len(args) >= 2 and args[1] == "notify":
+        return handle_notify(args[0], args[2:])
     if len(args) < 3:
         raise ValueError("usage: cage-provider-account <provider> <mode> <account_id> [args...]")
     provider_id, mode, account_id, *rest = args
@@ -429,6 +561,11 @@ def run_provider(args):
     original_umask = os.umask(0o077)
     if account_id != DEFAULT:
         adapter.ensure_profile(config_dir)
+    elif mode == "run" and hasattr(adapter, "ensure_hooks"):
+        try:
+            adapter.ensure_hooks(config_dir)
+        except OSError:
+            pass
 
     if mode == "share":
         return 0
@@ -513,6 +650,9 @@ def run_provider(args):
     if mode == "run":
         if os.name != "nt" and (owner_args or scoped or sys.platform == "darwin"):
             env["BROWSER"] = _runtime["launcher"](scoped or OPEN, executable=True, arguments=owner_args, login_config=config_dir)
+        notify_conn = valid_notify_connection(_controller_context.get("CAGE_NOTIFY_CONNECTION", ""))
+        if notify_conn:
+            env[NOTIFY_ENV_VAR] = notify_conn
         expected = _controller_context.get("CAGE_PROVIDER_SUBJECT")
         if expected:
             reading = adapter.identity(config_dir, env)

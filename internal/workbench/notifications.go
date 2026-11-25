@@ -37,25 +37,64 @@ const notificationMaxAge = 60 * time.Second
 
 const notificationPreferenceFile = "notifications.json"
 
+type NotificationProviderPreferences struct {
+	Claude      bool `json:"claude"`
+	Antigravity bool `json:"antigravity"`
+	Codex       bool `json:"codex"`
+}
+
 type NotificationPreferences struct {
-	TurnCompletion string `json:"turn_completion"`
-	Approval       string `json:"approval"`
-	Sound          bool   `json:"sound"`
+	TurnCompletion string                           `json:"turn_completion"`
+	Approval       string                           `json:"approval"`
+	Sound          bool                             `json:"sound"`
+	Providers      *NotificationProviderPreferences `json:"providers,omitempty"`
+}
+
+func defaultNotificationProviders() NotificationProviderPreferences {
+	return NotificationProviderPreferences{
+		Claude:      true,
+		Antigravity: true,
+		Codex:       true,
+	}
 }
 
 // Notifications stay off until the user enables them in Settings, so a fresh
 // install never triggers a system permission prompt. A saved file is an
 // explicit choice and is always honored as written.
 func defaultNotificationPreferences() NotificationPreferences {
+	providers := defaultNotificationProviders()
 	return NotificationPreferences{
 		TurnCompletion: "off",
 		Approval:       "off",
 		Sound:          true,
+		Providers:      &providers,
 	}
 }
 
 func validNotificationMode(mode string) bool {
 	return mode == "unfocused" || mode == "always" || mode == "off"
+}
+
+func normalizeNotificationProviders(raw map[string]json.RawMessage) *NotificationProviderPreferences {
+	providers := defaultNotificationProviders()
+	if raw == nil {
+		return &providers
+	}
+	if subRaw, ok := raw["providers"]; ok {
+		var sub map[string]bool
+		if json.Unmarshal(subRaw, &sub) == nil && sub != nil {
+			if v, exists := sub["claude"]; exists {
+				providers.Claude = v
+			}
+			if v, exists := sub["antigravity"]; exists {
+				providers.Antigravity = v
+			}
+			if v, exists := sub["codex"]; exists {
+				providers.Codex = v
+			}
+		}
+	}
+	return &providers
 }
 
 func loadNotificationPreferences(profile string) NotificationPreferences {
@@ -64,9 +103,11 @@ func loadNotificationPreferences(profile string) NotificationPreferences {
 	if err != nil {
 		return pref
 	}
-	if json.Unmarshal(data, &pref) != nil {
+	var raw map[string]json.RawMessage
+	if json.Unmarshal(data, &raw) != nil || json.Unmarshal(data, &pref) != nil {
 		return defaultNotificationPreferences()
 	}
+	pref.Providers = normalizeNotificationProviders(raw)
 	if !validNotificationMode(pref.TurnCompletion) {
 		pref.TurnCompletion = "off"
 	}
@@ -88,8 +129,12 @@ func (s *Server) notificationPreferences(w http.ResponseWriter, r *http.Request)
 	path := filepath.Join(profile, notificationPreferenceFile)
 	if r.Method == http.MethodPost {
 		pref := loadNotificationPreferences(profile)
-		if !readJSON(w, r, &pref, 2048) {
+		if !readJSON(w, r, &pref, 4096) {
 			return
+		}
+		if pref.Providers == nil {
+			providers := defaultNotificationProviders()
+			pref.Providers = &providers
 		}
 		if !validNotificationMode(pref.TurnCompletion) || !validNotificationMode(pref.Approval) {
 			http.Error(w, "请选择有效的通知方式。", http.StatusBadRequest)
@@ -108,6 +153,7 @@ func (s *Server) notificationPreferences(w http.ResponseWriter, r *http.Request)
 type notificationEvent struct {
 	ID            string `json:"id"`
 	Kind          string `json:"kind"`
+	Provider      string `json:"provider,omitempty"`
 	TerminalID    string `json:"terminal_id"`
 	TabID         string `json:"tab_id"`
 	CLISessionID  string `json:"cli_session_id,omitempty"`
@@ -232,10 +278,19 @@ func (s *Server) dispatchGuestNotification(raw guestChannelEvent) bool {
 	title := terminal.title
 	sharedID := terminal.sharedID
 	workspace := terminal.workspace
+	provider := terminal.provider
+	kind := terminal.kind
 	closed := terminal.closed
 	terminal.mu.Unlock()
 	if closed || terminalID == "" {
 		return false
+	}
+	if provider == "" {
+		if spec, _, _, ok := terminalProviderKind(kind); ok {
+			provider = spec.ID
+		} else {
+			provider = "claude"
+		}
 	}
 	workspaceName := ""
 	if workspace != "" {
@@ -247,6 +302,7 @@ func (s *Server) dispatchGuestNotification(raw guestChannelEvent) bool {
 	return s.notifications.publish(notificationEvent{
 		ID:            raw.ID,
 		Kind:          raw.Event,
+		Provider:      provider,
 		TerminalID:    terminalID,
 		TabID:         "terminal:" + terminalID,
 		CLISessionID:  sharedID,

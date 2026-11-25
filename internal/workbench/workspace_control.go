@@ -206,13 +206,18 @@ func (b *workspaceControlBridge) handleStatus(w http.ResponseWriter, r *http.Req
 			"dark_ink":        appearance.Dark.Ink,
 		},
 		"preferences": map[string]any{
-			"balanced_display":        prefs.BalancedDisplay,
-			"clock_12_hour":           prefs.Clock12Hour,
-			"auto_timezone":           prefs.AutoTimezone,
-			"auto_language":           prefs.AutoLanguage,
-			"project_file_cache":      prefs.ProjectFileCache,
-			"browser_home_url":        browserHomeURL(prefs),
-			"claude_terminal_command": claudeTerminalCommand(prefs),
+			"balanced_display":             prefs.BalancedDisplay,
+			"clock_12_hour":                prefs.Clock12Hour,
+			"auto_timezone":                prefs.AutoTimezone,
+			"auto_language":                prefs.AutoLanguage,
+			"project_file_cache":           prefs.ProjectFileCache,
+			"browser_home_url":             browserHomeURL(prefs),
+			"claude_terminal_command":      claudeTerminalCommand(prefs),
+			"antigravity_terminal_command": antigravityTerminalCommand(prefs),
+			"codex_terminal_command":       codexTerminalCommand(prefs),
+			"reuse_claude_login":           prefs.ReuseClaudeLogin,
+			"reuse_antigravity_login":      prefs.ReuseAntigravityLogin,
+			"reuse_codex_login":            prefs.ReuseCodexLogin,
 		},
 		"project_folders":     toolsView.Folders,
 		"extensions":          extensions,
@@ -306,13 +311,18 @@ func (b *workspaceControlBridge) handleAppearance(w http.ResponseWriter, r *http
 
 func (b *workspaceControlBridge) handlePreferences(w http.ResponseWriter, r *http.Request) {
 	var patch struct {
-		BalancedDisplay       *bool   `json:"balanced_display"`
-		Clock12Hour           *bool   `json:"clock_12_hour"`
-		AutoTimezone          *bool   `json:"auto_timezone"`
-		AutoLanguage          *bool   `json:"auto_language"`
-		ProjectFileCache      *bool   `json:"project_file_cache"`
-		BrowserHomeURL        *string `json:"browser_home_url"`
-		ClaudeTerminalCommand *string `json:"claude_terminal_command"`
+		BalancedDisplay            *bool   `json:"balanced_display"`
+		Clock12Hour                *bool   `json:"clock_12_hour"`
+		AutoTimezone               *bool   `json:"auto_timezone"`
+		AutoLanguage               *bool   `json:"auto_language"`
+		ProjectFileCache           *bool   `json:"project_file_cache"`
+		BrowserHomeURL             *string `json:"browser_home_url"`
+		ClaudeTerminalCommand      *string `json:"claude_terminal_command"`
+		AntigravityTerminalCommand *string `json:"antigravity_terminal_command"`
+		CodexTerminalCommand       *string `json:"codex_terminal_command"`
+		ReuseClaudeLogin           *bool   `json:"reuse_claude_login"`
+		ReuseAntigravityLogin      *bool   `json:"reuse_antigravity_login"`
+		ReuseCodexLogin            *bool   `json:"reuse_codex_login"`
 	}
 	if err := decodeStrictJSON(r, &patch, 64<<10); err != nil {
 		http.Error(w, "invalid preferences update: "+err.Error(), http.StatusBadRequest)
@@ -327,13 +337,22 @@ func (b *workspaceControlBridge) handlePreferences(w http.ResponseWriter, r *htt
 		}
 		*patch.BrowserHomeURL = raw
 	}
-	if patch.ClaudeTerminalCommand != nil {
-		cmd := strings.TrimSpace(*patch.ClaudeTerminalCommand)
-		if cmd == "" || len(cmd) > 200 || strings.ContainsAny(cmd, "\r\n\x00") {
-			http.Error(w, "claude_terminal_command must be a single-line command up to 200 characters", http.StatusBadRequest)
-			return
+	for _, item := range []struct {
+		name string
+		val  *string
+	}{
+		{"claude_terminal_command", patch.ClaudeTerminalCommand},
+		{"antigravity_terminal_command", patch.AntigravityTerminalCommand},
+		{"codex_terminal_command", patch.CodexTerminalCommand},
+	} {
+		if item.val != nil {
+			cmd := strings.TrimSpace(*item.val)
+			if cmd == "" || len(cmd) > 200 || strings.ContainsAny(cmd, "\r\n\x00") {
+				http.Error(w, item.name+" must be a single-line command up to 200 characters", http.StatusBadRequest)
+				return
+			}
+			*item.val = cmd
 		}
-		*patch.ClaudeTerminalCommand = cmd
 	}
 
 	s := b.owner
@@ -360,6 +379,21 @@ func (b *workspaceControlBridge) handlePreferences(w http.ResponseWriter, r *htt
 	if patch.ClaudeTerminalCommand != nil {
 		next.ClaudeTerminalCommand = *patch.ClaudeTerminalCommand
 	}
+	if patch.AntigravityTerminalCommand != nil {
+		next.AntigravityTerminalCommand = *patch.AntigravityTerminalCommand
+	}
+	if patch.CodexTerminalCommand != nil {
+		next.CodexTerminalCommand = *patch.CodexTerminalCommand
+	}
+	if patch.ReuseClaudeLogin != nil {
+		next.ReuseClaudeLogin = *patch.ReuseClaudeLogin
+	}
+	if patch.ReuseAntigravityLogin != nil {
+		next.ReuseAntigravityLogin = *patch.ReuseAntigravityLogin
+	}
+	if patch.ReuseCodexLogin != nil {
+		next.ReuseCodexLogin = *patch.ReuseCodexLogin
+	}
 	s.mu.Unlock()
 
 	if err := writePrivate(filepath.Join(s.profile, "workbench.json"), next); err != nil {
@@ -373,13 +407,18 @@ func (b *workspaceControlBridge) handlePreferences(w http.ResponseWriter, r *htt
 	jsonReply(w, map[string]any{
 		"updated": true,
 		"preferences": map[string]any{
-			"balanced_display":        next.BalancedDisplay,
-			"clock_12_hour":           next.Clock12Hour,
-			"auto_timezone":           next.AutoTimezone,
-			"auto_language":           next.AutoLanguage,
-			"project_file_cache":      next.ProjectFileCache,
-			"browser_home_url":        browserHomeURL(next),
-			"claude_terminal_command": claudeTerminalCommand(next),
+			"balanced_display":             next.BalancedDisplay,
+			"clock_12_hour":                next.Clock12Hour,
+			"auto_timezone":                next.AutoTimezone,
+			"auto_language":                next.AutoLanguage,
+			"project_file_cache":           next.ProjectFileCache,
+			"browser_home_url":             browserHomeURL(next),
+			"claude_terminal_command":      claudeTerminalCommand(next),
+			"antigravity_terminal_command": antigravityTerminalCommand(next),
+			"codex_terminal_command":       codexTerminalCommand(next),
+			"reuse_claude_login":           next.ReuseClaudeLogin,
+			"reuse_antigravity_login":      next.ReuseAntigravityLogin,
+			"reuse_codex_login":            next.ReuseCodexLogin,
 		},
 	})
 }
