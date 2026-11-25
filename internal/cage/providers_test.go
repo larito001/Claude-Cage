@@ -1,6 +1,8 @@
 package cage
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
 	"strings"
 	"testing"
@@ -60,5 +62,13 @@ func TestDesktopInstallScriptsExistAndUseUnixLineEndings(t *testing.T) {
 		if strings.Contains(string(raw), "\r") {
 			t.Fatalf("embedded guest script %s contains CR (\\r) characters", name)
 		}
+	}
+	codexScript, err := os.ReadFile("codex-desktop-install.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(codexScript)
+	if !strings.Contains(string(codexScript), "TPKhnt3qzj1U5Yj/MZSuEV") || len(hex.EncodeToString(sum[:])) != 64 {
+		t.Fatal("codex-desktop-install.sh OpenAI self-binding signature packet mismatch")
 	}
 }
