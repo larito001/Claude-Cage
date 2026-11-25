@@ -641,7 +641,7 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
       terminal.dispose();
       instance.current = null;
     };
-  }, [session.id, session.cli_session_id, attempt]);
+  }, [session.id, session.cli_session_id, session.terminalKind || session.kind, session.provider_account_id, attempt]);
   useEffect(() => {
     if (visible) {
       fit.current?.fit();

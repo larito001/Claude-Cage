@@ -475,6 +475,61 @@ class AntigravityAdapter:
     def run_command(self, binary, extra_args, _is_default):
         return [_runtime["path"](binary), *extra_args]
 
+    def trust_workspace(self, config_dir, workspace):
+        if not workspace:
+            return
+        clean_ws = str(workspace).strip()
+        if not clean_ws or clean_ws == "/" or Path(clean_ws) == user_home():
+            return
+        cli_dir = config_dir / "antigravity-cli"
+        cli_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        settings_file = cli_dir / "settings.json"
+        if not settings_file.is_symlink():
+            data = {}
+            try:
+                if settings_file.is_file():
+                    parsed = json.loads(settings_file.read_text(encoding="utf-8"))
+                    if isinstance(parsed, dict):
+                        data = parsed
+            except (OSError, ValueError):
+                data = {}
+            trusted = data.get("trustedWorkspaces")
+            if not isinstance(trusted, list):
+                trusted = []
+            changed = False
+            for k, v in (
+                ("toolPermission", "always-proceed"),
+                ("artifactReviewPolicy", "always-proceed"),
+                ("allowNonWorkspaceAccess", True),
+            ):
+                if k not in data:
+                    data[k] = v
+                    changed = True
+            if clean_ws not in trusted:
+                trusted.append(clean_ws)
+                data["trustedWorkspaces"] = trusted
+                changed = True
+            if changed:
+                atomic_write_json(settings_file, data)
+        pbtxt = cli_dir / "jetski_state.pbtxt"
+        if not pbtxt.exists() and not pbtxt.is_symlink():
+            pbtxt_body = (
+                "post_onboarding: {\n"
+                "  completed_steps: POST_ONBOARDING_STEP_TYPE_MANAGER_WELCOME\n"
+                "  completed_steps: POST_ONBOARDING_STEP_TYPE_USAGE_MODE\n"
+                "  completed_steps: POST_ONBOARDING_STEP_TYPE_AGENT_CONFIGURATION\n"
+                "  completed_steps: POST_ONBOARDING_STEP_TYPE_ADD_WORKSPACE\n"
+                "}\n"
+            )
+            with tempfile.NamedTemporaryFile(dir=cli_dir, delete=False, mode="w", encoding="utf-8") as tmp:
+                tmp.write(pbtxt_body)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+                tmp_name = tmp.name
+            if os.name != "nt":
+                os.chmod(tmp_name, 0o600)
+            os.replace(tmp_name, pbtxt)
+
 
 class CodexAdapter:
     id = "codex"
@@ -489,7 +544,7 @@ class CodexAdapter:
     )
 
     def config_dir(self, base):
-        return Path.home() / ".codex" if base.name == DEFAULT else base / "config"
+        return user_home() / ".codex" if base.name == DEFAULT else base / "config"
 
     def ensure_profile(self, config_dir):
         config_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
@@ -499,9 +554,13 @@ class CodexAdapter:
             existing = toml_file.read_text(encoding="utf-8") if toml_file.is_file() else ""
         except OSError:
             existing = ""
-        if "cli_auth_credentials_store" not in existing:
-            prefix = key_line + "\n"
-            updated = prefix + existing
+        updated = existing
+        if "cli_auth_credentials_store" not in updated:
+            updated = key_line + "\n" + updated
+        if "screen_reader_detection_done" not in updated:
+            suffix = "" if not updated or updated.endswith("\n") else "\n"
+            updated = updated + suffix + "\n[tui]\nscreen_reader_detection_done = true\n"
+        if updated != existing:
             with tempfile.NamedTemporaryFile(dir=config_dir, delete=False, mode="w", encoding="utf-8") as tmp:
                 tmp.write(updated)
                 tmp.flush()
@@ -510,6 +569,35 @@ class CodexAdapter:
             if os.name != "nt":
                 os.chmod(tmp_name, 0o600)
             os.replace(tmp_name, toml_file)
+
+    def trust_workspace(self, config_dir, workspace):
+        if not workspace:
+            return
+        clean_ws = str(workspace).strip()
+        if not clean_ws or clean_ws == "/" or "\n" in clean_ws or "\r" in clean_ws or Path(clean_ws) == user_home():
+            return
+        config_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        toml_file = config_dir / "config.toml"
+        if toml_file.is_symlink():
+            return
+        try:
+            existing = toml_file.read_text(encoding="utf-8") if toml_file.is_file() else ""
+        except OSError:
+            existing = ""
+        escaped = clean_ws.replace("\\", "\\\\").replace('"', '\\"')
+        header = f'[projects."{escaped}"]'
+        if header in existing:
+            return
+        suffix = "" if not existing or existing.endswith("\n") else "\n"
+        updated = f"{existing}{suffix}\n{header}\ntrust_level = \"trusted\"\n"
+        with tempfile.NamedTemporaryFile(dir=config_dir, delete=False, mode="w", encoding="utf-8") as tmp:
+            tmp.write(updated)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+            tmp_name = tmp.name
+        if os.name != "nt":
+            os.chmod(tmp_name, 0o600)
+        os.replace(tmp_name, toml_file)
 
     def environment(self, base):
         env = os.environ.copy()
@@ -956,6 +1044,11 @@ def run_provider(args):
             if reading.get("subject") != expected:
                 print(f"此终端所选 {adapter.name} 账号身份已变化或尚未登录，请重新授权后再试。", file=sys.stderr)
                 return 1
+        if hasattr(adapter, "trust_workspace"):
+            try:
+                adapter.trust_workspace(config_dir, os.getcwd())
+            except OSError:
+                pass
         os.umask(original_umask)
         cmd = adapter.run_command(binary, rest, account_id == DEFAULT)
         if os.name == "nt":

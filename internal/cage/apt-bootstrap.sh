@@ -7,11 +7,17 @@ if [ "$ID" != debian ] || [ "${VERSION_ID:-}" != 13 ]; then
   exit 0
 fi
 # A package transaction cut off by a stopped environment or a power loss leaves
-# dpkg's journal behind, and every later apt-get refuses to run until it is
-# replayed. Replaying it only finishes the packages that were already chosen.
+# dpkg's journal or a local .deb in reinstreq state behind, and every later
+# apt-get refuses to run until cleared.
+for broken_pkg in antigravity claude-desktop chatgpt; do
+  if dpkg-query -W -f='${Status}\n' "$broken_pkg" 2>/dev/null | grep -Eq 'reinstreq'; then
+    printf 'Clearing interrupted %s package state...\n' "$broken_pkg"
+    env DEBIAN_FRONTEND=noninteractive dpkg --remove --force-remove-reinstreq --force-depends "$broken_pkg" </dev/null || true
+  fi
+done
 if [ -n "$(ls -A /var/lib/dpkg/updates 2>/dev/null)" ]; then
   printf 'Finishing an interrupted package installation...\n'
-  env DEBIAN_FRONTEND=noninteractive dpkg --configure -a </dev/null
+  env DEBIAN_FRONTEND=noninteractive dpkg --configure -a </dev/null || true
 fi
 version=$(dpkg-query -W -f='${Version}' apt)
 if dpkg --compare-versions "$version" ge 3.0.4; then

@@ -28,17 +28,41 @@ apt_get() {
   printf 'APT_FAILED exit=%s command=apt-get %s\n' "$status" "$*" >&2
   return "$status"
 }
+# Clear any interrupted local .deb unpack state (reinstreq) that blocks apt-get,
+# and remove duplicate .sources files when a matching .list already exists.
+if dpkg-query -W -f='${Status}\n' antigravity 2>/dev/null | grep -Eq 'reinstreq|half-installed|half-configured|unpacked'; then
+  printf '检测到上次未完成的 Antigravity 安装状态，正在清理恢复…\n'
+  sudo env DEBIAN_FRONTEND=noninteractive dpkg --remove --force-remove-reinstreq --force-depends antigravity </dev/null || true
+fi
+sudo env DEBIAN_FRONTEND=noninteractive dpkg --configure -a </dev/null || true
+for dup_base in antigravity claude-desktop chatgpt; do
+  if [ -f "/etc/apt/sources.list.d/${dup_base}.list" ] && [ -f "/etc/apt/sources.list.d/${dup_base}.sources" ]; then
+    sudo rm -f "/etc/apt/sources.list.d/${dup_base}.sources"
+  fi
+done
 printf '正在准备安装依赖…\n'
 apt_get update
-apt_get install -y --no-install-recommends wmctrl ca-certificates curl gnupg dbus-x11 xauth x11-utils x11-xserver-utils tigervnc-standalone-server tigervnc-tools openbox gnome-keyring gcr bubblewrap socat openssh-client libglib2.0-bin ibus ibus-gtk3 gir1.2-ibus-1.0 gir1.2-gtk-3.0 python3-gi python3-pil python3-xlib xsettingsd xdg-utils
-temporary=$(mktemp -d)
-trap 'rm -rf "$temporary"' EXIT
-printf '正在验证并下载 Google Antigravity 官方安装包…\n'
-deb_url="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.35.0-6394266482769920/${deb_arch}/Antigravity.deb"
-cage_curl_download "$temporary/Antigravity.deb" --proto '=https' --proto-redir '=https' -fSL --connect-timeout 15 "$deb_url" -o "$temporary/Antigravity.deb"
-printf '%s  %s\n' "$expected_sha256" "$temporary/Antigravity.deb" | sha256sum --check --status || { echo 'Antigravity package checksum did not match; installation stopped.' >&2; exit 1; }
+apt_get install -y --no-install-recommends -f wmctrl ca-certificates curl gnupg dbus-x11 xauth x11-utils x11-xserver-utils tigervnc-standalone-server tigervnc-tools openbox gnome-keyring gcr bubblewrap socat openssh-client libglib2.0-bin ibus ibus-gtk3 gir1.2-ibus-1.0 gir1.2-gtk-3.0 python3-gi python3-pil python3-xlib xsettingsd xdg-utils
+cache_dir="$HOME/.cache/claude-cage"
+mkdir -p "$cache_dir"
+cached_deb="$cache_dir/Antigravity-2.35.0-${deb_arch}.deb"
+if [ -f "$cached_deb" ] && printf '%s  %s\n' "$expected_sha256" "$cached_deb" | sha256sum --check --status 2>/dev/null; then
+  printf '正在复用已校验的 Google Antigravity 官方安装包缓存…\n'
+else
+  temporary=$(mktemp -d)
+  trap 'rm -rf "$temporary"' EXIT
+  printf '正在验证并下载 Google Antigravity 官方安装包…\n'
+  deb_url="https://storage.googleapis.com/antigravity-public/antigravity-hub/2.35.0-6394266482769920/${deb_arch}/Antigravity.deb"
+  cage_curl_download "$temporary/Antigravity.deb" --proto '=https' --proto-redir '=https' -fSL --connect-timeout 15 "$deb_url" -o "$temporary/Antigravity.deb"
+  printf '%s  %s\n' "$expected_sha256" "$temporary/Antigravity.deb" | sha256sum --check --status || { echo 'Antigravity package checksum did not match; installation stopped.' >&2; exit 1; }
+  mv -f "$temporary/Antigravity.deb" "$cached_deb"
+fi
+chmod 0644 "$cached_deb"
 printf '正在安装 Antigravity Desktop…\n'
-apt_get install -y --no-install-recommends "$temporary/Antigravity.deb"
+apt_get install -y --no-install-recommends "$cached_deb"
+if [ -f /etc/apt/sources.list.d/antigravity.list ] && [ -f /etc/apt/sources.list.d/antigravity.sources ]; then
+  sudo rm -f /etc/apt/sources.list.d/antigravity.sources
+fi
 test "$(dpkg-query -W -f='${Status}' antigravity)" = 'install ok installed'
 xdg-mime default workbench-web.desktop x-scheme-handler/http x-scheme-handler/https 2>/dev/null || true
 printf 'Antigravity Desktop 已安装。\n'

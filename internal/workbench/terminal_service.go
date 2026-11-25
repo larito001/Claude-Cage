@@ -973,7 +973,8 @@ func (s *Server) ensureGuestProviderCLI(ctx context.Context, spec cage.ProviderS
 		return nil
 	}
 	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	_, checkErr := s.guestControl(checkCtx, `PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" DISABLE_AUTOUPDATER=1 `+shellescape.Quote(binary)+` --version </dev/null >/dev/null 2>&1`, "")
+	probe := `PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"; p=$(command -v ` + shellescape.Quote(binary) + ` 2>/dev/null) && [ -s "$p" ] && [ -x "$p" ]`
+	_, checkErr := s.guestControl(checkCtx, probe, "")
 	cancel()
 	if checkErr == nil {
 		s.mu.Lock()

@@ -66,6 +66,11 @@ class ProviderAccountTests(unittest.TestCase):
             self.assertEqual(snap["auth_state"], "credentials_present")
             self.assertNotIn("secret-access-token", json.dumps(snap))
 
+            agy.trust_workspace(cfg, "/c/Users/demo/project")
+            settings = json.loads((cfg / "antigravity-cli" / "settings.json").read_text())
+            self.assertIn("/c/Users/demo/project", settings["trustedWorkspaces"])
+            self.assertTrue((cfg / "antigravity-cli" / "jetski_state.pbtxt").is_file())
+
     def test_archive_login_copies_oauth_token_into_managed_slot(self):
         with patch.object(Path, "home", return_value=self.home):
             default_cli = self.home / ".gemini" / "antigravity-cli"
@@ -124,6 +129,11 @@ class ProviderAccountTests(unittest.TestCase):
             self.assertEqual(snap["organization"], "acct-123")
             self.assertEqual(snap["plan"], "pro")
             self.assertNotIn("secret-oai-token", json.dumps(snap))
+
+            codex.trust_workspace(cfg, "/c/Users/demo/project")
+            toml_text = (cfg / "config.toml").read_text()
+            self.assertIn('[projects."/c/Users/demo/project"]', toml_text)
+            self.assertIn('trust_level = "trusted"', toml_text)
 
     def test_accounts_never_share_directories_between_providers_or_ids(self):
         with patch.object(Path, "home", return_value=self.home):

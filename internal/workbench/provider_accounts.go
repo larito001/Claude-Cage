@@ -1321,6 +1321,9 @@ func (s *Server) startProviderCodeLogin(provider string, input terminalRequest, 
 			}
 			_, err = s.createTerminalLocked(input)
 			s.op.Unlock()
+			if err == nil {
+				s.notifications.wake()
+			}
 		}
 		if err != nil && ctx.Err() == nil {
 			loginSession.mu.Lock()
