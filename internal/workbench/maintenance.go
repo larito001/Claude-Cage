@@ -25,6 +25,7 @@ import (
 // Only distribution/tool origins are reachable through this temporary channel.
 // Guest business traffic continues through EgressGate without any grant here.
 var maintenanceOrigins = map[string]bool{
+	"persistent.oaistatic.com": true, // signed Codex Desktop APT repository
 	"deb.debian.org": true, "security.debian.org": true,
 	"github.com": true, "objects.githubusercontent.com": true, "release-assets.githubusercontent.com": true,
 	"registry.npmjs.org": true, "downloads.claude.ai": true, "deb.nodesource.com": true,
@@ -53,7 +54,8 @@ func maintenanceDestination(address string, connect bool) bool {
 	}
 	host = strings.ToLower(host)
 	switch host {
-	case "mirrors.nju.edu.cn", "mirrors.ustc.edu.cn", "cdn.npmmirror.com", "api.snapcraft.io", "storage.snapcraftcontent.com", "canonical-lgw01.cdn.snapcraftcontent.com", "canonical-lcy01.cdn.snapcraftcontent.com", "canonical-lcy02.cdn.snapcraftcontent.com", "canonical-bos01.cdn.snapcraftcontent.com", "cloudfront.cdn.snapcraftcontent.com", "codeload.github.com":
+	case "mirrors.nju.edu.cn", "mirrors.ustc.edu.cn", "cdn.npmmirror.com", "api.snapcraft.io", "storage.snapcraftcontent.com", "canonical-lgw01.cdn.snapcraftcontent.com", "canonical-lcy01.cdn.snapcraftcontent.com", "canonical-lcy02.cdn.snapcraftcontent.com", "canonical-bos01.cdn.snapcraftcontent.com", "cloudfront.cdn.snapcraftcontent.com", "codeload.github.com",
+		"storage.googleapis.com", "antigravity-cli-auto-updater-974169037036.us-central1.run.app":
 		return connect
 	}
 	return maintenanceOrigins[host]

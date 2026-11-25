@@ -1,26 +1,48 @@
 import net from "node:net";
 
-const official = new Set(["claude.ai", "claude.com", "console.anthropic.com", "platform.claude.com", "platform.anthropic.com"]);
+const claudeHosts = new Set(["claude.ai", "claude.com", "console.anthropic.com", "platform.claude.com", "platform.anthropic.com"]);
+const antigravityHosts = new Set(["antigravity.google", "antigravity.google.com"]);
+const codexHosts = new Set(["chatgpt.com", "chat.openai.com", "auth.openai.com", "auth0.openai.com", "platform.openai.com"]);
+const officialHosts = new Set([...claudeHosts, ...antigravityHosts, ...codexHosts]);
+
+function validOAuthCallback(raw) {
+  let callback;
+  try { callback = new URL(raw); } catch { return false; }
+  if (callback.username || callback.password) return false;
+  if (callback.protocol === "https:" && !callback.port && officialHosts.has(callback.hostname)) return true;
+  if (callback.protocol === "http:" && (callback.hostname === "localhost" || callback.hostname === "127.0.0.1")) {
+    const port = Number(callback.port);
+    return Number.isInteger(port) && port >= 1024 && port <= 65535;
+  }
+  return false;
+}
+
 export function isClaudeSignIn(address, explicitLogin = false) {
   let url;
   try { url = new URL(address); } catch { return false; }
   if (url.protocol !== "https:" || url.username || url.password || url.port) return false;
-  if (official.has(url.hostname)) return /^\/(?:cai\/)?(?:login|auth|oauth|sso|sso-callback|magic-link|desktop\/(?:authorize|callback)|api\/auth)(?:\/|$)/.test(url.pathname);
+  if (claudeHosts.has(url.hostname)) {
+    return /^\/(?:cai\/)?(?:login|auth|oauth|sso|sso-callback|magic-link|desktop\/(?:authorize|callback)|api\/auth)(?:\/|$)/.test(url.pathname);
+  }
+  if (antigravityHosts.has(url.hostname)) {
+    return /^\/(?:login|auth|auth-success|oauth|oauth-callback|sso|sso-callback|desktop\/(?:authorize|callback)|api\/auth)(?:\/|$)/.test(url.pathname);
+  }
+  if (codexHosts.has(url.hostname)) {
+    return /^\/(?:login|auth|oauth|authorize|u\/login|sso|sso-callback|magic-link|codex|activate|desktop\/(?:authorize|callback)|api\/(?:auth|accounts))(?:\/|$)/.test(url.pathname);
+  }
   const provider = (url.hostname === "api.workos.com" && url.pathname.startsWith("/sso/")) ||
-    (url.hostname === "accounts.google.com" && /^\/o\/oauth2\//.test(url.pathname));
+    (url.hostname === "accounts.google.com" && /^(?:\/o\/oauth2\/|\/AccountChooser(?:\/|$))/.test(url.pathname)) ||
+    (url.hostname === "login.microsoftonline.com" && /\/oauth2\//.test(url.pathname)) ||
+    (url.hostname === "appleid.apple.com" && url.pathname.startsWith("/auth/"));
   if (!provider || explicitLogin) return provider;
   const redirects = url.searchParams.getAll("redirect_uri");
   if (redirects.length !== 1) return false;
-  try {
-    const callback = new URL(redirects[0]);
-    return callback.protocol === "https:" && !callback.username && !callback.password &&
-      !callback.port && official.has(callback.hostname);
-  } catch { return false; }
+  return validOAuthCallback(redirects[0]);
 }
 
 // Chrome accepts TCP proxy URLs. The only upstream of this loopback listener
 // is the selected account's Unix socket; the relay resolves every name there.
-async function accountProxy(route) {
+export async function accountProxy(route) {
   if (!/^[a-f0-9]{24}$/.test(route)) throw new Error("账号出口无效");
   const sockets = new Set();
   const server = net.createServer(client => {
@@ -74,7 +96,7 @@ export class LoginBrowser {
     if (typeof login !== "string" || !/^[a-f0-9-]{16,64}$/.test(login)) throw new Error("登录任务无效");
     const url = new URL(address);
     if (url.protocol !== "https:" || url.username || url.password || url.port ||
-        !(external && route || official.has(url.hostname) || isClaudeSignIn(address, true))) throw new Error("仅可打开官方登录地址");
+        !(external && route || officialHosts.has(url.hostname) || isClaudeSignIn(address, true))) throw new Error("仅可打开官方登录地址");
     await this.finish(login);
     // Reuse the regular browser for the default route. A bound account can
     // restore only the selected account's cookies.

@@ -163,6 +163,41 @@ class HostToolsConfigTests(unittest.TestCase):
         )
         self.assertFalse((self.home / ".config/Claude").exists())
 
+    def test_antigravity_and_codex_profiles_are_configured_and_cleaned(self):
+        agy_account = self.home / ".local/share/cage/antigravity-accounts/0123456789abcdef01234567/config"
+        agy_account.mkdir(parents=True)
+        agy_desktop = self.home / ".local/share/desktop-profiles/111111111111111111111111"
+        (agy_desktop / "data").mkdir(parents=True)
+        (agy_desktop / "provider").write_text("antigravity\n")
+        (agy_desktop / "home/.gemini").mkdir(parents=True)
+
+        codex_account = self.home / ".local/share/cage/codex-accounts/222222222222222222222222/config"
+        codex_account.mkdir(parents=True)
+        (codex_account / "config.toml").write_text('model = "o3"\n')
+
+        config.configure(self.home, "computer", ENTRY, "# relay\n")
+        program = self.home / ".local/share/mcp-relay/relay.py"
+        endpoint = self.home / ".config/mcp-relay/computer.json"
+        expected_relay = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
+
+        self.assertFalse((agy_desktop / "data/claude_desktop_config.json").exists())
+        self.assertEqual(
+            json.loads((agy_account / "config/mcp_config.json").read_text())["mcpServers"]["computer"],
+            expected_relay,
+        )
+        self.assertEqual(
+            json.loads((agy_desktop / "home/.gemini/config/mcp_config.json").read_text())["mcpServers"]["computer"],
+            expected_relay,
+        )
+        codex_text = (codex_account / "config.toml").read_text()
+        self.assertIn('model = "o3"', codex_text)
+        self.assertIn("[mcp_servers.computer]", codex_text)
+
+        config.unconfigure(self.home, "computer", ENTRY)
+        self.assertEqual(json.loads((agy_account / "config/mcp_config.json").read_text()), {})
+        self.assertEqual(json.loads((agy_desktop / "home/.gemini/config/mcp_config.json").read_text()), {})
+        self.assertEqual((codex_account / "config.toml").read_text(), 'model = "o3"\n')
+
 
 if __name__ == "__main__":
     unittest.main()

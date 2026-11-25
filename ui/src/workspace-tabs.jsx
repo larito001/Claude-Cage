@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { dropAfter, tabName } from "./workspace-state.mjs";
 import { AgentIcon } from "./agent-icon";
+import { browserSpaceSpec, isAgentTerminalTab } from "./providers.mjs";
 import { useTranslation } from "./interface-language.mjs";
 
 export function TabIcon({ kind, favicon, agent, accountNumber, size = 16 }) {
@@ -407,8 +408,11 @@ export function WorkspaceTabs({
                 }}
               >
                 <TabIcon kind={tab.kind} favicon={tab.favicon} size={15}
-                  agent={tab.terminalKind === "claude" || tab.terminalKind === "claude-login" || Boolean(tab.cli_session_id) || Boolean(tab.claude_account_id)}
+                  agent={isAgentTerminalTab(tab)}
                   accountNumber={tab.claudeAccountNumber} />
+                {(horizontal || vertical) && !tab.incognito && tab.space && browserSpaceSpec(tab.space) && (
+                  <small className="browser-tab-space-tag">{browserSpaceSpec(tab.space).shortBadge}</small>
+                )}
                 <span>{title}</span>
                 {tab.claudeLabel && <small className="claude-tab-profile">{tab.claudeLabel}</small>}
                 {saved[tab.id]?.pinned && <Pin size={11} className="tab-pin" />}

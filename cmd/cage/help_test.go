@@ -55,7 +55,7 @@ func TestSubcommandHelpText(t *testing.T) {
 	}
 	// Arguments after these commands belong to the program they run, or the
 	// command answers --help itself.
-	for _, args := range [][]string{{"run", "--help"}, {"claude", "-h"}, {"agent", "--help"}, {"run", "ls", "-h"}, {"init"}, {"init", "--force", "--help"}} {
+	for _, args := range [][]string{{"run", "--help"}, {"claude", "-h"}, {"agy", "-h"}, {"codex", "-h"}, {"agent", "--help"}, {"run", "ls", "-h"}, {"init"}, {"init", "--force", "--help"}} {
 		if _, ok := subcommandHelp(args); ok {
 			t.Fatalf("%v must not be answered as Cage help", args)
 		}

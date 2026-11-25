@@ -171,6 +171,21 @@ cage_install_tool() (
       url="https://github.com/jdx/mise/releases/download/v$wanted/mise-v$wanted-linux-$(if [ "$arch" = arm64 ]; then echo arm64; else echo x64; fi).tar.gz"
       artifact=mise.tar.gz
       ;;
+    codex)
+      export npm_config_fetch_retries=3 npm_config_fetch_timeout=120000
+      npm install --registry=https://registry.npmjs.org --prefix "$HOME/.local" --global @openai/codex@latest </dev/null
+      "$HOME/.local/bin/codex" --version
+      exit 0
+      ;;
+    agy)
+      local manifest
+      manifest="$(cage_curl_download - --proto '=https' --proto-redir '=https' --tlsv1.2 --fail --location --connect-timeout 15 "https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_${arch}.json" </dev/null)"
+      wanted="$(printf '%s' "$manifest" | jq -er '.version | select(type == "string") | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))')"
+      url="$(printf '%s' "$manifest" | jq -er '.url | select(type == "string") | select(startswith("https://storage.googleapis.com/antigravity-public/"))')"
+      checksum="$(printf '%s' "$manifest" | jq -er '.sha512 | select(type == "string") | select(test("^[0-9a-f]{128}$"))')"
+      if [ -x "$HOME/.local/bin/agy" ]; then current="$("$HOME/.local/bin/agy" --version | cage_tool_version)" || current=''; fi
+      artifact=agy.tar.gz
+      ;;
     claude)
       if [ "$arch" = amd64 ] && [ -r /proc/cpuinfo ] && ! grep -Eq '^flags[[:space:]]*:.*[[:space:]]sse4_2([[:space:]]|$)' /proc/cpuinfo; then
         echo 'Claude Code 需要 SSE4.2 指令。当前 x86_64 客机未提供该指令，请检查宿主 CPU、虚拟化平台和虚拟 CPU 配置后重启环境。' >&2
@@ -192,6 +207,22 @@ cage_install_tool() (
       cage_configure_claude_npm_prefix
     fi
     printf '%s already meets required version %s.\n' "$tool" "$wanted"
+    exit 0
+  fi
+  if [ "$tool" = agy ]; then
+    local cache="$HOME/.cache/cage/downloads/$checksum" stage
+    mkdir -p "$cache" "$HOME/.local/bin"
+    exec 9>"$cache/lock"
+    flock -w 60 9
+    cage_download_tool "$url" "$checksum" "$cache/$artifact" sha512sum
+    if [ "${CAGE_SETUP_PROGRESS:-}" = 1 ]; then echo "Installing Antigravity CLI..."; fi
+    stage="$(mktemp "$HOME/.local/bin/.agy-new-XXXXXX")"
+    trap 'rm -f "$stage"' EXIT
+    tar -xOzf "$cache/$artifact" antigravity >"$stage"
+    chmod 0755 "$stage"
+    mv -f "$stage" "$HOME/.local/bin/agy"
+    trap - EXIT
+    "$HOME/.local/bin/agy" install --dir "$HOME/.local/bin" </dev/null >/dev/null 2>&1 || true
     exit 0
   fi
   if [ "$tool" = claude ]; then

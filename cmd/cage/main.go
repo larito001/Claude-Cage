@@ -62,6 +62,8 @@ cage run COMMAND   Execute a command in the shared environment: from the current
                    it on a terminal, fails otherwise); --workdir DIR runs from
                    DIR in the environment
 cage claude        Run Claude Code in the shared environment
+cage agy           Run Antigravity CLI in the shared environment
+cage codex         Run Codex CLI in the shared environment
 cage stop          Stop the shared Cage environment and its proxy core
                    --keep-proxy keeps the core running for an environment restart
 cage list          List this cage profile's VMs
@@ -543,7 +545,13 @@ func run() int {
 	os.Setenv("AGENT_VM_STATE_DIR", state)
 	os.Setenv("AGENT_VM_LIMA_HOME", filepath.Join(state, "lima"))
 	// Do not inherit host proxy settings or credentials into VM operations.
-	for _, name := range []string{"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "FTP_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "ftp_proxy", "no_proxy", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"} {
+	for _, name := range []string{
+		"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "FTP_PROXY", "NO_PROXY",
+		"http_proxy", "https_proxy", "all_proxy", "ftp_proxy", "no_proxy",
+		"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
+		"GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "AGY_ADC_AUTH",
+		"OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN",
+	} {
 		os.Unsetenv(name)
 	}
 	// Lima's host-side image downloader follows system proxy settings/TUN.
@@ -573,7 +581,7 @@ func run() int {
 	}
 	// Every Cage operation targets this profile's one persistent environment.
 	switch args[0] {
-	case "up", "login", "shell", "run", "claude", "stop", "doctor", "access", "name":
+	case "up", "login", "shell", "run", "claude", "agy", "codex", "stop", "doctor", "access", "name":
 		directory := cage.EnvironmentDir(filepath.Dir(path))
 		if err := os.MkdirAll(directory, 0700); err != nil {
 			return fail(err)
@@ -637,7 +645,7 @@ func run() int {
 		if diskErr != nil {
 			return fail(diskErr)
 		}
-		args = append([]string{"setup", "--memory", fmt.Sprint(memory), "--cpus", fmt.Sprint(cpus), "--disk", fmt.Sprint(disk), "--preinstall=node,python,chromium,gh,claude,code-server"}, requireWorkbenchTools(args[1:])...)
+		args = append([]string{"setup", "--memory", fmt.Sprint(memory), "--cpus", fmt.Sprint(cpus), "--disk", fmt.Sprint(disk), "--preinstall=node,python,chromium,gh,claude,agy,codex,code-server"}, requireWorkbenchTools(args[1:])...)
 	}
 	if args[0] == "up" || args[0] == "login" {
 		return startEnvironment(args[0], startArgs, cli.Stdio(), cli.Main, func() error {
@@ -656,11 +664,11 @@ func run() int {
 	if args[0] == "access" {
 		args = []string{"run", "bash", "-c", `printf 'Editor password: '; sed -n 's/^password: //p' "$HOME/.config/claude-cage/code-server.yaml"; printf 'Browser password: '; cat "$HOME/.config/claude-cage/browser-password"; printf '\n'`}
 	}
-	allowed := map[string]bool{"setup": true, "run": true, "shell": true, "claude": true, "stop": true, "list": true, "doctor": true, "info": true, "name": true}
+	allowed := map[string]bool{"setup": true, "run": true, "shell": true, "claude": true, "agy": true, "codex": true, "stop": true, "list": true, "doctor": true, "info": true, "name": true}
 	if !allowed[args[0]] {
 		return fail(fmt.Errorf("unknown cage command %q; see cage help", args[0]))
 	}
-	if args[0] == "run" || args[0] == "shell" || args[0] == "claude" {
+	if args[0] == "run" || args[0] == "shell" || args[0] == "claude" || args[0] == "agy" || args[0] == "codex" {
 		warnClosedNetwork(path, os.Stderr)
 	}
 	return cli.Main(args, cli.Stdio())
@@ -672,8 +680,8 @@ func containerInstallScript(kind string) (string, error) {
 		return cage.GuestSetup, nil
 	case "tools":
 		script := "set -e\nexport CLAUDE_CAGE=1\n" + cage.InstallTLS12Prelude(os.Getenv(cage.InstallTLS12Env) == "1") + cage.APTBootstrapScript + "\n" + cage.ToolInstallPrelude()
-		enabled := map[string]bool{"NODE": true, "PYTHON": true, "CHROMIUM": true, "GH": true, "CLAUDE": true, "CODE_SERVER": true}
-		for _, name := range []string{"PYTHON", "NODE", "RUBY", "RUST", "GOLANG", "DOCKER", "CHROMIUM", "GH", "CLAUDE", "OPENCODE", "CODEX", "VIBE", "PI", "CODE_SERVER", "CODE_CLAUDE", "CODE_OPENCODE", "CODE_CODEX", "CODE_VIBE", "MCP_CHROME", "MCP_PLAYWRIGHT"} {
+		enabled := map[string]bool{"NODE": true, "PYTHON": true, "CHROMIUM": true, "GH": true, "CLAUDE": true, "AGY": true, "CODEX": true, "CODE_SERVER": true}
+		for _, name := range []string{"PYTHON", "NODE", "RUBY", "RUST", "GOLANG", "DOCKER", "CHROMIUM", "GH", "CLAUDE", "AGY", "OPENCODE", "CODEX", "VIBE", "PI", "CODE_SERVER", "CODE_CLAUDE", "CODE_OPENCODE", "CODE_CODEX", "CODE_VIBE", "MCP_CHROME", "MCP_PLAYWRIGHT"} {
 			value := "0"
 			if enabled[name] {
 				value = "1"
@@ -748,7 +756,7 @@ func requireWorkbenchTools(args []string) []string {
 // Commands whose remaining arguments belong to a program in the environment,
 // such as `cage run ls -h`, or that answer --help themselves.
 var helpPassthrough = map[string]bool{
-	"agent": true, "run": true, "shell": true, "sh": true, "claude": true, "code": true,
+	"agent": true, "run": true, "shell": true, "sh": true, "claude": true, "agy": true, "code": true,
 	"opencode": true, "codex": true, "vibe": true, "pi": true,
 }
 

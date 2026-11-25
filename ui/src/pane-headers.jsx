@@ -8,6 +8,7 @@ import { BrowserDownloads } from "./browser-downloads";
 import { BrowserCookies } from "./browser-cookies";
 import { BrowserHistory } from "./browser-history";
 import { BrowserAddressBar } from "./browser-address-bar";
+import { BrowserSpaceMenuSection } from "./browser-spaces";
 import { tabName } from "./workspace-state.mjs";
 import { shortcut } from "./platform.mjs";
 import logo from "./logo.png";
@@ -89,7 +90,8 @@ export function BrowserTabRail({ tabs, metadata, active, ready, busy, splitDrag,
 
 export function BrowserHeader({ vault, onManageVault, tab, tabs, metadata, ready, busy, focused, compact, triggerRef, vertical,
   sidebarButton, exitButton, splitDrag, onSelect, onClose, onRename, onPin, onReorder, onNew,
-  location, menu, back, forward, action, onNavigate, onOpen, onNewPrivate, onNewRegular, onCloseBrowser, onSettings, onReload, downloads, onStatus, onEditor, onRecover, recoveringEditor }) {
+  location, menu, back, forward, action, onNavigate, onOpen, onNewPrivate, onNewRegular, onCloseBrowser, onSettings, onReload, downloads, onStatus, onEditor, onRecover, recoveringEditor,
+  browserSpaces, proxySources, onOpenSpace }) {
   const tr = useTranslation();
   const [toolsOpen, setToolsOpen] = useState(false);
   const [cookiesOpen, setCookiesOpen] = useState(false);
@@ -208,6 +210,17 @@ export function BrowserHeader({ vault, onManageVault, tab, tabs, metadata, ready
         const item = event.target.closest('[role="menuitem"]');
         if (item && !item.closest(".vault-browser")) { setToolsOpen(false); toolsTrigger.current?.focus(); }
       }}>
+      {browserSpaces && onOpenSpace && (
+        <BrowserSpaceMenuSection
+          tab={tab}
+          browserSpaces={browserSpaces}
+          proxySources={proxySources}
+          ready={ready}
+          busy={busy}
+          onOpenSpace={onOpenSpace}
+          onStatus={onStatus}
+        />
+      )}
       <div className="browser-more-actions">
         <button className="browser-menu-item" role="menuitem" disabled={!ready || busy} onClick={onNewPrivate}><ScanEye size={16} />{tr("新建无痕标签")}</button>
         {tab.incognito && <button className="browser-menu-item" role="menuitem" disabled={!ready || busy} onClick={onNewRegular}><Globe2 size={16} />{tr("新建普通标签")}</button>}

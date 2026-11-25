@@ -8,6 +8,7 @@ export class PrivateBrowser {
   }
 
   tab(raw) {
+    if (raw.space) return { ...raw, incognito: false };
     return { ...raw, incognito: Boolean(raw.incognito || this.context && raw.browserContextId === this.context) };
   }
 

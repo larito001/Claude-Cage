@@ -43,7 +43,7 @@ const exitUsage = 2
 // home folder, where 1 means "older".
 var stateful = map[string]bool{
 	"name": true, "list": true, "status": true, "stop": true, "rm": true, "destroy": true, "destroy-all": true,
-	"info": true, "env": true, "project-env": true, "claude": true, "opencode": true, "codex": true, "vibe": true,
+	"info": true, "env": true, "project-env": true, "claude": true, "agy": true, "opencode": true, "codex": true, "vibe": true,
 	"pi": true, "shell": true, "sh": true, "run": true, "setup": true, "doctor": true, "install": true,
 	"uninstall": true, "code": true,
 }
@@ -112,7 +112,7 @@ func (e *app) main(ctx context.Context, args []string) int {
 		return e.sharedEnvCmd(args)
 	case "project-env":
 		return e.projectEnvCmd(ctx, args)
-	case "claude", "opencode", "codex", "vibe", "pi":
+	case "claude", "agy", "opencode", "codex", "vibe", "pi":
 		return e.agentCmd(ctx, cmd, opts, args)
 	case "shell", "sh":
 		return e.shellCmd(ctx, opts, args)

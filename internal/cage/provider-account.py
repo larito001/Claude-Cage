@@ -1,0 +1,542 @@
+#!/usr/bin/env python3
+"""Isolated guest CLI account runner and local credential inspector for non-Claude providers.
+
+Follows the exact same isolation model as cage-claude-account:
+- Each managed account owns ~/.local/share/cage/<provider>-accounts/<id>/config (0700).
+- Host/global API keys and external auth env vars are stripped in managed sessions.
+- File-backed credential storage is enforced so no shared keyring can cross-contaminate accounts.
+- OAuth logins open through Cage's scoped LoginBrowser (--account-id / --login-id) inside
+  the account's dedicated network namespace when configured, never touching Browser Spaces or Desktops.
+- Raw tokens, paths, and callback URLs are never printed to stdout/stderr.
+"""
+import base64
+from datetime import datetime
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import re
+import runpy
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+
+DEFAULT = "default"
+PRIVATE_MODE = 0o700
+ACCOUNT_ID_RE = re.compile(r"^[0-9a-f]{24}$")
+EMAIL_RE = re.compile(r"^[^\s@\x00-\x1f]+@[^\s@\x00-\x1f]+\.[^\s@\x00-\x1f]+$")
+OPEN = "/usr/local/libexec/cage-cli/bin/cage-open" if sys.platform == "darwin" else "/usr/local/bin/cage-open"
+
+_controller_context = {
+    key: os.environ.pop(key)
+    for key in (
+        "CAGE_LOGIN_OWNER",
+        "CAGE_ACCOUNT_BROWSER",
+        "CAGE_PROVIDER_SUBJECT",
+        "CAGE_PROVIDER_ACCOUNT_ID",
+    )
+    if key in os.environ
+}
+
+_runtime_path = Path("/usr/local/bin/client_runtime.py")
+if _runtime_path.is_file():
+    _runtime = runpy.run_path(str(_runtime_path))
+else:
+    def _fallback_launcher(target, executable=False, arguments=(), **_kwargs):
+        if not arguments:
+            return str(target)
+        fd, wrapper = tempfile.mkstemp(prefix="cage-open-", suffix=".sh")
+        os.close(fd)
+        quoted = " ".join("'" + str(x).replace("'", "'\\''") + "'" for x in [str(target), *arguments])
+        Path(wrapper).write_text(f"#!/bin/sh\nexec {quoted} \"$@\"\n", encoding="utf-8")
+        os.chmod(wrapper, 0o700 if executable else 0o600)
+        return wrapper
+
+    _runtime = {
+        "path": lambda value: str(value),
+        "environment": lambda env: {k: v for k, v in env.items() if not k.upper().startswith("CAGE_")},
+        "launcher": _fallback_launcher,
+    }
+
+
+def compute_subject(email, organization=""):
+    clean_email = (email or "").strip().lower()
+    clean_org = (organization or "").strip()
+    if not clean_email:
+        return ""
+    return hashlib.sha256(f"{clean_email}\n{clean_org}".encode("utf-8")).hexdigest()
+
+
+def decode_jwt(token):
+    if not isinstance(token, str) or len(token) > 65536 or token.count(".") != 2:
+        return {}
+    try:
+        payload = token.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        claims = json.loads(base64.urlsafe_b64decode(payload))
+        return claims if isinstance(claims, dict) else {}
+    except (ValueError, TypeError, UnicodeError):
+        return {}
+
+
+def parse_expiry(value):
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+        if not math.isfinite(number):
+            return None
+        return number / 1000 if number > 1e11 else number
+    except (ValueError, TypeError):
+        try:
+            return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+        except (ValueError, TypeError, AttributeError):
+            return None
+
+
+def read_regular_json(candidates):
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        try:
+            if candidate.is_symlink() or candidate.parent.is_symlink() or not candidate.is_file():
+                return None, None
+            with candidate.open("rb") as stream:
+                raw = stream.read((1 << 20) + 1)
+            if len(raw) > (1 << 20):
+                return None, None
+            data = json.loads(raw)
+        except (OSError, ValueError):
+            return None, None
+        return (candidate, data) if isinstance(data, dict) else (None, None)
+    return None, None
+
+
+def atomic_copy_private(src, dst):
+    dst.parent.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=dst.parent, delete=False) as tmp:
+        with src.open("rb") as inp:
+            shutil.copyfileobj(inp, tmp)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp_name = tmp.name
+    if os.name != "nt":
+        os.chmod(tmp_name, 0o600)
+    os.replace(tmp_name, dst)
+
+
+def validate_account_id(account_id):
+    if account_id != DEFAULT and not ACCOUNT_ID_RE.fullmatch(account_id or ""):
+        raise ValueError("invalid account identifier")
+    return account_id
+
+
+def account_base(provider_id, account_id):
+    validate_account_id(account_id)
+    root = Path.home() / ".local/share/cage" / f"{provider_id}-accounts"
+    root.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+    if account_id == DEFAULT:
+        return root / DEFAULT
+    base = root / account_id
+    base.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+    return base
+
+
+class AntigravityAdapter:
+    id = "antigravity"
+    name = "Antigravity"
+    binary_name = "agy"
+    shim_dir = "/usr/local/lib/cage-antigravity-bin"
+    external_env_keys = (
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "GOOGLE_GEMINI_BASE_URL",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "GOOGLE_CLOUD_PROJECT",
+        "GOOGLE_CLOUD_LOCATION",
+        "GOOGLE_CLOUD_QUOTA_PROJECT",
+        "GOOGLE_GENAI_USE_VERTEXAI",
+        "AGY_ADC_AUTH",
+    )
+
+    def config_dir(self, base):
+        return Path.home() / ".gemini" if base.name == DEFAULT else base / "config"
+
+    def ensure_profile(self, config_dir):
+        cli_dir = config_dir / "antigravity-cli"
+        cli_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        (config_dir / "config").mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        settings_file = cli_dir / "settings.json"
+        if not settings_file.exists():
+            settings_file.write_text("{}\n", encoding="utf-8")
+            if os.name != "nt":
+                os.chmod(settings_file, 0o600)
+
+    def environment(self, base):
+        env = os.environ.copy()
+        parts = [p for p in env.get("PATH", os.defpath).split(os.pathsep) if p and p != self.shim_dir]
+        env["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), *parts])
+        if base.name == DEFAULT:
+            env.pop("ANTIGRAVITY_GEMINI_DIR", None)
+            return _runtime["environment"](env)
+        env["ANTIGRAVITY_GEMINI_DIR"] = str(self.config_dir(base))
+        env["AGY_CLI_FORCE_FILE_TOKEN_STORAGE"] = "1"
+        for key in self.external_env_keys:
+            env.pop(key, None)
+        return _runtime["environment"](env)
+
+    def auth_candidates(self, config_dir):
+        return [
+            config_dir / "auth.json",
+            config_dir / "antigravity-cli" / "auth.json",
+            config_dir / "config" / "auth.json",
+        ]
+
+    def identity(self, config_dir, _env=None):
+        _, data = read_regular_json(self.auth_candidates(config_dir))
+        absent = {"logged_in": False, "auth_state": "signed_out", "usage_status": "unavailable", "subject": ""}
+        if data is None:
+            return absent
+        candidates = [data]
+        for key in ("account", "user", "token", "tokens", "credentials", "oauthToken"):
+            if isinstance(data.get(key), dict):
+                candidates.append(data[key])
+
+        def field(*names):
+            return next(
+                (c[n].strip() for c in candidates for n in names if isinstance(c.get(n), str) and c[n].strip()),
+                "",
+            )
+
+        access = field("access_token", "accessToken")
+        refresh = field("refresh_token", "refreshToken")
+        if not access and not refresh:
+            return absent
+        expiry = next(
+            (
+                parse_expiry(c[n])
+                for c in candidates
+                for n in ("expiry", "expires_at", "expiresAt", "expiry_date", "access_token_expires_at")
+                if n in c
+            ),
+            None,
+        )
+        expired = expiry is not None and expiry <= time.time()
+        if expired and not refresh:
+            return {**absent, "auth_state": "expired"}
+        email = field("email", "emailAddress", "user_email", "id_token_email").lower()
+        if not email:
+            claims = decode_jwt(field("id_token", "idToken"))
+            if isinstance(claims.get("email"), str) and claims.get("email_verified") is not False:
+                email = claims["email"].strip().lower()
+        if not EMAIL_RE.fullmatch(email) or len(email) > 254:
+            return {**absent, "auth_state": "identity_missing"}
+        subject = compute_subject(email, "")
+        return {
+            "logged_in": True,
+            "email": email,
+            "organization": "",
+            "plan": "antigravity",
+            "usage_status": "unavailable",
+            "auth_state": "refresh_required" if expired or not access else "credentials_present",
+            "subject": subject,
+        }
+
+    def copy_auth(self, source_dir, target_dir):
+        selected, _ = read_regular_json(self.auth_candidates(source_dir))
+        if selected is None:
+            return False
+        rel = selected.relative_to(source_dir)
+        atomic_copy_private(selected, target_dir / rel)
+        return True
+
+    def desktop_emails(self):
+        home = Path.home()
+        directories = [home / ".config/Antigravity"]
+        profiles = home / ".local/share/desktop-profiles"
+        if profiles.is_dir():
+            for p in profiles.iterdir():
+                if not ACCOUNT_ID_RE.fullmatch(p.name) or p.is_symlink():
+                    continue
+                try:
+                    prov = (p / "provider").read_text(encoding="utf-8").strip()
+                except OSError:
+                    prov = ""
+                if prov == "antigravity":
+                    directories.append(p / "data")
+        emails = set()
+        for directory in directories:
+            path = directory / "app_storage.json"
+            try:
+                if directory.is_symlink() or path.is_symlink() or not path.is_file():
+                    continue
+                with path.open("rb") as stream:
+                    raw = stream.read((1 << 20) + 1)
+                if len(raw) > (1 << 20):
+                    continue
+                value = json.loads(raw).get("agy.onboarding.lastLoginUsername")
+                if isinstance(value, str) and len(value) <= 254 and EMAIL_RE.fullmatch(value.strip()):
+                    emails.add(value.strip().lower())
+            except (ValueError, OSError, AttributeError):
+                continue
+        return sorted(emails)[:128]
+
+    def login_command(self, binary, _extra_args):
+        return [_runtime["path"](binary), "acp", "--login"]
+
+    def run_command(self, binary, extra_args, _is_default):
+        return [_runtime["path"](binary), *extra_args]
+
+
+class CodexAdapter:
+    id = "codex"
+    name = "Codex"
+    binary_name = "codex"
+    shim_dir = "/usr/local/lib/cage-codex-bin"
+    external_env_keys = (
+        "OPENAI_API_KEY",
+        "OPENAI_BASE_URL",
+        "CODEX_API_KEY",
+        "CODEX_ACCESS_TOKEN",
+    )
+
+    def config_dir(self, base):
+        return Path.home() / ".codex" if base.name == DEFAULT else base / "config"
+
+    def ensure_profile(self, config_dir):
+        config_dir.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+        toml_file = config_dir / "config.toml"
+        key_line = 'cli_auth_credentials_store = "file"'
+        try:
+            existing = toml_file.read_text(encoding="utf-8") if toml_file.is_file() else ""
+        except OSError:
+            existing = ""
+        if "cli_auth_credentials_store" not in existing:
+            prefix = key_line + "\n"
+            updated = prefix + existing
+            with tempfile.NamedTemporaryFile(dir=config_dir, delete=False, mode="w", encoding="utf-8") as tmp:
+                tmp.write(updated)
+                tmp.flush()
+                os.fsync(tmp.fileno())
+                tmp_name = tmp.name
+            if os.name != "nt":
+                os.chmod(tmp_name, 0o600)
+            os.replace(tmp_name, toml_file)
+
+    def environment(self, base):
+        env = os.environ.copy()
+        parts = [p for p in env.get("PATH", os.defpath).split(os.pathsep) if p and p != self.shim_dir]
+        env["PATH"] = os.pathsep.join([str(Path.home() / ".local/bin"), *parts])
+        if base.name == DEFAULT:
+            env.pop("CODEX_HOME", None)
+            return _runtime["environment"](env)
+        env["CODEX_HOME"] = str(self.config_dir(base))
+        for key in self.external_env_keys:
+            env.pop(key, None)
+        return _runtime["environment"](env)
+
+    def auth_candidates(self, config_dir):
+        return [config_dir / "auth.json"]
+
+    def identity(self, config_dir, _env=None):
+        _, data = read_regular_json(self.auth_candidates(config_dir))
+        absent = {"logged_in": False, "auth_state": "signed_out", "usage_status": "unavailable", "subject": ""}
+        if data is None:
+            return absent
+        tokens = data.get("tokens") if isinstance(data.get("tokens"), dict) else data
+        access = tokens.get("access_token") or tokens.get("accessToken") or ""
+        refresh = tokens.get("refresh_token") or tokens.get("refreshToken") or ""
+        id_tok = tokens.get("id_token") or tokens.get("idToken") or ""
+        api_key = data.get("OPENAI_API_KEY") or ""
+        if not any(isinstance(v, str) and v.strip() for v in (access, refresh, id_tok, api_key)):
+            return absent
+        claims = decode_jwt(id_tok) or decode_jwt(access)
+        email = ""
+        if isinstance(claims.get("email"), str) and claims.get("email_verified") is not False:
+            email = claims["email"].strip().lower()
+        if not email and isinstance(data.get("email"), str):
+            email = data["email"].strip().lower()
+        auth_claim = claims.get("https://api.openai.com/auth")
+        org = ""
+        plan = "codex"
+        if isinstance(auth_claim, dict):
+            org = str(auth_claim.get("chatgpt_account_id") or auth_claim.get("organization_id") or "").strip()
+            raw_plan = auth_claim.get("chatgpt_plan_type")
+            if isinstance(raw_plan, str) and raw_plan.strip():
+                plan = raw_plan.strip()
+        if not EMAIL_RE.fullmatch(email) or len(email) > 254:
+            if isinstance(api_key, str) and len(api_key.strip()) >= 8:
+                digest = hashlib.sha256(api_key.strip().encode("utf-8")).hexdigest()[:12]
+                email = f"apikey-{digest}@codex.local"
+            else:
+                return {**absent, "auth_state": "identity_missing"}
+        subject = compute_subject(email, org)
+        return {
+            "logged_in": True,
+            "email": email,
+            "organization": org,
+            "plan": plan,
+            "usage_status": "unavailable",
+            "auth_state": "credentials_present",
+            "subject": subject,
+        }
+
+    def copy_auth(self, source_dir, target_dir):
+        selected, _ = read_regular_json(self.auth_candidates(source_dir))
+        if selected is None:
+            return False
+        atomic_copy_private(selected, target_dir / "auth.json")
+        return True
+
+    def desktop_emails(self):
+        return []
+
+    def login_command(self, binary, extra_args):
+        cmd = [_runtime["path"](binary), "-c", 'cli_auth_credentials_store="file"', "login"]
+        if "--device-auth" in extra_args:
+            cmd.append("--device-auth")
+        return cmd
+
+    def run_command(self, binary, extra_args, is_default):
+        if is_default:
+            return [_runtime["path"](binary), *extra_args]
+        return [_runtime["path"](binary), "-c", 'cli_auth_credentials_store="file"', *extra_args]
+
+
+ADAPTERS = {
+    "antigravity": AntigravityAdapter(),
+    "codex": CodexAdapter(),
+}
+
+
+def run_provider(args):
+    if len(args) < 3:
+        raise ValueError("usage: cage-provider-account <provider> <mode> <account_id> [args...]")
+    provider_id, mode, account_id, *rest = args
+    adapter = ADAPTERS.get(provider_id)
+    if adapter is None:
+        raise ValueError(f"unsupported provider: {provider_id}")
+
+    base = account_base(provider_id, account_id)
+    if account_id == DEFAULT and mode == "login":
+        raise ValueError("new logins require a private profile")
+
+    config_dir = adapter.config_dir(base)
+    original_umask = os.umask(0o077)
+    if account_id != DEFAULT:
+        adapter.ensure_profile(config_dir)
+
+    if mode == "share":
+        return 0
+
+    env = adapter.environment(base)
+    if mode == "snapshot":
+        if account_id == DEFAULT:
+            if any(env.get(key) for key in adapter.external_env_keys) or not config_dir.is_dir():
+                print(json.dumps({"logged_in": False, "auth_state": "signed_out", "desktop_emails": adapter.desktop_emails()}))
+                return 0
+            summary = adapter.identity(config_dir, env)
+            print(json.dumps({**summary, "desktop_emails": adapter.desktop_emails()}))
+            return 0
+        print(json.dumps(adapter.identity(config_dir, env)))
+        return 0
+
+    if mode in ("archive-login", "recover-login"):
+        if len(rest) != 2 or account_id == DEFAULT or account_id == rest[0]:
+            raise ValueError("invalid account recovery")
+        source_id, expected = rest
+        current = adapter.identity(config_dir, env)
+        if current.get("subject") == expected and expected:
+            print(json.dumps(current))
+            return 0
+        source_base = account_base(provider_id, source_id)
+        source_dir = adapter.config_dir(source_base)
+        authenticated = adapter.identity(source_dir, env)
+        if not expected or authenticated.get("subject") != expected:
+            print(json.dumps({"logged_in": False}))
+            return 0
+        if not adapter.copy_auth(source_dir, config_dir):
+            print(json.dumps({"logged_in": False}))
+            return 0
+        recovered = adapter.identity(config_dir, env)
+        print(json.dumps(recovered if recovered.get("subject") == expected else {"logged_in": False}))
+        return 0
+
+    binary = os.environ.get("CAGE_CLI_BINARY") if os.name == "nt" else shutil.which(adapter.binary_name, path=env["PATH"])
+    if not binary:
+        print(f"尚未安装 {adapter.name} CLI ({adapter.binary_name})，请在设置中更新环境工具后重试。", file=sys.stderr)
+        return 1
+
+    owner = _controller_context.get("CAGE_LOGIN_OWNER", "")
+    owner_args = ["--account-id", owner] if ACCOUNT_ID_RE.fullmatch(owner) else []
+    scoped = _controller_context.get("CAGE_ACCOUNT_BROWSER")
+
+    if mode == "login":
+        opener_dir = None
+        if os.name != "nt":
+            launcher_path = _runtime["launcher"](scoped or OPEN, executable=True, arguments=[*owner_args, "--login-id", account_id])
+            env["BROWSER"] = launcher_path
+            if sys.platform != "darwin":
+                opener_dir = tempfile.mkdtemp(prefix="xdg-")
+                os.chmod(opener_dir, PRIVATE_MODE)
+                os.symlink(launcher_path, Path(opener_dir) / "xdg-open")
+                env["PATH"] = opener_dir + (os.pathsep + env["PATH"] if env.get("PATH") else "")
+
+        def interrupted(_signum, _frame):
+            raise KeyboardInterrupt()
+
+        if hasattr(signal, "SIGHUP"):
+            signal.signal(signal.SIGHUP, interrupted)
+        signal.signal(signal.SIGTERM, interrupted)
+        try:
+            cmd = adapter.login_command(binary, rest)
+            return subprocess.call(cmd, cwd=Path.home(), env=env)
+        finally:
+            if opener_dir:
+                shutil.rmtree(opener_dir, ignore_errors=True)
+            if os.name != "nt":
+                finish = [scoped or OPEN, *owner_args, "--login-id", account_id, "--finish-login"]
+                subprocess.run(
+                    finish,
+                    env=os.environ,
+                    timeout=8,
+                    check=False,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
+    if mode == "run":
+        if os.name != "nt" and (owner_args or scoped or sys.platform == "darwin"):
+            env["BROWSER"] = _runtime["launcher"](scoped or OPEN, executable=True, arguments=owner_args, login_config=config_dir)
+        expected = _controller_context.get("CAGE_PROVIDER_SUBJECT")
+        if expected:
+            reading = adapter.identity(config_dir, env)
+            if reading.get("subject") != expected:
+                print(f"此终端所选 {adapter.name} 账号身份已变化或尚未登录，请重新授权后再试。", file=sys.stderr)
+                return 1
+        os.umask(original_umask)
+        cmd = adapter.run_command(binary, rest, account_id == DEFAULT)
+        if os.name == "nt":
+            return subprocess.call(cmd, env=env)
+        os.execve(cmd[0], cmd, env)
+
+    raise ValueError("unknown operation")
+
+
+def entrypoint(args):
+    try:
+        return run_provider(args)
+    except KeyboardInterrupt:
+        return 130
+    except (OSError, ValueError, subprocess.SubprocessError, TypeError):
+        print("准备终端或启动官方 CLI 失败，请检查目录权限并同步环境组件后重试；现有登录信息已保留。", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(entrypoint(sys.argv[1:]))

@@ -98,6 +98,7 @@ INSTALL_DOCKER="${AGENT_VM_INSTALL_DOCKER:-1}"
 INSTALL_CHROMIUM="${AGENT_VM_INSTALL_CHROMIUM:-1}"
 INSTALL_GH="${AGENT_VM_INSTALL_GH:-1}"
 INSTALL_CLAUDE="${AGENT_VM_INSTALL_CLAUDE:-1}"
+INSTALL_AGY="${AGENT_VM_INSTALL_AGY:-0}"
 INSTALL_OPENCODE="${AGENT_VM_INSTALL_OPENCODE:-1}"
 INSTALL_CODEX="${AGENT_VM_INSTALL_CODEX:-1}"
 INSTALL_VIBE="${AGENT_VM_INSTALL_VIBE:-1}"
@@ -369,6 +370,23 @@ if [[ "$HAS_CLAUDE" == "1" ]]; then
 JSON
 fi
 
+if [[ "$INSTALL_AGY" == "1" ]]; then
+  echo "Installing Antigravity CLI..."
+  if [[ "${CLAUDE_CAGE:-}" == "1" ]]; then
+    cage_install_tool agy
+  else
+    curl -fsSL https://antigravity.google/cli/install.sh | bash
+  fi
+  mkdir -p "$HOME/.gemini/antigravity-cli"
+  cat > "$HOME/.gemini/antigravity-cli/settings.json" << 'JSON'
+{
+  "toolPermission": "always-proceed",
+  "artifactReviewPolicy": "always-proceed",
+  "allowNonWorkspaceAccess": true
+}
+JSON
+fi
+
 if [[ "$INSTALL_OPENCODE" == "1" || "$INSTALL_CODE_OPENCODE" == "1" ]]; then
   echo "Installing OpenCode..."
   curl -fsSL https://opencode.ai/install | bash
@@ -380,7 +398,11 @@ if [[ "$INSTALL_CODEX" == "1" ]]; then
     echo "Skipping Codex CLI: requires Node.js (re-run setup with Node.js enabled)." >&2
   else
     echo "Installing Codex CLI..."
-    sudo npm i -g @openai/codex </dev/null
+    if [[ "${CLAUDE_CAGE:-}" == "1" ]]; then
+      cage_install_tool codex
+    else
+      sudo npm i -g @openai/codex </dev/null
+    fi
   fi
 fi
 

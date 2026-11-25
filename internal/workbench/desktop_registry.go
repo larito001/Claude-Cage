@@ -12,12 +12,14 @@ import (
 	"time"
 
 	"al.essio.dev/pkg/shellescape"
+	"github.com/sylvinus/agent-vm/internal/cage"
 )
 
 //go:embed desktop-inspection.py
 var desktopInspection string
 
 type desktopObservation struct {
+	Provider   string               `json:"provider,omitempty"`
 	Generation int                  `json:"generation,omitempty"`
 	Running    bool                 `json:"running"`
 	Identity   *claudeGuestSnapshot `json:"identity"`
@@ -66,18 +68,146 @@ func (list *claudeAccountList) desktopOwner(id string) *claudeAccount {
 func (list *claudeAccountList) desktopEntry(id string) desktopEntry {
 	var entry desktopEntry
 	if a := list.desktopOwner(id); a != nil {
-		entry = desktopEntry{ID: id, AccountID: a.ID, Number: a.Number, Label: a.Label, Dedicated: a.DesktopDedicatedNetwork || a.ProxyNodeID != ""}
+		entry = desktopEntry{Provider: "claude", ID: id, AccountID: a.ID, Number: a.Number, Label: a.Label, Dedicated: a.DesktopDedicatedNetwork || a.ProxyNodeID != ""}
 	} else {
 		label := "待登录 Desktop"
 		if id == "default" {
 			label = "默认 Desktop"
 		}
-		entry = desktopEntry{ID: id, Label: label}
+		entry = desktopEntry{Provider: "claude", ID: id, Label: label}
 	}
 	if custom := list.DesktopLabels[id]; custom != "" {
 		entry.Label = custom
 	}
 	return entry
+}
+
+func (list *providerAccountList) desktopEntry(id string) desktopEntry {
+	spec, _ := cage.LookupProvider(list.Provider)
+	var entry desktopEntry
+	if a := list.desktopOwner(id); a != nil {
+		label := a.Label
+		if label == "" {
+			label = a.Email
+		}
+		entry = desktopEntry{Provider: list.Provider, ID: id, AccountID: a.ID, Number: a.Number, Label: label, Dedicated: a.DesktopDedicatedNetwork || a.ProxyNodeID != ""}
+	} else {
+		name := spec.Desktop.Name
+		if name == "" {
+			name = "Desktop"
+		}
+		entry = desktopEntry{Provider: list.Provider, ID: id, Label: name}
+	}
+	if custom := list.DesktopLabels[id]; custom != "" {
+		entry.Label = custom
+	}
+	return entry
+}
+
+func (list *providerAccountList) renameDesktop(id, raw string) (desktopEntry, error) {
+	label := strings.TrimSpace(raw)
+	if !validDesktopLabel(label) {
+		return desktopEntry{}, errors.New("Desktop 名称需要 1 至 100 个字符，不能含控制字符")
+	}
+	if !validClaudeID(id) || list.DesktopRedirects[id] != "" {
+		return desktopEntry{}, os.ErrNotExist
+	}
+	if list.desktopOwner(id) == nil && list.PendingDesktop != id {
+		return desktopEntry{}, os.ErrNotExist
+	}
+	if list.DesktopLabels == nil {
+		list.DesktopLabels = map[string]string{}
+	}
+	list.DesktopLabels[id] = label
+	return list.desktopEntry(id), nil
+}
+
+func (list *providerAccountList) deleteDesktop(id string) bool {
+	if !validClaudeID(id) {
+		return false
+	}
+	found := false
+	if list.PendingDesktop == id {
+		list.PendingDesktop = ""
+		found = true
+	}
+	if owner := list.desktopOwner(id); owner != nil {
+		owner.DesktopInstanceID = ""
+		owner.DesktopStatus = ""
+		found = true
+	}
+	if found {
+		delete(list.DesktopLabels, id)
+	}
+	return found
+}
+
+func (list *providerAccountList) createDesktop(account string) (desktopEntry, error) {
+	if account == "" {
+		if list.PendingDesktop == "" {
+			list.PendingDesktop = randomToken()[:24]
+		}
+		return list.desktopEntry(list.PendingDesktop), nil
+	}
+	a := list.find(account)
+	if a == nil {
+		return desktopEntry{}, errors.New("未找到所属账号")
+	}
+	if a.DesktopInstanceID == "" {
+		id := a.ID
+		if list.desktopOwner(id) != nil || id == list.PendingDesktop {
+			id = randomToken()[:24]
+		}
+		a.DesktopInstanceID = id
+	}
+	return list.desktopEntry(a.DesktopInstanceID), nil
+}
+
+func (s *Server) resolveDesktopInstance(id string) (provider string, owner *claudeAccount, exists bool, err error) {
+	s.claudeAccounts.mu.Lock()
+	clist, cerr := s.loadClaudeAccounts()
+	s.claudeAccounts.mu.Unlock()
+	if cerr != nil {
+		return "", nil, false, cerr
+	}
+	if o := clist.desktopOwner(id); o != nil {
+		copy := *o
+		return "claude", &copy, true, nil
+	}
+	if clist.PendingDesktop == id || (clist.find(id) != nil && clist.DesktopRedirects[id] == "") {
+		return "claude", nil, true, nil
+	}
+	for _, p := range cage.Providers() {
+		if p.ID == "claude" {
+			continue
+		}
+		st := s.providerAccounts.forProvider(p.ID)
+		st.mu.Lock()
+		plist, perr := s.loadProviderAccounts(p.ID)
+		st.mu.Unlock()
+		if perr != nil {
+			return "", nil, false, perr
+		}
+		if o := plist.desktopOwner(id); o != nil {
+			carrier := claudeAccount{
+				ID:                      o.ID,
+				Source:                  p.ID,
+				ProfileID:               o.guestID(),
+				Number:                  o.Number,
+				Label:                   o.Label,
+				Email:                   o.Email,
+				Organization:            o.Organization,
+				ProxyNodeID:             o.ProxyNodeID,
+				DesktopInstanceID:       o.DesktopInstanceID,
+				DesktopDedicatedNetwork: o.DesktopDedicatedNetwork,
+			}
+			return p.ID, &carrier, true, nil
+		}
+		if plist.PendingDesktop == id || plist.find(id) != nil {
+			return p.ID, nil, true, nil
+		}
+	}
+	return "", nil, false, nil
 }
 
 func (list *claudeAccountList) renameDesktop(id, raw string) (desktopEntry, error) {
@@ -146,6 +276,7 @@ func (list *claudeAccountList) createDesktop(account string) (desktopEntry, erro
 
 func (s *Server) newAccountDesktop(w http.ResponseWriter, r *http.Request) {
 	var input struct {
+		Provider  string `json:"provider"`
 		AccountID string `json:"account_id"`
 	}
 	if !readJSON(w, r, &input) {
@@ -155,8 +286,53 @@ func (s *Server) newAccountDesktop(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "此环境尚未支持独立 Desktop", 501)
 		return
 	}
+	provider := strings.TrimSpace(input.Provider)
+	if provider != "" && !cage.ValidProviderID(provider) {
+		http.Error(w, "Desktop 平台无效", http.StatusBadRequest)
+		return
+	}
 	s.op.Lock()
 	defer s.op.Unlock()
+
+	if provider == "" && input.AccountID != "" {
+		// Auto-detect non-Claude provider if account_id belongs to one.
+		for _, p := range cage.Providers() {
+			if p.ID == "claude" {
+				continue
+			}
+			st := s.providerAccounts.forProvider(p.ID)
+			st.mu.Lock()
+			plist, perr := s.loadProviderAccounts(p.ID)
+			found := perr == nil && plist.find(input.AccountID) != nil
+			st.mu.Unlock()
+			if found {
+				provider = p.ID
+				break
+			}
+		}
+	}
+
+	if provider != "" && provider != "claude" {
+		st := s.providerAccounts.forProvider(provider)
+		st.mu.Lock()
+		defer st.mu.Unlock()
+		plist, err := s.loadProviderAccounts(provider)
+		if err != nil {
+			requestError(w, err)
+			return
+		}
+		entry, err := plist.createDesktop(input.AccountID)
+		if err == nil {
+			err = s.saveProviderAccounts(provider, plist)
+		}
+		if err != nil {
+			requestError(w, err)
+			return
+		}
+		jsonReply(w, entry)
+		return
+	}
+
 	m := &s.claudeAccounts
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -201,6 +377,40 @@ func (s *Server) updateAccountDesktopMetadata(w http.ResponseWriter, r *http.Req
 		return
 	}
 	defer s.op.Unlock()
+
+	if id != "default" {
+		resolvedProvider, _, exists, err := s.resolveDesktopInstance(id)
+		if err != nil {
+			requestError(w, err)
+			return
+		}
+		if exists && resolvedProvider != "" && resolvedProvider != "claude" {
+			st := s.providerAccounts.forProvider(resolvedProvider)
+			st.mu.Lock()
+			defer st.mu.Unlock()
+			plist, err := s.loadProviderAccounts(resolvedProvider)
+			if err != nil {
+				requestError(w, err)
+				return
+			}
+			entry, err := plist.renameDesktop(id, *input.Label)
+			if errors.Is(err, os.ErrNotExist) {
+				http.NotFound(w, r)
+				return
+			}
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if err := s.saveProviderAccounts(resolvedProvider, plist); err != nil {
+				requestError(w, err)
+				return
+			}
+			jsonReply(w, entry)
+			return
+		}
+	}
+
 	m := &s.claudeAccounts
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -248,16 +458,55 @@ func (s *Server) deleteAccountDesktop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer s.op.Unlock()
+
+	resolvedProvider, _, exists, err := s.resolveDesktopInstance(id)
+	if err != nil {
+		requestError(w, err)
+		return
+	}
+	if exists && resolvedProvider != "" && resolvedProvider != "claude" {
+		st := s.providerAccounts.forProvider(resolvedProvider)
+		st.mu.Lock()
+		plist, perr := s.loadProviderAccounts(resolvedProvider)
+		valid := perr == nil && (plist.desktopOwner(id) != nil || plist.PendingDesktop == id)
+		st.mu.Unlock()
+		if perr != nil {
+			requestError(w, perr)
+			return
+		}
+		if !valid {
+			http.NotFound(w, r)
+			return
+		}
+		if err := s.changeAccountDesktop(s.operationContext(), id, claudeAccount{Source: resolvedProvider}, "delete"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		st.mu.Lock()
+		plist, perr = s.loadProviderAccounts(resolvedProvider)
+		if perr == nil {
+			plist.deleteDesktop(id)
+			perr = s.saveProviderAccounts(resolvedProvider, plist)
+		}
+		st.mu.Unlock()
+		if perr != nil {
+			requestError(w, perr)
+			return
+		}
+		jsonReply(w, map[string]bool{"ok": true})
+		return
+	}
+
 	m := &s.claudeAccounts
 	m.mu.Lock()
 	list, err := s.loadClaudeAccounts()
-	exists := err == nil && (list.desktopOwner(id) != nil || list.PendingDesktop == id)
+	claudeExists := err == nil && (list.desktopOwner(id) != nil || list.PendingDesktop == id)
 	m.mu.Unlock()
 	if err != nil {
 		requestError(w, err)
 		return
 	}
-	if !exists {
+	if !claudeExists {
 		http.NotFound(w, r)
 		return
 	}
@@ -285,8 +534,8 @@ func (list *claudeAccountList) migrateDesktopInstances(observed map[string]deskt
 	changed := false
 	for i := range list.Accounts {
 		a := &list.Accounts[i]
-		_, exists := observed[a.ID]
-		if exists && a.DesktopInstanceID == "" && list.desktopOwner(a.ID) == nil && a.ID != list.PendingDesktop && list.DesktopRedirects[a.ID] == "" {
+		obs, exists := observed[a.ID]
+		if exists && (obs.Provider == "" || obs.Provider == "claude") && a.DesktopInstanceID == "" && list.desktopOwner(a.ID) == nil && a.ID != list.PendingDesktop && list.DesktopRedirects[a.ID] == "" {
 			a.DesktopInstanceID = a.ID
 			changed = true
 		}
@@ -383,7 +632,7 @@ func (s *Server) reconcileDesktops(ctx context.Context, observed map[string]desk
 	sort.Strings(ids)
 	for _, id := range ids {
 		v := observed[id]
-		if !v.Running || v.Identity == nil {
+		if !v.Running || v.Identity == nil || (v.Provider != "" && v.Provider != "claude") {
 			continue
 		}
 		m.mu.Lock()
@@ -486,17 +735,19 @@ func (s *Server) desktopCatalog(w http.ResponseWriter, r *http.Request) {
 	}
 	accounts := make([]desktopEntry, 0, len(list.Accounts))
 	instances := make([]desktopEntry, 0, len(list.Accounts)+1)
+	claudeInstances := make([]desktopEntry, 0, len(list.Accounts)+1)
 	add := func(id string) {
 		e := list.desktopEntry(id)
 		e.Running = observed[id].Running
 		e.Generation = observed[id].Generation
 		instances = append(instances, e)
+		claudeInstances = append(claudeInstances, e)
 	}
 	if _, exists := observed["default"]; (exists || list.desktopOwner("default") != nil || list.DesktopLabels["default"] != "") && list.DesktopRedirects["default"] == "" {
 		add("default")
 	}
 	for _, a := range list.Accounts {
-		e := desktopEntry{ID: a.ID, AccountID: a.ID, Number: a.Number, Label: a.Label, Dedicated: a.DesktopDedicatedNetwork || a.ProxyNodeID != "", Running: observed[a.DesktopInstanceID].Running}
+		e := desktopEntry{Provider: "claude", ID: a.ID, AccountID: a.ID, Number: a.Number, Label: a.Label, Dedicated: a.DesktopDedicatedNetwork || a.ProxyNodeID != "", Running: observed[a.DesktopInstanceID].Running}
 		accounts = append(accounts, e)
 		if a.DesktopInstanceID != "" && a.DesktopInstanceID != "default" {
 			add(a.DesktopInstanceID)
@@ -505,7 +756,53 @@ func (s *Server) desktopCatalog(w http.ResponseWriter, r *http.Request) {
 	if list.PendingDesktop != "" {
 		add(list.PendingDesktop)
 	}
-	jsonReply(w, map[string]any{"supported": supported, "accounts": accounts, "instances": instances, "redirects": list.DesktopRedirects})
+	byProvider := map[string]any{
+		"claude": map[string]any{
+			"accounts":  accounts,
+			"instances": claudeInstances,
+			"redirects": list.DesktopRedirects,
+		},
+	}
+	for _, p := range cage.Providers() {
+		if p.ID == "claude" {
+			continue
+		}
+		st := s.providerAccounts.forProvider(p.ID)
+		st.mu.Lock()
+		plist, perr := s.loadProviderAccounts(p.ID)
+		st.mu.Unlock()
+		if perr != nil {
+			continue
+		}
+		pAccounts := make([]desktopEntry, 0, len(plist.Accounts))
+		pInstances := make([]desktopEntry, 0, len(plist.Accounts)+1)
+		addProviderInstance := func(id string) {
+			e := plist.desktopEntry(id)
+			e.Running = observed[id].Running
+			e.Generation = observed[id].Generation
+			pInstances = append(pInstances, e)
+			instances = append(instances, e)
+		}
+		for _, a := range plist.Accounts {
+			label := a.Label
+			if label == "" {
+				label = a.Email
+			}
+			e := desktopEntry{Provider: p.ID, ID: a.ID, AccountID: a.ID, Number: a.Number, Label: label, Dedicated: a.DesktopDedicatedNetwork || a.ProxyNodeID != "", Running: observed[a.DesktopInstanceID].Running}
+			pAccounts = append(pAccounts, e)
+			if a.DesktopInstanceID != "" {
+				addProviderInstance(a.DesktopInstanceID)
+			}
+		}
+		if plist.PendingDesktop != "" {
+			addProviderInstance(plist.PendingDesktop)
+		}
+		byProvider[p.ID] = map[string]any{
+			"accounts":  pAccounts,
+			"instances": pInstances,
+		}
+	}
+	jsonReply(w, map[string]any{"supported": supported, "accounts": accounts, "instances": instances, "redirects": list.DesktopRedirects, "providers": byProvider})
 }
 
 // The legacy window retains its original HOME, keyring and Desktop data. Add

@@ -75,9 +75,38 @@ test("regular account cookies survive a browser restart without entering other l
 });
 
 test("only official sign-in paths opt external links into login handling", () => {
-  for (const address of ["https://claude.ai/login/app-google-auth","https://claude.com/cai/login/app-google-auth","https://claude.ai/magic-link","https://claude.ai/sso-callback","https://claude.ai/login/sso-providers","https://claude.com/cai/oauth/authorize?state=one","https://api.workos.com/sso/authorize?redirect_uri=https://claude.ai/sso-callback","https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://claude.com/auth"])
+  for (const address of [
+    "https://claude.ai/login/app-google-auth",
+    "https://claude.com/cai/login/app-google-auth",
+    "https://claude.ai/magic-link",
+    "https://claude.ai/sso-callback",
+    "https://claude.ai/login/sso-providers",
+    "https://claude.com/cai/oauth/authorize?state=one",
+    "https://api.workos.com/sso/authorize?redirect_uri=https://claude.ai/sso-callback",
+    "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://claude.com/auth",
+    "https://antigravity.google/auth-success?app=antigravity",
+    "https://antigravity.google/oauth-callback",
+    "https://antigravity.google.com/login",
+    "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://antigravity.google/oauth-callback",
+    "https://accounts.google.com/o/oauth2/auth?redirect_uri=http://127.0.0.1:43210/callback",
+    "https://accounts.google.com/o/oauth2/auth?redirect_uri=http://localhost:8085/oauth2callback",
+    "https://auth.openai.com/oauth/authorize",
+    "https://chatgpt.com/activate",
+  ])
     assert.equal(isClaudeSignIn(address), true, address);
-  for (const address of ["https://claude.ai/chat/123","https://claude.ai.example.org/login","https://docs.example.org/login","https://claude.ai:445/login","https://api.workos.com/sso/authorize","https://api.workos.com/sso/authorize?redirect_uri=https://example.org/auth","https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://claude.ai.example.org/auth"])
+  for (const address of [
+    "https://claude.ai/chat/123",
+    "https://claude.ai.example.org/login",
+    "https://docs.example.org/login",
+    "https://claude.ai:445/login",
+    "https://antigravity.google/docs/install",
+    "https://chatgpt.com/docs",
+    "https://auth.openai.com.example.org/oauth/authorize",
+    "https://api.workos.com/sso/authorize",
+    "https://api.workos.com/sso/authorize?redirect_uri=https://example.org/auth",
+    "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=https://claude.ai.example.org/auth",
+    "https://accounts.google.com/o/oauth2/v2/auth?redirect_uri=http://127.0.0.1:80/callback",
+  ])
     assert.equal(isClaudeSignIn(address), false, address);
   assert.equal(isClaudeSignIn("https://api.workos.com/sso/authorize", true), true);
 });

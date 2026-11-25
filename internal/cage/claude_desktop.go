@@ -5,6 +5,12 @@ import _ "embed"
 //go:embed claude-desktop-install.sh
 var claudeDesktopInstall string
 
+//go:embed antigravity-desktop-install.sh
+var antigravityDesktopInstall string
+
+//go:embed codex-desktop-install.sh
+var codexDesktopInstall string
+
 //go:embed claude-desktop-session.sh
 var claudeDesktopSession string
 
@@ -46,6 +52,27 @@ sudo -H -u cage xdg-mime default workbench-web.desktop x-scheme-handler/http x-s
 
 func ClaudeDesktopInstallScript() string {
 	return ToolInstallPrelude() + claudeDesktopInstall + "\n" + ClaudeDesktopProvisionScript()
+}
+
+func AntigravityDesktopInstallScript() string {
+	return ToolInstallPrelude() + antigravityDesktopInstall + "\n" + ClaudeDesktopProvisionScript()
+}
+
+func CodexDesktopInstallScript() string {
+	return ToolInstallPrelude() + codexDesktopInstall + "\n" + ClaudeDesktopProvisionScript()
+}
+
+func DesktopInstallScriptFor(provider string) (string, bool) {
+	switch provider {
+	case "claude":
+		return ClaudeDesktopInstallScript(), true
+	case "antigravity":
+		return AntigravityDesktopInstallScript(), true
+	case "codex":
+		return CodexDesktopInstallScript(), true
+	default:
+		return "", false
+	}
 }
 
 // DesktopFileSupportScript installs the session FileChooser portal helper and

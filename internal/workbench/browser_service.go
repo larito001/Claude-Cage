@@ -37,6 +37,8 @@ type browserCookieInput struct {
 }
 
 type browserInput struct {
+	Space          string              `json:"space,omitempty"`
+	Route          string              `json:"route,omitempty"`
 	Incognito      bool                `json:"incognito,omitempty"`
 	Enabled        *bool               `json:"enabled,omitempty"`
 	CookieKey      string              `json:"cookieKey,omitempty"`
@@ -125,6 +127,12 @@ func (s *Server) browserAction(ctx context.Context, action string, input *browse
 	var body []byte
 	if input != nil {
 		method = http.MethodPost
+		if input.Route != "" {
+			return nil, browserInputError{errors.New("不允许直接指定内部路由参数")}
+		}
+		if input.Space != "" && action != "new" {
+			return nil, browserInputError{errors.New("仅新建标签页可指定浏览器空间")}
+		}
 		if action == "cookies" && (input.ID == "" ||
 			(input.Mode != "list" && input.Mode != "details" && input.Mode != "delete" && input.Mode != "delete-selected" && input.Mode != "clear" && input.Mode != "set") ||
 			(input.Scope != "site" && input.Scope != "all") || len(input.Query) > 800 || input.Page < 0 ||
@@ -183,6 +191,24 @@ func (s *Server) browserAction(ctx context.Context, action string, input *browse
 			validSession := input.Mode == "status" || validInputToken(input.Session)
 			if !validTarget || !validMode || !validSession || input.Mode == "begin" && !validInputToken(input.Context) || input.Sequence < 0 || len(input.Text) > 8192 || input.SelectionStart < 0 || input.SelectionEnd < input.SelectionStart || input.SelectionEnd > selectionLimit {
 				return nil, browserInputError{errors.New("输入法组合状态无效")}
+			}
+		}
+		if action == "new" && input.Space != "" {
+			if input.Incognito {
+				return nil, browserInputError{errors.New("无痕标签不能同时归属浏览器空间")}
+			}
+			spaceCfg, provider, err := s.ensureBrowserSpaceConfig(input.Space)
+			if err != nil {
+				return nil, err
+			}
+			if input.URL == "" {
+				input.URL = provider.WebURL
+			}
+			if spaceCfg.ProxyNodeID != "" {
+				if err := s.ensureAccountNetwork(ctx, spaceCfg.RouteID, spaceCfg.ProxyNodeID); err != nil {
+					return nil, err
+				}
+				input.Route = spaceCfg.RouteID
 			}
 		}
 		if action == "new" && input.URL == "" {

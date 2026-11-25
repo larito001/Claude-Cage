@@ -13,10 +13,13 @@ import (
 
 func TestWHPXQEMU64Features(t *testing.T) {
 	for bits, want := range map[uint64]string{
-		0:    "qemu64",
-		0x60: "qemu64", // AMD SSE4a and XOP do not imply SSE4.2.
-		0x0c: "qemu64,+ssse3,+sse4.1",
-		0x9c: "qemu64,+ssse3,+sse4.1,+sse4.2,+popcnt",
+		0:       "qemu64",
+		0x60:    "qemu64", // AMD SSE4a and XOP do not imply SSE4.2.
+		0x0c:    "qemu64,+ssse3,+sse4.1",
+		0x9c:    "qemu64,+ssse3,+sse4.1,+sse4.2,+popcnt",
+		1 << 16: "qemu64,+aes",
+		1 << 17: "qemu64,+pclmulqdq",
+		0x3009c: "qemu64,+ssse3,+sse4.1,+sse4.2,+popcnt,+aes,+pclmulqdq",
 	} {
 		if got := whpxQEMU64Model(bits); got != want {
 			t.Errorf("WHPX feature mask %#x: got %q, want %q", bits, got, want)

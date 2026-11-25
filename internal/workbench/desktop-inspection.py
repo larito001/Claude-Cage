@@ -17,9 +17,9 @@ for unit in units.strip().split("\n\n"):
     if values.get("ActiveState") == "active":
         running[values["Id"]] = int(values["MainPID"])
 result = {}
-def inspect(instance, runtime, unit):
+def inspect(instance, runtime, unit, provider="claude"):
     active = unit in running
-    result[instance] = {"running": active, "generation": running.get(unit, 0)}
+    result[instance] = {"running": active, "generation": running.get(unit, 0), "provider": provider}
     if active:
         try:
             with Path("/run", runtime, "account.json").open() as status:
@@ -30,10 +30,14 @@ def inspect(instance, runtime, unit):
             result[instance]["identity"] = observation
 
 if (home / ".config/Claude").is_dir() or "cage-claude-desktop.service" in running:
-    inspect("default", "cage-desktop", "cage-claude-desktop.service")
+    inspect("default", "cage-desktop", "cage-claude-desktop.service", "claude")
 if base.is_dir():
     for folder in base.iterdir():
         if identifier.fullmatch(folder.name) and (folder / "launch.lock").is_file():
+            try:
+                prov = (folder / "provider").read_text(encoding="utf-8").strip() or "claude"
+            except OSError:
+                prov = "claude"
             unit = "desktop-" + folder.name
-            inspect(folder.name, unit, unit + ".service")
+            inspect(folder.name, unit, unit + ".service", prov)
 print(json.dumps(result, separators=(",", ":")))

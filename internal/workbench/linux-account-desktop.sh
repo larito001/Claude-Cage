@@ -5,6 +5,8 @@ umask 077
 id=$1
 code=$2
 scope=$3
+provider=${4:-claude}
+[[ $provider == claude || $provider == antigravity || $provider == codex ]]
 [[ $id =~ ^[0-9a-f]{24}$ && ( $code == default || $code =~ ^[0-9a-f]{24}$ ) ]]
 unit="desktop-$id"
 base="$HOME/.local/share/desktop-profiles/$id"
@@ -36,7 +38,12 @@ if [[ $scope == stop ]]; then
   exit 0
 fi
 if systemctl is-active --quiet "$unit.service"; then exit 0; fi
-test -x /usr/bin/claude-desktop
+case "$provider" in
+  claude) test -x /usr/bin/claude-desktop ;;
+  antigravity) test -x /usr/bin/antigravity ;;
+  codex) test -x /usr/bin/chatgpt ;;
+esac
+printf '%s\n' "$provider" > "$base/provider"
 sudo systemctl reset-failed "$unit.service" 2>/dev/null || :
 # The controller creates node namespaces. Older administrator-managed
 # namespaces keep their Desktop-only binding until the account is changed.
@@ -63,22 +70,28 @@ set -euo pipefail
 umask 077
 base=$1
 code=$2
-if [[ $code == default ]]; then
-  config="$base/code"
-else
-  config="$HOME/.local/share/cage/claude-accounts/$code/config"
+provider=${3:-claude}
+data="$base/data"
+if [[ $provider == claude ]]; then
+  if [[ $code == default ]]; then
+    config="$base/code"
+  else
+    config="$HOME/.local/share/cage/claude-accounts/$code/config"
+  fi
+  mkdir -p "$config"
+  if [[ $code != default ]]; then
+    /usr/local/bin/cage-claude-account share "$code" >/dev/null || :
+  fi
+  export CLAUDE_CONFIG_DIR
+  CLAUDE_CONFIG_DIR=$(python3 -I -c 'import runpy,sys;print(runpy.run_path("/usr/local/bin/client_runtime.py")["path"](sys.argv[1]))' "$config")
+elif [[ $provider == antigravity ]]; then
+  mkdir -p "$base/home/.gemini/config"
+  export ANTIGRAVITY_GEMINI_DIR
+  ANTIGRAVITY_GEMINI_DIR=$(python3 -I -c 'import runpy,sys;print(runpy.run_path("/usr/local/bin/client_runtime.py")["path"](sys.argv[1]))' "$base/home/.gemini")
+elif [[ $provider == codex ]]; then
+  mkdir -p "$base/home/.codex"
+  export CODEX_HOME="$base/home/.codex"
 fi
-mkdir -p "$config"
-# Desktop's Code tab starts the CLI without Cage's launch flags. Link the
-# shared skills and instructions and add shared settings first; a conflict
-# keeps the original files, is logged by this unit and does not block Desktop.
-if [[ $code != default ]]; then
-  /usr/local/bin/cage-claude-account share "$code" >/dev/null || :
-fi
-# client_runtime creates temporary compatibility aliases. Resolve the path
-# inside the service's private /tmp so it also exists for the Code tab.
-export CLAUDE_CONFIG_DIR
-CLAUDE_CONFIG_DIR=$(python3 -I -c 'import runpy,sys;print(runpy.run_path("/usr/local/bin/client_runtime.py")["path"](sys.argv[1]))' "$config")
 export HOME="$base/home" XDG_RUNTIME_DIR="$RUNTIME_DIRECTORY"
 unset RUNTIME_DIRECTORY INVOCATION_ID JOURNAL_STREAM SYSTEMD_EXEC_PID
 rm -f "$XDG_RUNTIME_DIR/stopping"
@@ -97,35 +110,40 @@ on_term() {
 }
 trap on_term TERM
 export PATH=/usr/bin:/bin XDG_CURRENT_DESKTOP=Openbox
-mkdir -p "$HOME" "$base/data" "$HOME/.local/share/applications" "$HOME/.config"
+mkdir -p "$HOME" "$data" "$HOME/.local/share/applications" "$HOME/.config"
 # Give the login browser the same profile, network namespace and callback
 # handler as its originating Desktop. gio reads these defaults in this HOME.
-python3 - "$base" <<'PY'
+python3 - "$base" "$provider" <<'PY'
 from pathlib import Path
 import sys
 from configparser import ConfigParser
 base=Path(sys.argv[1])
+provider=sys.argv[2] if len(sys.argv) > 2 else 'claude'
+data=base/'data'
 apps=Path.home()/'.local/share/applications'
 def arg(path):
     return '"'+str(path).replace('\\','\\\\').replace('"','\\"').replace('$','\\$').replace('`','\\`').replace('%','%%')+'"'
-# Claude registers this desktop ID again at startup. A per-profile entry
-# with the same ID keeps that registration pointed at the original process.
-# The portal builds its chooser from the MIME cache, even when the default
-# handler in mimeapps.list is already correct. Minimal guests lack the updater.
 cache = ConfigParser(interpolation=None)
 cache.optionxform = str
 cache.read(apps/'mimeinfo.cache')
 if 'MIME Cache' not in cache:
     cache.add_section('MIME Cache')
-for name,mimes,line in [
- ('com.anthropic.Claude',['claude'],'/usr/bin/claude-desktop '+arg('--user-data-dir='+str(base/'data'))+' %u'),
- ('web',['http','https'],'/usr/bin/python3 -I /usr/local/lib/desktop-auth-browser.py %u')]:
+if provider == 'antigravity':
+    app_entry = ('com.google.Antigravity', ['antigravity'], '/usr/bin/antigravity '+arg('--user-data-dir='+str(data))+' %u')
+elif provider == 'codex':
+    app_entry = ('com.openai.ChatGPT', ['chatgpt', 'codex', 'openai'], '/usr/bin/env '+arg('CODEX_HOME='+str(base/'home'/'.codex'))+' /usr/bin/chatgpt '+arg('--user-data-dir='+str(data))+' %u')
+else:
+    app_entry = ('com.anthropic.Claude', ['claude'], '/usr/bin/claude-desktop '+arg('--user-data-dir='+str(data))+' %u')
+entries = [app_entry, ('web',['http','https'],'/usr/bin/python3 -I /usr/local/lib/desktop-auth-browser.py %u')]
+default_lines = ['[Default Applications]']
+for name,mimes,line in entries:
     (apps/(name+'.desktop')).write_text('[Desktop Entry]\nType=Application\nName='+name+'\nExec='+line+'\nMimeType='+''.join('x-scheme-handler/'+m+';' for m in mimes)+'\n')
     for mime in mimes:
         cache['MIME Cache']['x-scheme-handler/'+mime]=name+'.desktop;'
+        default_lines.append('x-scheme-handler/'+mime+'='+name+'.desktop;')
 with (apps/'mimeinfo.cache').open('w') as output:
     cache.write(output,space_around_delimiters=False)
-(Path.home()/'.config/mimeapps.list').write_text('[Default Applications]\nx-scheme-handler/claude=com.anthropic.Claude.desktop;\nx-scheme-handler/http=web.desktop;\nx-scheme-handler/https=web.desktop;\n')
+(Path.home()/'.config/mimeapps.list').write_text('\n'.join(default_lines)+'\n')
 PY
 # Use the desktop-entry parser for quoted arguments when the browser opens a
 # custom URI. Route local files and folders to this instance's file broker.
@@ -133,7 +151,7 @@ mkdir -p "$XDG_RUNTIME_DIR/bin"
 cat > "$XDG_RUNTIME_DIR/bin/xdg-open" <<'OPEN'
 #!/bin/sh
 case "${1:-}" in
-  http://*|https://*|claude://*|about:blank) exec /usr/bin/gio open "$1" ;;
+  http://*|https://*|claude://*|antigravity://*|chatgpt://*|codex://*|openai://*|about:blank) exec /usr/bin/gio open "$1" ;;
   *) exec /usr/local/bin/cage-desktop-files --open "${1:-}" ;;
 esac
 OPEN
@@ -150,8 +168,6 @@ Xtigervnc -displayfd 3 3>"$XDG_RUNTIME_DIR/display" -geometry 1280x800 -depth 24
 for _ in {1..100}; do test -s "$XDG_RUNTIME_DIR/display" && break; sleep .05; done
 export DISPLAY=":$(cat "$XDG_RUNTIME_DIR/display")"
 xauth -f "$XAUTHORITY" add "$DISPLAY" . "$cookie"
-# The environment file's values win over the unit's own Environment=, so the
-# account's region arrives under other names and is applied here.
 if [[ -n "${account_tz:-}" ]]; then export TZ=$account_tz; fi
 if [[ -n "${account_language:-}" ]]; then CAGE_LANGUAGE=$account_language; fi
 unset account_tz account_language
@@ -166,7 +182,6 @@ cat > "$XDG_RUNTIME_DIR/windows.xml" <<'XML'
 <openbox_config xmlns="http://openbox.org/3.4/rc"><desktops><number>1</number></desktops><applications><application type="normal"><decor>no</decor><maximized>yes</maximized></application></applications></openbox_config>
 XML
 openbox --config-file "$XDG_RUNTIME_DIR/windows.xml" >/dev/null 2>&1 &
-# Electron draws its own GTK controls; Openbox decorations alone do not hide them.
 printf 'Gtk/DecorationLayout ":"\n' > "$XDG_RUNTIME_DIR/xsettings.conf"
 xsettingsd --config="$XDG_RUNTIME_DIR/xsettings.conf" &
 python3 - <<'PYSETTINGS'
@@ -204,18 +219,19 @@ fi
 notify=$NOTIFY_SOCKET
 unset NOTIFY_SOCKET
 cd "$HOME"
-# Desktop emits the active identity from its native account provider after
-# the renderer confirms the login. Keep the filtered stream in the unit's
-# private, ephemeral runtime directory; no callback or cookie is inspected.
 input_session=()
 if [[ -x /usr/local/bin/cage-input-session ]]; then input_session=(/usr/local/bin/cage-input-session); fi
 lang_args=()
 if [[ -n "${desktop_lang:-}" ]]; then lang_args=("--lang=${desktop_lang}"); fi
-# The neutral launcher renames the audio and input socket paths the client
-# would otherwise see. It is installed with the environment.
 client_runtime=()
 if [[ -r /usr/local/bin/client_runtime.py ]]; then client_runtime=(/usr/bin/python3 -I /usr/local/bin/client_runtime.py); fi
-DESKTOP_LOG_LEVEL=debug CLAUDE_ENABLE_LOGGING=1 DEBUG='*current-account*' ${input_session[@]+"${input_session[@]}"} ${client_runtime[@]+"${client_runtime[@]}"} claude-desktop "--user-data-dir=$base/data" ${lang_args[@]+"${lang_args[@]}"} --password-store=gnome-libsecret --xdg-portal-required-version=3 > >(/usr/bin/python3 -I /usr/local/lib/desktop-identity.py "$XDG_RUNTIME_DIR/account.json") &
+if [[ $provider == antigravity ]]; then
+  ${input_session[@]+"${input_session[@]}"} ${client_runtime[@]+"${client_runtime[@]}"} antigravity "--user-data-dir=$data" ${lang_args[@]+"${lang_args[@]}"} --disable-quic --force-webrtc-ip-handling-policy=disable_non_proxied_udp --password-store=gnome-libsecret --xdg-portal-required-version=3 > >(/usr/bin/python3 -I /usr/local/lib/desktop-identity.py "$XDG_RUNTIME_DIR/account.json" --antigravity) &
+elif [[ $provider == codex ]]; then
+  ${input_session[@]+"${input_session[@]}"} ${client_runtime[@]+"${client_runtime[@]}"} /usr/bin/env "CODEX_HOME=$CODEX_HOME" /usr/bin/chatgpt "--user-data-dir=$data" ${lang_args[@]+"${lang_args[@]}"} --disable-quic --force-webrtc-ip-handling-policy=disable_non_proxied_udp --password-store=gnome-libsecret --xdg-portal-required-version=3 > >(/usr/bin/python3 -I /usr/local/lib/desktop-identity.py "$XDG_RUNTIME_DIR/account.json" --codex) &
+else
+  DESKTOP_LOG_LEVEL=debug CLAUDE_ENABLE_LOGGING=1 DEBUG='*current-account*' ${input_session[@]+"${input_session[@]}"} ${client_runtime[@]+"${client_runtime[@]}"} claude-desktop "--user-data-dir=$data" ${lang_args[@]+"${lang_args[@]}"} --password-store=gnome-libsecret --xdg-portal-required-version=3 > >(/usr/bin/python3 -I /usr/local/lib/desktop-identity.py "$XDG_RUNTIME_DIR/account.json") &
+fi
 app=$!
 printf '%s\n' "$app" > "$XDG_RUNTIME_DIR/app-pid"
 for _ in {1..250}; do
@@ -255,12 +271,11 @@ sudo systemd-run --quiet --no-block --collect --unit="$unit" --service-type=noti
   --property=NotifyAccess=all --property=TimeoutStartSec=45 --property=TimeoutStopSec=8 \
   --property="ExecStop=/bin/bash /usr/local/lib/desktop-finish.sh $runtime $unit.service" \
   --property=KillMode=control-group --property=PrivateTmp=yes ${props[@]+"${props[@]}"} \
-  /usr/bin/dbus-run-session -- /bin/bash "$program" "$base" "$code"
+  /usr/bin/dbus-run-session -- /bin/bash "$program" "$base" "$code" "$provider"
 ok=
 trap 'if [[ -z "$ok" ]]; then sudo systemctl stop "$unit.service" >/dev/null 2>&1 || :; fi; rm -f -- "$program"' EXIT
 for _ in {1..160}; do test -p "$runtime/unlock" && break; sleep .1; done
 test -p "$runtime/unlock"
-# The child shell opens the FIFO so the timeout covers open as well as write.
 # shellcheck disable=SC2016
 timeout 5 sh -c 'cat >"$1/unlock"' sh "$runtime"
 for _ in {1..260}; do

@@ -9,6 +9,7 @@ import { auditBrowser } from "./browser-audit.mjs";
 import { BrowserVault } from "./browser-vault.mjs";
 import { LoginBrowser, isClaudeSignIn } from "./browser-login.mjs";
 import { PrivateBrowser } from "./browser-private.mjs";
+import { BrowserSpaces, SpaceCookies } from "./browser-spaces.mjs";
 import { browserCookies, AccountLoginCookies } from "./browser-cookies.mjs";
 import { BrowserExtensions, extensionUploadLimit } from "./browser-extensions.mjs";
 import { BrowserHistory } from "./browser-history.mjs";
@@ -106,6 +107,7 @@ const auditExclusions = new Set();
 const auditCreations = new Set(), deferredTargetInfo = new Map();
 const loginBrowser = new LoginBrowser(cdp, new AccountLoginCookies("/home/cage-browser/LoginProfiles"));
 const privateBrowser = new PrivateBrowser(cdp, downloadPath);
+const browserSpaces = new BrowserSpaces(cdp, new SpaceCookies("/home/cage-browser/SpaceProfiles"), downloadPath);
 const browserExtensions = new BrowserExtensions({ directory: "/home/cage-browser", cdp, control: splitController, protectedID: extensionId });
 const browserHistory = new BrowserHistory({ cdp, control: splitController });
 const pending = new Map(),
@@ -223,7 +225,7 @@ function updateTargetInfo(t) {
   if (!isBrowserTab(t)) return;
   const fresh = !targets.has(t.targetId);
   const previous = targets.get(t.targetId);
-  targets.set(t.targetId, privateBrowser.tab(loginBrowser.tab(rememberOpener(t, previous), previous)));
+  targets.set(t.targetId, privateBrowser.tab(browserSpaces.tab(loginBrowser.tab(rememberOpener(t, previous), previous), previous)));
   if (isNativeNewTab(t.url)) void restoreHomepage(t.targetId).catch(error => console.error("Could not open homepage:", error.message));
   if (fresh) void session(t.targetId).catch(() => {});
   if (t.targetId === activeId) rememberSelection();
@@ -320,6 +322,7 @@ chrome.stdio[4].on("data", (chunk) => {
       deferredTargetInfo.delete(p.targetId);
       inspectors.delete(p.targetId);
       void mutate(() => loginBrowser.targetClosed(p.targetId)).catch(() => {});
+      void mutate(() => browserSpaces.targetClosed(p.targetId)).catch(() => {});
       if (p.targetId === splitTarget) {
         splitTarget = null; splitSession = null;
         if (!shuttingDown) void mutate(async () => {
@@ -359,7 +362,11 @@ chrome.stdio[4].on("data", (chunk) => {
       faviconRequests.delete(uploadTab);
       broadcastState();
     }
-    if (uploadTab && event.method === "Page.loadEventFired") refreshFavicon(uploadTab);
+    if (uploadTab && event.method === "Page.loadEventFired") {
+      refreshFavicon(uploadTab);
+      const tabSpace = targets.get(uploadTab)?.space;
+      if (tabSpace) void mutate(() => browserSpaces.persist(tabSpace)).catch(() => {});
+    }
     if (uploadTab === activeId && (
       event.method === "Page.loadEventFired" ||
       event.method === "Page.navigatedWithinDocument" ||
@@ -566,8 +573,15 @@ function checkedURL(value) {
   if (value === settingsURL || value.startsWith(settingsURL + "#")) return value;
   throw new Error("Only HTTP(S) URLs and supported browser pages are accepted");
 }
-async function newTab(url = homeURL, incognito = false) {
+async function newTab(url = homeURL, incognito = false, space = "", route = "") {
   const address = checkedURL(url);
+  if (space) {
+    return browserSpaces.open(space, address, async tab => {
+      targets.set(tab.targetId, tab);
+      await activate(tab.targetId, true);
+      return session(tab.targetId);
+    }, { route });
+  }
   if (incognito) {
     const result = await privateBrowser.open("about:blank", async tab => {
       targets.set(tab.targetId, tab);
@@ -658,7 +672,7 @@ async function tabState() {
   for (const tab of targetInfos) {
     if (!isBrowserTab(tab)) continue;
     const previous = targets.get(tab.targetId);
-    targets.set(tab.targetId, privateBrowser.tab(loginBrowser.tab(rememberOpener(tab, previous), previous)));
+    targets.set(tab.targetId, privateBrowser.tab(browserSpaces.tab(loginBrowser.tab(rememberOpener(tab, previous), previous), previous)));
   }
   await refreshNavigation();
   return publicState();
@@ -708,6 +722,7 @@ function publicState() {
     uploads: uploads.snapshot(),
     tabs: [...targets.values()].map((t) => ({
       id: t.targetId,
+      space: t.space || "",
       incognito: Boolean(t.incognito),
       login: Boolean(t.login),
       title: displayTitle(t),
@@ -926,7 +941,10 @@ const server = http.createServer(async (req, res) => {
         try { return await vault.request(input); }
         catch (error) { return { vaultError: error.message }; }
       }
-      if (req.url === "/login-open" || (req.url === "/new" && (input.route || isClaudeSignIn(input.url)))) {
+      if (req.url === "/space-route") {
+        return browserSpaces.setRoute(input.space, input.route || "");
+      }
+      if (req.url === "/login-open" || (req.url === "/new" && !input.space && (input.route || isClaudeSignIn(input.url)))) {
         const external = req.url === "/new" && !isClaudeSignIn(input.url);
         const privateLogin = !external && !existsSync("/etc/claude-cage/login-browser-mode");
         return loginBrowser.open(input.login || randomUUID(), input.url, async tab => {
@@ -986,7 +1004,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (req.url === "/resize")
         return resizeDisplay(input.width, input.height, input.scale);
-      if (req.url === "/new") return newTab(input.url || undefined, input.incognito === true);
+      if (req.url === "/new") return newTab(input.url || undefined, input.incognito === true, input.space || "", input.route || "");
       if (req.url === "/editor") return editor(input.workspace || config.workspace);
       if (req.url === "/editor-restart") return restartEditor(input.workspace);
       if (req.url === "/ime") {
@@ -998,7 +1016,14 @@ const server = http.createServer(async (req, res) => {
       const id = input.id || activeId;
       if (!targets.has(id)) throw new Error("Tab no longer exists");
       switch (req.url) {
-        case "/cookies": return browserCookies(cdp, session, { ...targets.get(id), url: publicURL(targets.get(id)) }, input);
+        case "/cookies": {
+          const tab = targets.get(id);
+          const reply = await browserCookies(cdp, session, { ...tab, url: publicURL(tab) }, input);
+          if (tab.space && ["delete", "delete-selected", "clear", "set"].includes(input.mode)) {
+            await browserSpaces.persist(tab.space);
+          }
+          return reply;
+        }
         case "/copy-context": {
           if (!/^[a-f0-9]{32}$/.test(input.context || "") || id !== activeId)
             throw new Error("Copy target changed");
@@ -1122,6 +1147,6 @@ process.on("SIGTERM", () => {
   shuttingDown = true;
   server.close();
   void phoneBrowser?.dispose();
-  void loginBrowser.shutdown().finally(() => cdp("Browser.close")).catch(() => {});
+  void Promise.allSettled([loginBrowser.shutdown(), browserSpaces.shutdown()]).finally(() => cdp("Browser.close")).catch(() => {});
   setTimeout(() => process.exit(0), 2000).unref();
 });

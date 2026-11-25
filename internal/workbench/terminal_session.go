@@ -29,6 +29,8 @@ type terminalSession struct {
 	conversationEnded     bool
 	workspace             string
 	kind, claudeAccountID string
+	provider              string
+	providerAccountID     string
 	loginGuestID          string
 	physicalProfile       string
 	loginRequested        time.Time
@@ -57,6 +59,21 @@ func (t *terminalSession) accountID() string {
 	return t.claudeAccountID
 }
 
+func (t *terminalSession) providerName() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.provider
+}
+
+func (t *terminalSession) anyAccountID() string {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.claudeAccountID != "" {
+		return t.claudeAccountID
+	}
+	return t.providerAccountID
+}
+
 func (t *terminalSession) ended() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -76,7 +93,7 @@ func (t *terminalSession) ended() bool {
 func (t *terminalSession) replaceable() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	return t.closed && !t.dismissed && t.kind == "claude-login"
+	return t.closed && !t.dismissed && isProviderLoginKind(t.kind)
 }
 
 func (t *terminalSession) ownsConversation() bool {
@@ -102,6 +119,7 @@ func (t *terminalSession) summary() map[string]any {
 		}
 	}
 	return map[string]any{"id": t.id, "title": t.title, "closed": closed, "workspace": t.workspace, "kind": t.kind,
+		"provider": t.provider, "provider_account_id": t.providerAccountID, "login_guest_id": t.loginGuestID,
 		"claude_account_id": t.claudeAccountID, "claude_account_source": t.claudeAccountSource, "cli_session_id": t.sharedID,
 		"background_login": t.backgroundLogin, "login_notice": t.loginNotice, "cli_starting": t.cliStartupPendingLocked()}
 }

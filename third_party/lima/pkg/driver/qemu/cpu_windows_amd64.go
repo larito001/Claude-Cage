@@ -41,6 +41,10 @@ func whpxQEMU64Model(bits uint64) string {
 		{1 << 3, "+sse4.1"},
 		{1 << 4, "+sse4.2"},
 		{1 << 7, "+popcnt"},
+		// Antigravity CLI requires PCLMUL; expose crypto instructions only
+		// when WHPX reports them available to guests.
+		{1 << 16, "+aes"},
+		{1 << 17, "+pclmulqdq"},
 	} {
 		if bits&feature.mask != 0 {
 			model += "," + feature.flag

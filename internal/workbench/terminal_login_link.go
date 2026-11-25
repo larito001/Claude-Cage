@@ -28,6 +28,32 @@ func claudeAuthorizationURL(raw string) bool {
 	return false
 }
 
+func terminalAuthorizationURL(raw string) bool {
+	if claudeAuthorizationURL(raw) {
+		return true
+	}
+	if len(raw) > 8192 || strings.ContainsAny(raw, "\r\n\t \\") {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.User != nil || u.Port() != "" {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	path := strings.TrimSuffix(u.EscapedPath(), "/")
+	switch host {
+	case "antigravity.google", "antigravity.google.com":
+		return u.RawQuery != "" && (path == "/login" || path == "/auth" || path == "/oauth" || strings.HasPrefix(path, "/oauth/"))
+	case "accounts.google.com":
+		return u.RawQuery != "" && (strings.HasPrefix(path, "/o/oauth2") || path == "/AccountChooser" || strings.HasPrefix(path, "/AccountChooser/"))
+	case "auth.openai.com", "auth0.openai.com":
+		return u.RawQuery != "" && (path == "/authorize" || path == "/oauth/authorize" || strings.HasPrefix(path, "/u/login"))
+	case "chatgpt.com", "chat.openai.com":
+		return path == "/activate" || strings.HasPrefix(path, "/auth/")
+	}
+	return false
+}
+
 func (s *Server) terminalLoginLink(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		URL  string `json:"url"`
@@ -36,8 +62,8 @@ func (s *Server) terminalLoginLink(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &input) {
 		return
 	}
-	if !claudeAuthorizationURL(input.URL) {
-		http.Error(w, "请选择 Claude 官方授权链接", 400)
+	if !terminalAuthorizationURL(input.URL) {
+		http.Error(w, "请选择官方授权链接", 400)
 		return
 	}
 	terminal := s.terminals.get(r.PathValue("id"))
@@ -59,7 +85,7 @@ func (s *Server) terminalLoginLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := s.accountForRoute(terminal.accountID())
+	a, err := s.providerAccountForRoute(terminal.providerName(), terminal.anyAccountID())
 	if err != nil {
 		requestError(w, err)
 		return

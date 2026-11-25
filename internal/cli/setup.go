@@ -85,14 +85,14 @@ Options:
 
 // The software of the base, as agent-vm.setup.sh names it
 // (AGENT_VM_INSTALL_<NAME>).
-var software = []string{"python", "node", "ruby", "rust", "golang", "docker", "chromium", "gh", "claude", "opencode", "codex", "vibe", "pi",
+var software = []string{"python", "node", "ruby", "rust", "golang", "docker", "chromium", "gh", "claude", "agy", "opencode", "codex", "vibe", "pi",
 	"code-server", "code-claude", "code-opencode", "code-codex", "code-vibe", "mcp-chrome", "mcp-playwright"}
 
 // The default set. Opt-in: Ruby, Rust, Go, Pi (released several times a
 // week), Playwright MCP (a second browser-driving server, whose tools cost
 // context in every agent), and code-server with its extensions (an editor
 // most use on the host).
-var defaultSoftware = []string{"python", "node", "docker", "chromium", "gh", "claude", "opencode", "codex", "vibe", "mcp-chrome"}
+var defaultSoftware = []string{"python", "node", "docker", "chromium", "gh", "claude", "agy", "opencode", "codex", "vibe", "mcp-chrome"}
 
 // skipPrereqs is for tests, on hosts without KVM.
 var skipPrereqs = false
@@ -303,6 +303,7 @@ func (e *app) wizard(in install, disk, memory, cpus int, memorySeen bool) (int, 
 		"            Chrome DevTools MCP\n"+
 		"  Skip:     Pi, Ruby, Rust, Go, Playwright MCP, code-server\n\n")
 	if !yn("Use this default", true) {
+		in["agy"] = false
 		fmt.Fprint(w, "\nAI coding agents\n────────────────\n")
 		in["claude"] = yn("Claude Code", true)
 		in["opencode"] = yn("OpenCode", true)
@@ -538,7 +539,7 @@ func (e *app) buildBase(ctx context.Context, in install, disk, memory, cpus int)
 	}
 
 	fmt.Fprint(e.io.Stdout, "\nBase VM ready. Try one of these in any project directory:\n  agent-vm shell\n")
-	for _, a := range []string{"claude", "opencode", "codex", "vibe", "pi"} {
+	for _, a := range []string{"claude", "agy", "opencode", "codex", "vibe", "pi"} {
 		if in[a] {
 			fmt.Fprintf(e.io.Stdout, "  agent-vm %s\n", a)
 		}

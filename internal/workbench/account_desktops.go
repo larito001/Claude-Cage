@@ -19,6 +19,7 @@ import (
 var linuxAccountDesktop string
 
 type desktopEntry struct {
+	Provider   string `json:"provider,omitempty"`
 	Generation int    `json:"generation,omitempty"`
 	AccountID  string `json:"account_id,omitempty"`
 	ID         string `json:"id"`
@@ -52,14 +53,12 @@ func (s *Server) accountDesktop(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "请先启动环境", 409)
 		return
 	}
-	s.claudeAccounts.mu.Lock()
-	list, err := s.loadClaudeAccounts()
-	s.claudeAccounts.mu.Unlock()
+	resolvedProvider, _, exists, err := s.resolveDesktopInstance(id)
 	if err != nil {
 		requestError(w, err)
 		return
 	}
-	if list.desktopOwner(id) == nil && list.PendingDesktop != id && (list.find(id) == nil || list.DesktopRedirects[id] != "") {
+	if !exists {
 		http.NotFound(w, r)
 		return
 	}
@@ -89,6 +88,47 @@ func (s *Server) accountDesktop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.launchRequest(w, r, "desktop-instance-"+action, func() error {
+		if resolvedProvider != "" && resolvedProvider != "claude" {
+			st := s.providerAccounts.forProvider(resolvedProvider)
+			st.mu.Lock()
+			plist, loadErr := s.loadProviderAccounts(resolvedProvider)
+			var owner claudeAccount
+			valid := false
+			if loadErr == nil {
+				if selected := plist.desktopOwner(id); selected != nil {
+					owner = claudeAccount{
+						ID:                      selected.ID,
+						Source:                  resolvedProvider,
+						ProfileID:               selected.guestID(),
+						ProxyNodeID:             selected.ProxyNodeID,
+						DesktopDedicatedNetwork: selected.DesktopDedicatedNetwork,
+					}
+					valid = true
+				} else if plist.PendingDesktop == id {
+					owner = claudeAccount{Source: resolvedProvider}
+					valid = true
+				} else if a := plist.find(id); a != nil && a.DesktopInstanceID == "" && action == "start" {
+					a.DesktopInstanceID = id
+					loadErr = s.saveProviderAccounts(resolvedProvider, plist)
+					owner = claudeAccount{
+						ID:                      a.ID,
+						Source:                  resolvedProvider,
+						ProfileID:               a.guestID(),
+						ProxyNodeID:             a.ProxyNodeID,
+						DesktopDedicatedNetwork: a.DesktopDedicatedNetwork,
+					}
+					valid = true
+				}
+			}
+			st.mu.Unlock()
+			if loadErr != nil {
+				return loadErr
+			}
+			if !valid {
+				return errors.New("Desktop 归属已变化，请刷新列表")
+			}
+			return s.changeAccountDesktop(s.operationContext(), id, owner, action)
+		}
 		// Reload inside the job's operation lock. A draft can be removed or
 		// its dedicated-network selection can change between admission and execution.
 		s.claudeAccounts.mu.Lock()
@@ -121,11 +161,19 @@ func (s *Server) accountDesktop(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func desktopProviderOf(account claudeAccount) string {
+	if account.Source != "" && account.Source != "managed" && account.Source != "default" && cage.ValidProviderID(account.Source) {
+		return account.Source
+	}
+	return "claude"
+}
+
 func (s *Server) changeAccountDesktop(parent context.Context, instance string, account claudeAccount, action string) error {
 	if s.desktopAction != nil {
 		return s.desktopAction(parent, instance, account, action)
 	}
 	var err error
+	provider := desktopProviderOf(account)
 	scope := "stop"
 	if action == "delete" {
 		scope = "delete"
@@ -147,7 +195,11 @@ func (s *Server) changeAccountDesktop(parent context.Context, instance string, a
 			return err
 		}
 		defer clear(key)
-		if err = s.runDesktopScript("set -euo pipefail\n"+cage.DesktopFileSupportScript(), 20*time.Second); err != nil {
+		provision := cage.DesktopFileSupportScript()
+		if provider != "claude" {
+			provision = cage.ClaudeDesktopProvisionScript()
+		}
+		if err = s.runDesktopScript("set -euo pipefail\n"+provision, 25*time.Second); err != nil {
 			return err
 		}
 	}
@@ -156,9 +208,16 @@ func (s *Server) changeAccountDesktop(parent context.Context, instance string, a
 		code = "default"
 	}
 	if action == "start" && validClaudeID(instance) && s.hostToolsServing() {
-		prep := fmt.Sprintf("umask 077\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/data\"", instance)
-		if code == "default" {
-			prep += fmt.Sprintf(" \"$HOME/.local/share/desktop-profiles/%s/code\"", instance)
+		prep := fmt.Sprintf("umask 077\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/data\"\nprintf '%%s\\n' %s > \"$HOME/.local/share/desktop-profiles/%s/provider\"", instance, shellescape.Quote(provider), instance)
+		switch provider {
+		case "claude":
+			if code == "default" {
+				prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/code\"", instance)
+			}
+		case "antigravity":
+			prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/home/.gemini/config\"", instance)
+		case "codex":
+			prep += fmt.Sprintf("\nmkdir -p \"$HOME/.local/share/desktop-profiles/%s/home/.codex\"", instance)
 		}
 		if prepErr := s.runDesktopScript("set -euo pipefail\n"+prep+"\n", 15*time.Second); prepErr == nil {
 			s.syncHostToolsConfigNow(parent)
@@ -177,6 +236,9 @@ func (s *Server) changeAccountDesktop(parent context.Context, instance string, a
 		}
 	}
 	command := fmt.Sprintf("exec env %s/bin/bash -c %s -- %s %s %s", envPrefix, shellescape.Quote(linuxAccountDesktop), instance, code, scope)
+	if provider != "claude" {
+		command += " " + shellescape.Quote(provider)
+	}
 	cmd := s.sshCommand(ctx, "-T", s.sshTarget(), "--", command)
 	cmd.Stdin = bytes.NewReader(key)
 	output, err := cmd.CombinedOutput()
@@ -184,7 +246,11 @@ func (s *Server) changeAccountDesktop(parent context.Context, instance string, a
 		if action == "delete" {
 			return errors.New("无法清理客机内的 Desktop 实例数据，暂未删除记录，请重试")
 		}
-		msg := "Desktop 操作失败，请确认已安装 Claude Desktop 并检查客机服务"
+		desktopName := "Claude Desktop"
+		if spec, ok := cage.LookupProvider(provider); ok {
+			desktopName = spec.Desktop.Name
+		}
+		msg := fmt.Sprintf("Desktop 操作失败，请确认已安装 %s 并检查客机服务", desktopName)
 		if bytes.Contains(output, []byte("专属网络尚未就绪")) {
 			msg = "此账号的专属网络尚未就绪"
 		}

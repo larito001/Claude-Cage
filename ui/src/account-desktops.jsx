@@ -58,6 +58,7 @@ function DesktopRowAction({ label, icon: Icon, disabled, className = "", onClick
 
 export function useAccountDesktops(onShow, onHide, notify, confirm, visible, revision) {
   const [expanded, setExpanded] = useState(false);
+  const [expandedProviders, setExpandedProviders] = useState({});
   const [catalog, setCatalog] = useState(null);
   const [panes, setPanes] = useState([]);
   const [pending, setPending] = useState("");
@@ -90,14 +91,15 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
       if (g === generation.current && !(background && e.status === 409)) notifyRef.current(e.message);
     }
   }, []);
+  const anyExpanded = expanded || Object.values(expandedProviders).some(Boolean);
   // Guest login and window lifecycle events advance the revision in the
   // normal workbench status response. Idle panes need no extra SSH polling.
   useEffect(() => {
-    if (expanded || visible) void refresh(true);
-  }, [expanded, visible, revision, refresh]);
+    if (anyExpanded || visible) void refresh(true);
+  }, [anyExpanded, visible, revision, refresh]);
   const focus = id => requestAnimationFrame(() =>
     document.getElementById("desktop-pane-" + id)?.querySelector("canvas")?.focus());
-  async function act(account, action, beside = false, create = false, anchor = null) {
+  async function act(account, action, beside = false, create = false, anchor = null, provider = "claude") {
     if (lock.current) return;
     lock.current = true;
     try {
@@ -113,7 +115,10 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
         return;
       setPending(account.id || "create");
       if (create) {
-        account = await api("/desktop-instances", {account_id: account.id});
+        account = await api("/desktop-instances", {
+          provider: provider || "claude",
+          account_id: account.id || "",
+        });
         setPending(account.id);
       }
       if (action === "start" && account.id === "default") {
@@ -187,6 +192,7 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
   }
   return {
     expanded,
+    expandedProviders,
     catalog,
     panes,
     pending,
@@ -198,7 +204,189 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
     toggle: () => {
       setExpanded(!expanded);
     },
+    toggleProvider: (provider) => {
+      setExpandedProviders((prev) => ({ ...prev, [provider]: !prev[provider] }));
+    },
   };
+}
+
+export function ProviderDesktopList({
+  provider,
+  label,
+  model,
+  disabled,
+  selected,
+  installerSelected = false,
+  onOpenInstaller,
+  onRename,
+}) {
+  const tr = useTranslation();
+  const { catalog, expandedProviders, panes, pending } = model;
+  const isExpanded = Boolean(expandedProviders?.[provider]);
+  const [creating, setCreating] = useState(false);
+  const [accountID, setAccountID] = useState("");
+  const providerCatalog = catalog?.providers?.[provider];
+  const instances = providerCatalog?.instances || [];
+  const accounts = providerCatalog?.accounts || [];
+  const focusRowActions = (event) => {
+    event.preventDefault();
+    event.currentTarget.focus();
+    event.currentTarget.parentElement
+      ?.querySelector(".terminal-row-actions button:not(:disabled)")
+      ?.focus();
+  };
+  const choose = async () => {
+    const ok = await model.act({ id: accountID }, "start", false, true, null, provider);
+    if (ok) setCreating(false);
+    else onOpenInstaller?.();
+  };
+  return (
+    <div className="account-desktop-nav">
+      <button
+        className={"sidebar-link " + (selected ? "selected" : "")}
+        aria-expanded={isExpanded}
+        onClick={() => model.toggleProvider(provider)}
+      >
+        <Monitor size={17} />
+        {label}{" "}
+        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+      </button>
+      {isExpanded && (
+        <div className="account-desktop-list">
+          {onOpenInstaller && (
+            <div className={`account-desktop-row ${installerSelected ? "active" : ""}`}>
+              <button
+                type="button"
+                className="sidebar-link"
+                disabled={disabled}
+                onClick={onOpenInstaller}
+              >
+                <Monitor size={16} />
+                <span className="account-desktop-label">{tr("更新 / 修复安装")}</span>
+              </button>
+            </div>
+          )}
+          {catalog?.supported &&
+            instances.map((a) => {
+              const active = selected && panes.some((p) => p.id === a.id);
+              return (
+                <div className={`account-desktop-row ${active ? "active" : ""}`} key={a.id}>
+                  <button
+                    title={title(a) + (a.running ? " " + tr("· 运行中") : " " + tr("· 未启动"))}
+                    aria-label={
+                      title(a) +
+                      (pending === a.id
+                        ? " " + tr("· 处理中")
+                        : a.running
+                          ? " " + tr("· 运行中")
+                          : " " + tr("· 未启动"))
+                    }
+                    aria-pressed={active}
+                    className="sidebar-link"
+                    disabled={Boolean(pending) || disabled}
+                    onClick={async () => {
+                      const ok = await model.act(a, "start", false, false, null, provider);
+                      if (!ok) onOpenInstaller?.();
+                    }}
+                    onContextMenu={focusRowActions}
+                    onKeyDown={(event) => {
+                      if (event.key === "F10" && event.shiftKey) focusRowActions(event);
+                    }}
+                  >
+                    <DesktopAccountLabel account={a} />
+                    {pending === a.id || a.running ? (
+                      <span className="account-desktop-status" aria-hidden="true">
+                        {pending === a.id ? "…" : "●"}
+                      </span>
+                    ) : null}
+                  </button>
+                  <div
+                    className="terminal-row-actions"
+                    role="group"
+                    aria-label={tr("{0} 的操作", title(a))}
+                  >
+                    {panes.length > 0 && !panes.some((p) => p.id === a.id) && (
+                      <DesktopRowAction
+                        label={tr("并排打开")}
+                        icon={Columns2}
+                        disabled={Boolean(pending) || disabled}
+                        onClick={() => model.act(a, "start", true, false, null, provider)}
+                      />
+                    )}
+                    {a.running && (
+                      <DesktopRowAction
+                        label={tr("关闭")}
+                        icon={Power}
+                        disabled={Boolean(pending) || disabled}
+                        onClick={(event) =>
+                          model.act(a, "stop", false, false, event.currentTarget, provider)
+                        }
+                      />
+                    )}
+                    {onRename && (
+                      <DesktopRowAction
+                        label={tr("重命名")}
+                        icon={Pencil}
+                        disabled={Boolean(pending) || disabled}
+                        onClick={() => onRename(a)}
+                      />
+                    )}
+                    <DesktopRowAction
+                      label={tr("删除")}
+                      icon={Trash2}
+                      className="desktop-delete-action"
+                      disabled={Boolean(pending) || disabled}
+                      onClick={(event) => model.remove(a, event.currentTarget)}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          {catalog?.supported && (
+            <div className="desktop-create">
+              <button
+                type="button"
+                className="sidebar-link"
+                disabled={disabled || Boolean(pending)}
+                aria-expanded={creating}
+                onClick={() => setCreating(!creating)}
+              >
+                <Plus size={16} />
+                {tr("新建 Desktop")}
+              </button>
+              {creating && (
+                <div className="desktop-create-fields">
+                  <label>
+                    {tr("所属账号")}
+                    <InlineSelect
+                      inline
+                      aria-label={tr("Desktop 所属账号")}
+                      value={accountID}
+                      onValueChange={setAccountID}
+                    >
+                      <option value="">{tr("在此实例中登录")}</option>
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {title(a)}
+                        </option>
+                      ))}
+                    </InlineSelect>
+                  </label>
+                  <button
+                    className="primary"
+                    disabled={disabled || Boolean(pending)}
+                    onClick={choose}
+                  >
+                    {tr("打开 Desktop")}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function DesktopList({ model, disabled, selected, defaultRunning = false, onDefault, onDefaultStop, onRename }) {

@@ -75,11 +75,12 @@ func TestSetupPreinstall(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"--preinstall=default"}, "python,node,docker,chromium,gh,claude,opencode,codex,vibe,mcp-chrome"},
-		{[]string{"--preinstall", "--disk", "20"}, "python,node,docker,chromium,gh,claude,opencode,codex,vibe,mcp-chrome"},
+		{[]string{"--preinstall=default"}, "python,node,docker,chromium,gh,claude,agy,opencode,codex,vibe,mcp-chrome"},
+		{[]string{"--preinstall", "--disk", "20"}, "python,node,docker,chromium,gh,claude,agy,opencode,codex,vibe,mcp-chrome"},
 		{[]string{"--preinstall=none"}, ""},
 		{[]string{"--preinstall=all"}, strings.Join(software, ",")},
 		{[]string{"--preinstall=python, docker,claude"}, "python,docker,claude"},
+		{[]string{"--preinstall=agy"}, "agy"},
 		{[]string{"--preinstall=code-opencode"}, "opencode,code-server,code-opencode"},
 		{[]string{"--preinstall=code-vibe"}, "code-server,code-vibe"},
 		// Codex needs npm: node goes in, and it is said.

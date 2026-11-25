@@ -101,27 +101,47 @@ def browser_flags(profile_dir, lang):
     ]
 
 
+def _valid_callback(raw, official):
+    try:
+        callback = urlsplit(raw)
+        if callback.username or callback.password:
+            return False
+        if callback.scheme == "https" and callback.port in (None, 443) and callback.hostname in official:
+            return True
+        if callback.scheme == "http" and callback.hostname in ("localhost", "127.0.0.1") and callback.port is not None:
+            return 1024 <= callback.port <= 65535
+    except ValueError:
+        pass
+    return False
+
+
 def sign_in(url):
     if url.scheme != "https" or url.username or url.password or url.port not in (None, 443):
         return False
-    path = url.path.removeprefix("/cai/")
-    if not path.startswith("/"):
-        path = "/" + path
-    official = {"claude.ai", "claude.com", "platform.claude.com", "platform.anthropic.com", "console.anthropic.com"}
-    if url.hostname in official:
+    raw_path = url.path if url.path.startswith("/") else "/" + url.path
+    claude = {"claude.ai", "claude.com", "platform.claude.com", "platform.anthropic.com", "console.anthropic.com"}
+    google = {"antigravity.google", "antigravity.google.com"}
+    codex = {"chatgpt.com", "chat.openai.com", "auth.openai.com", "auth0.openai.com", "platform.openai.com"}
+    if url.hostname in claude:
+        path = raw_path.removeprefix("/cai/")
+        if not path.startswith("/"):
+            path = "/" + path
         roots = ("/login", "/auth", "/oauth", "/sso", "/sso-callback", "/magic-link", "/desktop/authorize", "/desktop/callback", "/api/auth")
         return any(path == root or path.startswith(root + "/") for root in roots)
-    provider = ((url.hostname == "api.workos.com" and path.startswith("/sso/")) or
-                (url.hostname == "accounts.google.com" and path.startswith("/o/oauth2/")))
+    if url.hostname in google:
+        roots = ("/login", "/auth", "/auth-success", "/oauth", "/oauth-callback", "/sso", "/sso-callback", "/desktop/authorize", "/desktop/callback", "/api/auth")
+        return any(raw_path == root or raw_path.startswith(root + "/") for root in roots)
+    if url.hostname in codex:
+        roots = ("/login", "/auth", "/oauth", "/authorize", "/u/login", "/sso", "/sso-callback", "/magic-link", "/codex", "/activate", "/desktop/authorize", "/desktop/callback", "/api/auth", "/api/accounts")
+        return any(raw_path == root or raw_path.startswith(root + "/") for root in roots)
+    provider = ((url.hostname == "api.workos.com" and raw_path.startswith("/sso/")) or
+                (url.hostname == "accounts.google.com" and (raw_path.startswith("/o/oauth2/") or raw_path == "/AccountChooser" or raw_path.startswith("/AccountChooser/"))) or
+                (url.hostname == "login.microsoftonline.com" and "/oauth2/" in raw_path) or
+                (url.hostname == "appleid.apple.com" and raw_path.startswith("/auth/")))
     redirects = parse_qs(url.query, keep_blank_values=True).get("redirect_uri", [])
     if not provider or len(redirects) != 1:
         return False
-    try:
-        callback = urlsplit(redirects[0])
-        return (callback.scheme == "https" and not callback.username and not callback.password
-                and callback.port in (None, 443) and callback.hostname in official)
-    except ValueError:
-        return False
+    return _valid_callback(redirects[0], claude | google | codex)
 
 
 def main(address):

@@ -6,6 +6,7 @@ import {
   completeDotCom,
   findInlineCompletion,
 } from "./browser-omnibox.mjs";
+import { BrowserSpaceBadge } from "./browser-spaces";
 import { useTranslation } from "./interface-language.mjs";
 
 export function BrowserAddressBar({ tab, tabs, ready, onNavigate, onSelect }) {
@@ -246,6 +247,8 @@ export function BrowserAddressBar({ tab, tabs, ready, onNavigate, onSelect }) {
             <ScanEye size={13} />
             {tr("无痕")}
           </span>
+        ) : tab.space ? (
+          <BrowserSpaceBadge space={tab.space} />
         ) : (
           <Globe2 size={13} />
         )}

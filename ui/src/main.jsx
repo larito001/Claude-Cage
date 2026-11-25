@@ -46,6 +46,10 @@ import { DesktopPanes, useAccountDesktops } from "./account-desktops";
 import { desktopTitle, mergedDefaultInstance } from "./account-desktop-state.mjs";
 import { ClaudeDesktop } from "./claude-desktop";
 import { ClaudeAccountsPanel, useClaudeAccounts } from "./claude-accounts";
+import { AccountProviderTabs, ProviderAccountsPanel, useProviderAccounts } from "./provider-accounts";
+import { ProviderDesktopView } from "./provider-desktop";
+import { useBrowserSpaces } from "./browser-spaces";
+import { isProviderLoginTerminal, providerSpec, terminalProvider } from "./providers.mjs";
 import { AccountProvider, AccountGate, useAccount } from "./account";
 import { BrowserHeader, BrowserTabRail, TerminalHeader, ExpandSidebar, ExpandPane } from "./pane-headers";
 import { useDownloadNotifications, useDesktopFiles } from "./browser-downloads";
@@ -82,6 +86,7 @@ import {
 } from "./notifications.mjs";
 import { AppUpdateButton, AppUpdateDialog, useAppUpdates } from "./app-updates";
 import "./appearance.css";
+import "./allcage-ui.css";
 import { stopAndExit } from "./quit";
 import { useTranslation } from "./interface-language.mjs";
 import { localizeBackendMessage } from "./backend-message.mjs";
@@ -112,6 +117,15 @@ function App() {
     return () => document.removeEventListener("scroll", onScroll, { capture: true });
   }, []);
   const claudeProfiles = useClaudeAccounts();
+  const antigravityProfiles = useProviderAccounts("antigravity");
+  const codexProfiles = useProviderAccounts("codex");
+  const providerStores = {
+    claude: claudeProfiles,
+    antigravity: antigravityProfiles,
+    codex: codexProfiles,
+  };
+  const [accountProvider, setAccountProvider] = useState("claude");
+  const [desktopProvider, setDesktopProvider] = useState("claude");
   const [managementPage, setManagementPage] = useState("");
   const [pluginPage, setPluginPage] = useState(null);
   const [pluginSidebar, setPluginSidebar] = useState(false);
@@ -235,6 +249,7 @@ function App() {
     : layout.side === "left" ? [current, other] : [other, current];
   const webPanes = panes.filter(tab => tab.kind !== "terminal");
   const passwordVault = usePasswordVault(Boolean(status?.ready), browser.active);
+  const browserSpaces = useBrowserSpaces(Boolean(status?.ready));
   const dualBrowser = split && webPanes.length === 2;
   const leftId = dualBrowser ? panes[0].id : "";
   const rightId = dualBrowser ? panes[1].id : "";
@@ -348,6 +363,7 @@ function App() {
       api("/browser/activate", { id: mixedBrowserId }).catch(error => setToast(error.message));
   }, [mixedBrowserId, status?.ready, browser.active]);
   const accountLogin = useRef("");
+  const accountLoginProvider = useRef("claude");
   const tabsBeforeLogin = useRef("");
   const [enrollmentID, setEnrollmentID] = useState("");
   const terminalAccounts = [...new Set(tabs.map(t=>t.claude_account_id).filter(Boolean))].sort().join(",");
@@ -356,10 +372,13 @@ function App() {
       void claudeProfiles.load();
     }
   }, [terminalAccounts, claudeProfiles.load]);
-  const finishedLogins = tabs.filter((tab) => tab.terminalKind === "claude-login" && tab.closed).map((tab) => tab.id).sort().join(",");
+  const finishedLogins = tabs.filter((tab) => isProviderLoginTerminal(tab.terminalKind) && tab.closed).map((tab) => `${tab.terminalKind}:${tab.id}`).sort().join(",");
   useEffect(() => {
-    if (finishedLogins) claudeProfiles.load();
-  }, [finishedLogins, claudeProfiles.load]);
+    if (!finishedLogins) return;
+    if (finishedLogins.includes("claude-login:")) void claudeProfiles.load();
+    if (finishedLogins.includes("antigravity-login:")) void antigravityProfiles.load();
+    if (finishedLogins.includes("codex-login:")) void codexProfiles.load();
+  }, [finishedLogins, claudeProfiles.load, antigravityProfiles.load, codexProfiles.load]);
   // A plugin page may mark its notice as an error, shown in the error color.
   const notify = (text, tone) => { setToast(text); setToastTone(tone === "error" ? "error" : ""); };
   const accountDesktops = useAccountDesktops(
@@ -557,10 +576,20 @@ function App() {
   const openBrowserPage = async (
     url = settings?.browser_home_url || "https://www.bing.com/",
     incognito = Boolean(current?.incognito),
+    space = incognito
+      ? ""
+      : current && current.kind !== "terminal" && !current.incognito
+        ? current.space || ""
+        : "",
   ) => {
     setTailnetLogin(null);
     browserDismissed.current = false;
-    const result = await action("/browser/new", { url, incognito });
+    const normalizedSpace = incognito ? "" : space || "";
+    const result = await action("/browser/new", {
+      url,
+      incognito,
+      ...(normalizedSpace ? { space: normalizedSpace } : {}),
+    });
     if (result) {
       setManagementPage("");
       setDesktopOpen(false);
@@ -573,6 +602,7 @@ function App() {
               {
                 id: result.id,
                 incognito,
+                space: result.space || normalizedSpace || undefined,
                 kind: "web",
                 url,
                 title: "新标签页",
@@ -580,10 +610,38 @@ function App() {
             ],
       );
       setActive(result.id);
+      if (normalizedSpace) void browserSpaces.refresh();
     }
     return result;
   };
   const newPage = () => openBrowserPage();
+  const openBrowserSpace = (space = "", defaultURL) => {
+    const targetSpace = space || "";
+    if (targetSpace) {
+      const existing =
+        tabs.find(
+          (t) =>
+            t.id === lastBrowserTab.current &&
+            t.kind !== "terminal" &&
+            !t.incognito &&
+            t.space === targetSpace,
+        ) ||
+        tabs.find(
+          (t) =>
+            t.id === browser.active &&
+            t.kind !== "terminal" &&
+            !t.incognito &&
+            t.space === targetSpace,
+        ) ||
+        tabs.find((t) => t.kind !== "terminal" && !t.incognito && t.space === targetSpace);
+      if (existing) return select(existing.id);
+    }
+    return openBrowserPage(
+      defaultURL || providerSpec(targetSpace)?.homeURL || settings?.browser_home_url || "https://www.bing.com/",
+      false,
+      targetSpace,
+    );
+  };
   const showBrowserResult = result => {
     if (!result?.id) return;
     browserDismissed.current = false;
@@ -620,9 +678,12 @@ function App() {
   };
   const createTerminal = async (path, kind, accountId, autoHandoff) => {
     setTerminalChoice(null);
+    const spec = terminalProvider(kind);
+    const isClaude = !spec || spec.id === "claude";
     const result = await api("/terminals", {
-      workspace: path, kind,
-      ...(accountId && { claude_account_id: accountId }),
+      workspace: path,
+      kind,
+      ...(accountId && (isClaude ? { claude_account_id: accountId } : { account_id: accountId })),
       ...(autoHandoff !== undefined && { auto_handoff: autoHandoff }),
     });
     showTerminal(result);
@@ -630,19 +691,50 @@ function App() {
     if (kind === "claude" && result.claude_account_id &&
         !claudeProfiles.accounts?.some((profile) => profile.id === result.claude_account_id)) {
       claudeProfiles.load();
+    } else if (spec && spec.id !== "claude" && result.provider_account_id) {
+      const store = providerStores[spec.id];
+      if (!store?.accounts?.some((profile) => profile.id === result.provider_account_id)) {
+        void store?.load?.();
+      }
     }
   };
-  const authorizeAccount = async (id, proxyNode) => {
+  const authorizeAccount = async (id, proxyNode) =>
+    authorizeProviderAccount("claude", id, proxyNode, false);
+  const authorizeProviderAccount = async (provider, id, proxyNode, deviceAuth = false) => {
+    const spec = providerSpec(provider) || providerSpec("claude");
     browserDismissed.current = false;
     const result = await api("/terminals", {
-      kind: "claude-login", background_login: true,
-      ...(id ? { claude_account_id: id } : { login_proxy_node: proxyNode || "" }),
+      kind: spec.loginKind,
+      background_login: true,
+      ...(spec.id === "claude"
+        ? id
+          ? { claude_account_id: id }
+          : { login_proxy_node: proxyNode || "" }
+        : {
+            ...(id ? { account_id: id } : { login_proxy_node: proxyNode || "" }),
+            ...(deviceAuth ? { device_auth: true } : {}),
+          }),
     });
+    accountLoginProvider.current = spec.id;
     accountLogin.current = result.id;
     setEnrollmentID(result.id);
     const tab = browserSnapshot.current?.tabs?.find(t => t.id === browserSnapshot.current.active && t.login);
     if (tab) showBrowserResult(tab);
     return result.id;
+  };
+  const openProviderAccountDesktop = async (provider, profile) => {
+    const providerCatalog = accountDesktops?.catalog?.providers?.[provider];
+    const existing = providerCatalog?.instances?.find((item) => item.account_id === profile.id);
+    const ok = existing
+      ? await accountDesktops.act(existing, "start", false, false, null, provider)
+      : await accountDesktops.act({ id: profile.id }, "start", false, true, null, provider);
+    if (!ok) {
+      accountDesktops.clear();
+      setDesktopProvider(provider);
+      setManagementPage("");
+      setHome(false);
+      setDesktopOpen(true);
+    }
   };
   const showTerminal = result => {
     setTailnetLogin(null);
@@ -708,7 +800,7 @@ function App() {
     newTerminal(contentWorkspace, event?.currentTarget?.tagName === "BUTTON"
       ? event.currentTarget : terminalTrigger.current);
   const terminalMenuAt = (location) => terminalChoice?.anchor?.dataset.terminalLocation === location && (
-    <TerminalMenu choice={terminalChoice} busy={busy} profiles={claudeProfiles}
+    <TerminalMenu choice={terminalChoice} busy={busy} profiles={claudeProfiles} providerStores={providerStores}
       atLimit={liveTerminalCount(tabs) + (enrollmentID ? 1 : 0) >= TERMINAL_LIMIT}
       usesOfficialCLI={(settings?.claude_terminal_command?.trim() || "claude") === "claude"}
       onClose={() => setTerminalChoice(null)}
@@ -912,10 +1004,16 @@ function App() {
             accountLogin.current = enrollment.id;
             setEnrollmentID(enrollment.id);
           } else if (accountLogin.current) {
+            const finishedProvider = accountLoginProvider.current || "claude";
             accountLogin.current = "";
             setEnrollmentID("");
             void claudeProfiles.load();
-            if (tabsBeforeLogin.current === activeRef.current) setManagementPage("claude-accounts");
+            void antigravityProfiles.load();
+            void codexProfiles.load();
+            if (tabsBeforeLogin.current === activeRef.current) {
+              setAccountProvider(finishedProvider);
+              setManagementPage("claude-accounts");
+            }
             tabsBeforeLogin.current = "";
           }
           const all = [
@@ -1461,11 +1559,34 @@ function App() {
   }
   const claudeLabels = new Map(claudeProfiles.accounts?.map((account) => [account.id, account.label || account.email]));
   const claudeNumbers = new Map(claudeProfiles.accounts?.map(account => [account.id, account.number]));
-  const terminalAccountName = (tab) => claudeLabels.get(tab.claude_account_id) ||
-    (tab.terminalKind === "claude-login" ? "新账号登录" : tab.claude_account_id ? "Claude 账号" : "");
-  const displayTabs = orderedTabs(tabs, metadata).map((tab) =>
-    tab.claude_account_id || tab.terminalKind === "claude-login" ? { ...tab,
-      claudeLabel: terminalAccountName(tab), claudeAccountNumber: claudeNumbers.get(tab.claude_account_id) } : tab);
+  const antigravityLabels = new Map(antigravityProfiles.accounts?.map((account) => [account.id, account.label || account.email]));
+  const antigravityNumbers = new Map(antigravityProfiles.accounts?.map((account) => [account.id, account.number]));
+  const codexLabels = new Map(codexProfiles.accounts?.map((account) => [account.id, account.label || account.email]));
+  const codexNumbers = new Map(codexProfiles.accounts?.map((account) => [account.id, account.number]));
+  const terminalAccountInfo = (tab) => {
+    const spec = terminalProvider(tab?.terminalKind);
+    const providerID = tab?.provider || spec?.id || (tab?.claude_account_id ? "claude" : "");
+    if (!providerID) return null;
+    if (providerID === "antigravity") {
+      const id = tab.provider_account_id || tab.claude_account_id;
+      const label = antigravityLabels.get(id) || (tab.terminalKind === "antigravity-login" ? "新账号登录" : id ? "Antigravity 账号" : "");
+      return { provider: "antigravity", providerName: "Antigravity", label, number: antigravityNumbers.get(id), isLogin: tab.terminalKind === "antigravity-login" };
+    }
+    if (providerID === "codex") {
+      const id = tab.provider_account_id || tab.claude_account_id;
+      const label = codexLabels.get(id) || (tab.terminalKind === "codex-login" ? "新账号登录" : id ? "Codex 账号" : "");
+      return { provider: "codex", providerName: "Codex", label, number: codexNumbers.get(id), isLogin: tab.terminalKind === "codex-login" };
+    }
+    const id = tab.claude_account_id;
+    const label = claudeLabels.get(id) || (tab.terminalKind === "claude-login" ? "新账号登录" : id ? "Claude 账号" : "");
+    return { provider: "claude", providerName: "Claude", label, number: claudeNumbers.get(id), isLogin: tab.terminalKind === "claude-login" };
+  };
+  const displayTabs = orderedTabs(tabs, metadata).map((tab) => {
+    const info = terminalAccountInfo(tab);
+    return info && (info.label || info.isLogin)
+      ? { ...tab, claudeLabel: info.label, claudeAccountNumber: info.number }
+      : tab;
+  });
   const browserTabs = displayTabs.filter((tab) => tab.kind !== "terminal");
   const switchTabs =
     terminal && !showHome
@@ -1565,9 +1686,15 @@ function App() {
   };
   const terminalHeader = tab => {
     const path = tab?.workspace || workspace;
-    const account = tab?.claude_account_id && terminalAccountName(tab);
-    const detail = tab?.terminalKind === "claude-login" ? tr("登录 · {0}", account || tr("新账号"))
-      : account ? tab.claude_account_source === "default" ? tr("Claude · {0}（启动时账号）", account) : `Claude · ${account}` : "";
+    const info = tab ? terminalAccountInfo(tab) : null;
+    const account = info?.label;
+    const detail = info?.isLogin
+      ? tr("{0} 登录 · {1}", info.providerName, account || tr("新账号"))
+      : account
+        ? tab?.claude_account_source === "default"
+          ? tr("{0} · {1}（启动时账号）", info.providerName, account)
+          : `${info.providerName} · ${account}`
+        : "";
     const location = split && tab ? `heading-${tab.id}` : "heading";
     return <TerminalHeader tab={tab} project={tr(projectName(path, groups, tr("新项目")))} metadata={metadata}
       contentWorkspace={path} terminalDetail={detail} terminalDetailHint={tab?.claude_account_source === "default"
@@ -1596,7 +1723,8 @@ function App() {
     forward={tab.kind !== "browser-settings" && (browser.split?.history?.[tab.id]?.forward ?? (tab.id === browser.active && browser.forward))}
     action={action} onSelect={select} onClose={closeTab} onRename={renameTab} onPin={pinTab} onReorder={reorder}
     onNew={newPage} onNavigate={address => navigate(tab.id, address)} onOpen={openBrowserPage}
-    onNewPrivate={() => openBrowserPage(undefined, true)} onNewRegular={() => openBrowserPage(undefined, false)}
+    onNewPrivate={() => openBrowserPage(undefined, true, "")} onNewRegular={() => openBrowserPage(undefined, false, "")}
+    browserSpaces={browserSpaces} proxySources={proxy?.sources || []} onOpenSpace={openBrowserSpace}
     onSettings={openBrowserSettings}
     onReload={() => tab.kind === "browser-settings" ? setBrowserSettingsRevision(value => value + 1) : action("/browser/reload", { id: tab.id })}
     onCloseBrowser={!dualBrowser || tab.id === rightId ? closeBrowser : undefined}
@@ -1827,18 +1955,29 @@ function App() {
               if (window.matchMedia("(max-width: 520px)").matches) setSidebarCollapsed(true);
             }}
             desktopOpen={!managementPage && desktopOpen}
-            onClaudeWeb={() => openBrowserPage("https://claude.ai/")}
+            desktopProvider={desktopProvider}
+            activeBrowserSpace={!desktopOpen && !showHome && current && current.kind !== "terminal" && !current.incognito ? current.space || "" : ""}
+            onOpenBrowserSpace={openBrowserSpace}
+            onClaudeWeb={() => openBrowserSpace("claude", "https://claude.ai/")}
             defaultDesktopRunning={defaultDesktopRunning}
             onDefaultDesktopStop={stopDefaultDesktop}
             accountDesktops={status.account_desktops_supported ? accountDesktops : null}
             onDesktopRename={(desktop) => setRename({ id: desktop.id, title: desktop.label || "", desktop: true })}
             onClaudeDesktop={() => {
+              setDesktopProvider("claude");
               const merged = mergedDefaultInstance(accountDesktops.catalog);
               if (merged) {
                 void accountDesktops.act(merged, "start");
                 return;
               }
               accountDesktops.clear();
+              setManagementPage("");
+              setHome(false);
+              setDesktopOpen(true);
+            }}
+            onProviderDesktop={(provider) => {
+              accountDesktops.clear();
+              setDesktopProvider(provider);
               setManagementPage("");
               setHome(false);
               setDesktopOpen(true);
@@ -1897,7 +2036,18 @@ function App() {
             <main className="management-page" aria-labelledby={managementPage + "-title"}>
               <header className="chrome management-header">
                 {sidebarButton()}
-                <h1 id={managementPage + "-title"} tabIndex={-1}>{managementPage === "tailscale" ? "Tailscale" : managementPage === "plugins" && pluginPage ? pluginPageTitle(hostPlugins, pluginPage) : managementPage === "plugin-view" ? openPage?.title || tr("插件页面") : tr("Claude 账号管理")}</h1>
+                <h1 id={managementPage + "-title"} tabIndex={-1}>{managementPage === "tailscale" ? "Tailscale" : managementPage === "plugins" && pluginPage ? pluginPageTitle(hostPlugins, pluginPage) : managementPage === "plugin-view" ? openPage?.title || tr("插件页面") : tr("账号管理")}</h1>
+                {managementPage === "claude-accounts" && (
+                  <AccountProviderTabs
+                    activeProvider={accountProvider}
+                    onSelect={setAccountProvider}
+                    counts={{
+                      claude: claudeProfiles.accounts?.length,
+                      antigravity: antigravityProfiles.accounts?.length,
+                      codex: codexProfiles.accounts?.length,
+                    }}
+                  />
+                )}
               </header>
               <div className="management-content">
                 {managementPage === "plugin-view" ? <PluginView key={`${currentClient.connection_id || "local"}:${pluginView}`} plugin={openPage?.plugin || pluginView.split("/")[0]} view={openPage?.view || { id: pluginView.split("/")[1] || "" }}
@@ -1911,9 +2061,23 @@ function App() {
                   }}
                   onConfirm={confirm} onInstall={async () => {
                     await action("/tailscale/install", {});
-                  }} /> : <ClaudeAccountsPanel proxySources={proxy?.sources || []} desktopNetwork={status.account_desktops_supported} store={claudeProfiles} tabs={tabs} onConfirm={confirm}
+                  }} /> : accountProvider === "claude" ? <ClaudeAccountsPanel proxySources={proxy?.sources || []} desktopNetwork={status.account_desktops_supported} store={claudeProfiles} tabs={tabs} onConfirm={confirm}
                   running={status.vm_running} environmentBusy={busy || storageRecovery}
-                  login={authorizeAccount} enrollmentID={enrollmentID} cancelLogin={() => api("/terminals/"+enrollmentID, undefined, "DELETE")} />}
+                  login={authorizeAccount} enrollmentID={accountLoginProvider.current === "claude" ? enrollmentID : ""} cancelLogin={() => api("/terminals/"+enrollmentID, undefined, "DELETE")} />
+                  : <ProviderAccountsPanel
+                      provider={accountProvider}
+                      proxySources={proxy?.sources || []}
+                      desktopNetwork={status.account_desktops_supported}
+                      store={providerStores[accountProvider]}
+                      tabs={tabs}
+                      onConfirm={confirm}
+                      running={status.vm_running}
+                      environmentBusy={busy || storageRecovery}
+                      login={authorizeProviderAccount}
+                      enrollmentID={accountLoginProvider.current === accountProvider ? enrollmentID : ""}
+                      cancelLogin={() => api("/terminals/"+enrollmentID, undefined, "DELETE")}
+                      onOpenDesktop={openProviderAccountDesktop}
+                    />}
               </div>
             </main>
           )}
@@ -1936,18 +2100,32 @@ function App() {
               sidebarCollapsed={sidebarCollapsed}
               onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)}
             />}
-            {!storageRecovery && desktopOpen && !accountDesktops.panes.length && <ClaudeDesktop
-              uploads={desktopFiles.uploads}
-              onProjectOpened={async () => { await refreshSettings(); await refreshStatus.current?.(); }}
-              status={status} visible={!settingsOpen && !managementPage} remoteRef={remote}
-              onStatus={notify} onFallback={(text, message) => setTransfer({ text, message })}
-              onDetails={() => setDetails(true)}
-              sidebarCollapsed={sidebarCollapsed}
-              onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)}
-              refreshSignal={defaultDesktopSignal}
-              autoStart={!defaultDesktopStopped}
-              onRunningChange={handleDefaultDesktopRunning}
-            />}
+            {!storageRecovery && desktopOpen && !accountDesktops.panes.length && (
+              desktopProvider === "claude" ? (
+                <ClaudeDesktop
+                  uploads={desktopFiles.uploads}
+                  onProjectOpened={async () => { await refreshSettings(); await refreshStatus.current?.(); }}
+                  status={status} visible={!settingsOpen && !managementPage} remoteRef={remote}
+                  onStatus={notify} onFallback={(text, message) => setTransfer({ text, message })}
+                  onDetails={() => setDetails(true)}
+                  sidebarCollapsed={sidebarCollapsed}
+                  onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)}
+                  refreshSignal={defaultDesktopSignal}
+                  autoStart={!defaultDesktopStopped}
+                  onRunningChange={handleDefaultDesktopRunning}
+                />
+              ) : (
+                <ProviderDesktopView
+                  provider={desktopProvider}
+                  status={status}
+                  visible={!settingsOpen && !managementPage}
+                  accountDesktops={accountDesktops}
+                  onDetails={() => setDetails(true)}
+                  sidebarCollapsed={sidebarCollapsed}
+                  onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)}
+                />
+              )
+            )}
             {status.environment_update_required && !busy && (
               <div className="environment-update-banner" role="status">
                 <span>{status.environment_update_error || tr("环境组件需要更新。请先保存编辑器中的文件。")}</span>

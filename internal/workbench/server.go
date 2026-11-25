@@ -77,6 +77,8 @@ type Server struct {
 	closing                                          bool
 	shutdown                                         func()
 	claudeAccounts                                   claudeAccountManager
+	providerAccounts                                 providerAccountManagers
+	browserSpacesMu                                  sync.Mutex
 	tokenUsage                                       tokenUsageManager
 	accountNetworks                                  accountNetworks
 	favoritesMu                                      sync.Mutex
@@ -414,8 +416,11 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("GET /api/diagnostics", s.diagnosticStatus)
 	mux.HandleFunc("POST /api/diagnostics/events", s.diagnosticEvent)
 	mux.HandleFunc("GET /api/diagnostics/export", s.diagnosticExport)
+	mux.HandleFunc("GET /api/providers", s.providersCatalog)
 	mux.HandleFunc("GET /api/claude-accounts", s.listClaudeAccounts)
 	mux.HandleFunc("POST /api/claude-accounts", s.mutateClaudeAccounts)
+	mux.HandleFunc("GET /api/provider-accounts/{provider}", s.listProviderAccounts)
+	mux.HandleFunc("POST /api/provider-accounts/{provider}", s.mutateProviderAccounts)
 	mux.HandleFunc("GET /api/token-usage", s.getTokenUsage)
 	mux.HandleFunc("POST /api/token-usage", s.mutateTokenUsage)
 	mux.HandleFunc("GET /api/vault", s.vaultList)
@@ -490,6 +495,8 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("POST /api/tailscale/{action}", s.tailnet)
 	mux.HandleFunc("GET /api/browser/tabs", s.browser)
 	mux.HandleFunc("GET /api/browser/events", s.browserEvents)
+	mux.HandleFunc("GET /api/browser/spaces", s.browserSpaces)
+	mux.HandleFunc("POST /api/browser/spaces", s.browserSpaces)
 	mux.HandleFunc("POST /api/browser/clipboard", s.browserClipboard)
 	mux.HandleFunc("GET /api/browser/preferences", s.browserPreferences)
 	mux.HandleFunc("POST /api/browser/preferences", s.browserPreferences)
@@ -521,6 +528,9 @@ func (s *Server) handler() http.Handler {
 		jsonReply(w, map[string]any{"password": s.credentials.VNCPassword, "display_scale": s.credentials.DisplayScale, "dynamic_scale": s.credentials.DynamicScale, "pixel_wheel": true})
 	})
 	mux.HandleFunc("GET /api/vnc", s.vnc)
+	mux.HandleFunc("GET /api/desktop-apps", s.listDesktopApps)
+	mux.HandleFunc("GET /api/desktop-apps/{provider}", s.listDesktopApps)
+	mux.HandleFunc("POST /api/desktop-apps/{provider}/{action}", s.desktopAppAction)
 	mux.HandleFunc("GET /api/desktop-instances", s.desktopCatalog)
 	mux.HandleFunc("POST /api/desktop-instances", s.newAccountDesktop)
 	mux.HandleFunc("DELETE /api/desktop-instances/{id}", s.deleteAccountDesktop)

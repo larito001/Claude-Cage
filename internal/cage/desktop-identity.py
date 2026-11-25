@@ -59,6 +59,12 @@ def main():
     path = Path(sys.argv[1])
     temporary = path.with_suffix(".tmp")
     history = sys.argv[2:]
+    if "--antigravity" in history or "--codex" in history:
+        temporary.write_text("null")
+        temporary.replace(path)
+        while sys.stdin.buffer.read(4096):
+            pass
+        return
     previous = object()
     def publish(value):
         nonlocal previous

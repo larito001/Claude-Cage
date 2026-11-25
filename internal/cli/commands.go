@@ -155,6 +155,7 @@ var agents = map[string]struct {
 	// The VM also enforces bypass mode with managed settings: Claude Code
 	// drops the flag when it relaunches itself.
 	"claude": {[]string{"claude", "--dangerously-skip-permissions"}, false},
+	"agy":    {[]string{"agy", "--dangerously-skip-permissions"}, true},
 	// Approves every prompt that is not explicitly denied.
 	"opencode": {[]string{"opencode", "--auto"}, true},
 	"codex":    {[]string{"codex", "--dangerously-bypass-approvals-and-sandbox"}, false},

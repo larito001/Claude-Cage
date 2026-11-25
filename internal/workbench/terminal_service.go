@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"al.essio.dev/pkg/shellescape"
+	"github.com/sylvinus/agent-vm/internal/cage"
 	"github.com/sylvinus/agent-vm/internal/diagnostics"
 )
 
@@ -32,11 +33,33 @@ type terminalRequest struct {
 	Workspace       string  `json:"workspace"`
 	Kind            string  `json:"kind"`
 	ClaudeAccountID string  `json:"claude_account_id"`
+	AccountID       string  `json:"account_id,omitempty"`
 	AutoHandoff     *bool   `json:"auto_handoff,omitempty"`
 	loginDraft      *claudeSelection
 	afterLogin      *terminalSession
 	sharedID        string
 	requestContext  context.Context
+}
+
+func terminalProviderKind(kind string) (spec cage.ProviderSpec, login bool, deviceAuth bool, ok bool) {
+	if kind == "codex-device-login" {
+		s, found := cage.LookupProvider("codex")
+		return s, true, true, found
+	}
+	for _, p := range cage.Providers() {
+		if kind == p.CLI.TerminalKind {
+			return p, false, false, true
+		}
+		if kind == p.CLI.LoginKind {
+			return p, true, false, true
+		}
+	}
+	return cage.ProviderSpec{}, false, false, false
+}
+
+func isProviderLoginKind(kind string) bool {
+	_, login, _, ok := terminalProviderKind(kind)
+	return ok && login
 }
 
 // terminalManager owns host PTYs; subscriptions only borrow their output. The
@@ -77,10 +100,13 @@ func (m *terminalManager) startReplacing(previous *terminalSession, background b
 	}
 	m.sequence++
 	title := fmt.Sprintf("终端 %d", m.sequence)
-	if kind == "claude" {
-		title = fmt.Sprintf("Claude %d", m.sequence)
-	} else if kind == "claude-login" {
-		title = "Claude 账号登录"
+	spec, isLogin, _, isProvider := terminalProviderKind(kind)
+	if isProvider {
+		if isLogin {
+			title = fmt.Sprintf("%s 账号登录", spec.Name)
+		} else {
+			title = fmt.Sprintf("%s %d", spec.Name, m.sequence)
+		}
 	}
 	session := newTerminalSession(file)
 	session.creationOrder = m.sequence
@@ -89,14 +115,22 @@ func (m *terminalManager) startReplacing(previous *terminalSession, background b
 	if previous != nil {
 		session.id = previous.id
 	}
-	session.kind, session.claudeAccountID, session.physicalProfile = kind, selection.ID, selection.GuestID
-	if kind == "claude-login" {
-		session.loginGuestID = selection.GuestID
-	}
-	if selection.GuestID == "default" {
-		session.claudeAccountSource = "default"
-	} else if selection.ID != "" {
-		session.claudeAccountSource = "managed"
+	session.kind, session.physicalProfile = kind, selection.GuestID
+	if isProvider {
+		session.provider = spec.ID
+		if spec.ID == "claude" {
+			session.claudeAccountID = selection.ID
+			if selection.GuestID == "default" {
+				session.claudeAccountSource = "default"
+			} else if selection.ID != "" {
+				session.claudeAccountSource = "managed"
+			}
+		} else {
+			session.providerAccountID = selection.ID
+		}
+		if isLogin {
+			session.loginGuestID = selection.GuestID
+		}
 	}
 	if m.sessions == nil {
 		m.sessions = make(map[string]*terminalSession)
@@ -236,10 +270,17 @@ func (m *terminalManager) existingClaudeLogin(id string, login bool) (*terminalS
 	return m.existingProfileLogin(claudeSelection{ID: id}, login)
 }
 func (m *terminalManager) existingProfileLogin(selection claudeSelection, login bool) (*terminalSession, error) {
+	return m.existingProviderProfileLogin("claude", selection, login)
+}
+
+func (m *terminalManager) existingProviderProfileLogin(provider string, selection claudeSelection, login bool) (*terminalSession, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, session := range m.sessions {
-		sameAccount := session.accountID() == selection.ID
+		if session.providerName() != provider && !(provider == "claude" && session.providerName() == "") {
+			continue
+		}
+		sameAccount := session.anyAccountID() == selection.ID
 		if !sameAccount && (selection.GuestID == "" || selection.GuestID != session.physicalProfile) {
 			continue
 		}
@@ -248,10 +289,11 @@ func (m *terminalManager) existingProfileLogin(selection claudeSelection, login 
 			continue
 		default:
 		}
-		if sameAccount && session.kind == "claude-login" && login {
+		sessionIsLogin := isProviderLoginKind(session.kind)
+		if sameAccount && sessionIsLogin && login {
 			return session, nil
 		}
-		if login || session.kind == "claude-login" {
+		if login || sessionIsLogin {
 			return nil, errors.New("请先结束此账号的登录或运行中的终端，再更改登录身份")
 		}
 	}
@@ -305,8 +347,8 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 		return nil, errTerminalBusy
 	}
 	defer s.op.Unlock()
-	if input.BackgroundLogin && input.Kind != "claude-login" {
-		return nil, errors.New("后台授权只能用于 Claude 登录")
+	if input.BackgroundLogin && !isProviderLoginKind(input.Kind) {
+		return nil, errors.New("后台授权只能用于账号登录")
 	}
 	if input.AutoHandoff != nil && input.Kind != "claude" {
 		return nil, errors.New("只有 Claude Code 会话可选择自动接续")
@@ -335,13 +377,49 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 				return s.startCodeLogin(input, a.ID)
 			}
 		}
+	} else if spec, isLogin, _, ok := terminalProviderKind(input.Kind); ok && spec.ID != "claude" && !isLogin {
+		requested := input.AccountID
+		if requested == "" {
+			requested = input.ClaudeAccountID
+		}
+		input.AccountID = requested
+		if requested == "login" {
+			return s.startProviderCodeLogin(spec.ID, input, "")
+		}
+		if validClaudeID(requested) {
+			st := s.providerAccounts.forProvider(spec.ID)
+			st.mu.Lock()
+			list, err := s.loadProviderAccounts(spec.ID)
+			var needsLogin bool
+			var foundID string
+			if err == nil {
+				if a := list.find(requested); a != nil {
+					foundID = a.ID
+					needsLogin = a.Status != "ready" || a.CodeUnlinked
+				} else {
+					err = fmt.Errorf("未找到所选 %s 账号", spec.Name)
+				}
+			}
+			st.mu.Unlock()
+			if err != nil {
+				return nil, err
+			}
+			if needsLogin {
+				return s.startProviderCodeLogin(spec.ID, input, foundID)
+			}
+		}
 	}
 	return s.createTerminalLocked(input)
 }
 
 // Caller holds the environment operation lock through PTY publication.
 func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, error) {
-	if input.LoginProxyNode != nil && (input.Kind != "claude-login" || input.ClaudeAccountID != "" || *input.LoginProxyNode != "" && !s.accountDesktopsSupported()) {
+	providerSpec, isLoginKind, isDeviceAuth, isProvider := terminalProviderKind(input.Kind)
+	requestedAccount := input.ClaudeAccountID
+	if isProvider && providerSpec.ID != "claude" && input.AccountID != "" {
+		requestedAccount = input.AccountID
+	}
+	if input.LoginProxyNode != nil && (!isLoginKind || requestedAccount != "" || *input.LoginProxyNode != "" && !s.accountDesktopsSupported()) {
 		return nil, errors.New("仅可为新增的 Linux 账号选择代理节点")
 	}
 	var sharedRecord *mobileRecord
@@ -384,17 +462,18 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	}
 	// Reject a full manager before opening project shares. start checks again
 	// atomically with process publication because shutdown can race this work.
-	if input.Kind != "claude-login" && input.afterLogin == nil {
+	if !isLoginKind && input.afterLogin == nil {
 		if err := s.terminals.canStart(); err != nil {
 			return nil, err
 		}
 	}
-	if input.Kind != "" && input.Kind != "shell" && input.Kind != "claude" && input.Kind != "claude-login" {
+	if input.Kind != "" && input.Kind != "shell" && !isProvider {
 		return nil, errors.New("终端类型无效")
 	}
-	managed := input.Kind == "claude" || input.Kind == "claude-login"
-	if !managed && input.ClaudeAccountID != "" {
-		return nil, errors.New("普通终端不能指定 Claude 账号")
+	managedClaude := isProvider && providerSpec.ID == "claude"
+	managedOther := isProvider && providerSpec.ID != "claude"
+	if !isProvider && (input.ClaudeAccountID != "" || input.AccountID != "") {
+		return nil, errors.New("普通终端不能指定账号")
 	}
 	// Login works even when the last project is disconnected or has moved.
 	// It always runs from the guest home, without loading project settings.
@@ -403,13 +482,22 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 		workspace = input.Workspace
 	}
 	var err error
-	if input.Kind != "claude-login" {
+	if !isLoginKind {
 		workspace, err = s.connectProject(input.Workspace, false)
 		if err != nil {
 			return nil, err
 		}
 	}
 	launchCommand := command
+	if managedOther {
+		launchCommand = providerSpec.CLI.Binary
+		switch providerSpec.ID {
+		case "antigravity":
+			launchCommand += " --dangerously-skip-permissions"
+		case "codex":
+			launchCommand += " --dangerously-bypass-approvals-and-sandbox"
+		}
+	}
 	if input.Kind == "claude" && !sharedCLILauncher(command) {
 		directories, err := s.projectAdditionalDirectories(workspace)
 		if err != nil {
@@ -422,7 +510,7 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	script := terminalScript(guestPath(workspace), input.Kind, launchCommand)
 	var selection claudeSelection
 	var finished func()
-	if managed {
+	if managedClaude {
 		login := input.Kind == "claude-login"
 		if input.loginDraft != nil {
 			selection = *input.loginDraft
@@ -471,8 +559,51 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 				}
 			}
 		}
+	} else if managedOther {
+		if componentUpdate {
+			return nil, errGuestUpdateRequired
+		}
+		if input.loginDraft != nil {
+			selection = *input.loginDraft
+		} else {
+			selection, err = s.selectProviderAccount(providerSpec.ID, requestedAccount, isLoginKind, workspace)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if input.LoginProxyNode != nil {
+			if err = s.setProviderLoginDraftNode(providerSpec.ID, selection.ID, *input.LoginProxyNode); err != nil {
+				return nil, err
+			}
+		}
+		if selection.ID != "" || input.loginDraft != nil {
+			if (input.loginDraft == nil && !validClaudeID(selection.ID)) || !validClaudeGuestID(selection.GuestID) || (isLoginKind && selection.GuestID == "default") {
+				return nil, fmt.Errorf("%s 账号 ID 无效", providerSpec.Name)
+			}
+			if selection.ID != "" {
+				if existing, conflict := s.terminals.existingProviderProfileLogin(providerSpec.ID, selection, isLoginKind); existing != nil || conflict != nil {
+					if existing != nil && input.loginDraft != nil {
+						return nil, errors.New("请先完成此账号正在进行的登录")
+					}
+					return existing, conflict
+				}
+			}
+			if !isLoginKind && selection.Subject == "" {
+				return nil, fmt.Errorf("%s 账号状态已变化，请重试", providerSpec.Name)
+			}
+		}
+		script = managedProviderTerminalScript(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, isLoginKind, isDeviceAuth)
+		if isLoginKind && input.loginDraft == nil && selection.ID != "" {
+			provID := providerSpec.ID
+			selID := selection.ID
+			finished = func() {
+				ctx, cancel := context.WithTimeout(s.lifetimeContext(), 15*time.Second)
+				defer cancel()
+				_, _ = s.confirmProviderLogin(ctx, provID, selID)
+			}
+		}
 	}
-	ordinaryShell := !managed && !componentUpdate
+	ordinaryShell := !isProvider && !componentUpdate
 	if ordinaryShell {
 		finished = s.refreshShellLoginWatch
 	}
@@ -484,7 +615,11 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 		}
 	}
 	if selection.ID != "" {
-		script, err = s.routeAccountCommand(s.lifetimeContext(), selection.ID, script)
+		if managedOther {
+			script, err = s.routeProviderAccountCommand(s.lifetimeContext(), providerSpec.ID, selection.ID, script)
+		} else {
+			script, err = s.routeAccountCommand(s.lifetimeContext(), selection.ID, script)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -618,6 +753,32 @@ func managedClaudeTerminalScript(workspace, command, accountID, subject string, 
 		env += `export CLAUDE_CONFIG_DIR="$HOME/.local/share/cage/claude-accounts/$CAGE_CLAUDE_ACCOUNT_ID/config"; `
 	}
 	env += `export PATH="/usr/local/lib/cage-claude-bin:$PATH"; `
+	body := env + `eval "$CAGE_TERMINAL_COMMAND"; unset CAGE_TERMINAL_COMMAND; exec bash -i`
+	return "cd " + shellescape.Quote(workspace) +
+		" && exec env TERM=xterm-256color COLORTERM=truecolor CAGE_WORKBENCH=1 CAGE_TERMINAL_COMMAND=" +
+		shellescape.Quote(command) + " bash -lic " + shellescape.Quote(body)
+}
+
+func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, accountID, subject string, login, deviceAuth bool) string {
+	if login {
+		extra := ""
+		if deviceAuth {
+			extra = " --device-auth"
+		}
+		return "cd \"$HOME\" && exec /usr/local/bin/cage-provider-account " +
+			shellescape.Quote(spec.ID) + " login " + shellescape.Quote(accountID) + extra
+	}
+	env := `export CAGE_PROVIDER_ACCOUNT_ID=` + shellescape.Quote(accountID) +
+		` CAGE_PROVIDER_SUBJECT=` + shellescape.Quote(subject) + "; "
+	if accountID != "default" {
+		switch spec.ID {
+		case "antigravity":
+			env += `export ANTIGRAVITY_GEMINI_DIR="$HOME/.local/share/cage/antigravity-accounts/$CAGE_PROVIDER_ACCOUNT_ID/config" AGY_CLI_FORCE_FILE_TOKEN_STORAGE=1; `
+		case "codex":
+			env += `export CODEX_HOME="$HOME/.local/share/cage/codex-accounts/$CAGE_PROVIDER_ACCOUNT_ID/config"; `
+		}
+	}
+	env += `export PATH="/usr/local/lib/cage-` + spec.ID + `-bin:$HOME/.local/bin:$PATH"; `
 	body := env + `eval "$CAGE_TERMINAL_COMMAND"; unset CAGE_TERMINAL_COMMAND; exec bash -i`
 	return "cd " + shellescape.Quote(workspace) +
 		" && exec env TERM=xterm-256color COLORTERM=truecolor CAGE_WORKBENCH=1 CAGE_TERMINAL_COMMAND=" +

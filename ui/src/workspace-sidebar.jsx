@@ -1,5 +1,6 @@
-import { DesktopList } from "./account-desktops";
+import { DesktopList, ProviderDesktopList } from "./account-desktops";
 import { HostPluginsNav, HostPluginsSidebar, PluginPagesNav } from "./host-plugins";
+import { PROVIDERS } from "./providers.mjs";
 import { shortcut } from "./platform.mjs";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -77,7 +78,11 @@ export function WorkspaceSidebar({
   onClaudeAccounts,
   claudeAccountsOpen,
   onClaudeWeb,
+  onOpenBrowserSpace,
+  activeBrowserSpace = "",
   onClaudeDesktop,
+  onProviderDesktop,
+  desktopProvider = "claude",
   defaultDesktopRunning,
   onDefaultDesktopStop,
   accountDesktops,
@@ -180,26 +185,76 @@ export function WorkspaceSidebar({
             <Globe2 size={17} />
             {tr("浏览器")}
           </button>
-          <button
-            className="icon-button sidebar-claude-shortcut"
-            onClick={onClaudeWeb}
-            disabled={!ready || busy}
-            aria-label="claude.ai"
-            title={tr("打开 claude.ai")}
-          >
-            <img src={claudeLogo} width="18" height="18" alt="" />
-          </button>
+          <div className="sidebar-space-shortcuts" role="group" aria-label={tr("隔离浏览器空间")}>
+            <button
+              className={`icon-button sidebar-claude-shortcut ${activeBrowserSpace === "claude" ? "active" : ""}`}
+              onClick={
+                onOpenBrowserSpace
+                  ? () => onOpenBrowserSpace("claude", "https://claude.ai/")
+                  : onClaudeWeb
+              }
+              disabled={!ready || busy}
+              aria-label="claude.ai"
+              title={tr("打开 claude.ai")}
+            >
+              <img src={claudeLogo} width="18" height="18" alt="" />
+            </button>
+            {PROVIDERS.filter((item) => item.id !== "claude").map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`sidebar-space-pill ${activeBrowserSpace === item.id ? "active" : ""}`}
+                onClick={() => onOpenBrowserSpace?.(item.id, item.homeURL)}
+                disabled={!ready || busy}
+                aria-label={tr("{0} 浏览器空间", item.name)}
+                title={tr("{0} 浏览器空间", item.name)}
+              >
+                {item.shortBadge}
+              </button>
+            ))}
+          </div>
         </div>
         {accountDesktops ? (
-          <DesktopList
-            model={accountDesktops}
-            disabled={!running || busy}
-            selected={desktopOpen}
-            defaultRunning={defaultDesktopRunning}
-            onDefault={onClaudeDesktop}
-            onDefaultStop={onDefaultDesktopStop}
-            onRename={onDesktopRename}
-          />
+          <>
+            <DesktopList
+              model={accountDesktops}
+              disabled={!running || busy}
+              selected={
+                desktopOpen &&
+                (accountDesktops.panes.length > 0
+                  ? accountDesktops.panes.some((p) => (p.provider || "claude") === "claude")
+                  : desktopProvider === "claude")
+              }
+              defaultRunning={defaultDesktopRunning}
+              onDefault={onClaudeDesktop}
+              onDefaultStop={onDefaultDesktopStop}
+              onRename={onDesktopRename}
+            />
+            {PROVIDERS.filter((item) => item.id !== "claude").map((item) => (
+              <ProviderDesktopList
+                key={item.id}
+                provider={item.id}
+                label={item.desktopLabel}
+                model={accountDesktops}
+                disabled={!running || busy}
+                selected={
+                  desktopOpen &&
+                  (accountDesktops.panes.length > 0
+                    ? accountDesktops.panes.some((p) => p.provider === item.id)
+                    : desktopProvider === item.id)
+                }
+                installerSelected={
+                  desktopOpen &&
+                  accountDesktops.panes.length === 0 &&
+                  desktopProvider === item.id
+                }
+                onOpenInstaller={
+                  onProviderDesktop ? () => onProviderDesktop(item.id) : undefined
+                }
+                onRename={onDesktopRename}
+              />
+            ))}
+          </>
         ) : (
           <div className={`account-desktop-row ${desktopOpen ? "active" : ""}`}>
             <button
@@ -229,7 +284,7 @@ export function WorkspaceSidebar({
         )}
         <button className={`sidebar-link ${claudeAccountsOpen ? "selected" : ""}`} onClick={onClaudeAccounts}
           aria-current={claudeAccountsOpen ? "page" : undefined}>
-          <UsersRound size={17} />{tr("Claude 账号管理")}
+          <UsersRound size={17} />{tr("账号管理")}
         </button>
         {(plugins || onTailscale) && (
           <>

@@ -1,10 +1,13 @@
-# Adds one MCP server to every Claude client of this user: Claude Code reads
-# it over HTTP, the desktop app starts a small relay program instead.
+# Adds one MCP server to every supported AI client of this user:
+# - Claude Code reads it over HTTP (.claude.json)
+# - Claude Desktop, Antigravity (CLI & Desktop), and Codex (CLI & Desktop)
+#   start a private local stdio relay program instead.
 # ENTRY and RELAY (JSON strings) are defined by the lines placed before this
 # script; the server's name is the first argument and "add" or "remove" the
 # second.
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -25,8 +28,45 @@ def desktop_config_dirs(home):
     if default.is_dir():
         dirs.append(default)
     desktops = home / ".local/share/desktop-profiles"
-    dirs += [d for d in sorted(desktops.glob("*/data")) if d.is_dir()]
+    for d in sorted(desktops.glob("*/data")):
+        if not d.is_dir():
+            continue
+        provider_file = d.parent / "provider"
+        try:
+            provider = provider_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            provider = "claude"
+        if provider in ("", "claude"):
+            dirs.append(d)
     return dirs
+
+
+def antigravity_mcp_files(home):
+    files = []
+    default = home / ".gemini"
+    if default.is_dir():
+        files.append(default / "config/mcp_config.json")
+    accounts = home / ".local/share/cage/antigravity-accounts"
+    files += [d / "config/mcp_config.json" for d in sorted(accounts.glob("*/config")) if d.is_dir()]
+    desktops = home / ".local/share/desktop-profiles"
+    for d in sorted(desktops.glob("*/home/.gemini")):
+        if d.is_dir():
+            files.append(d / "config/mcp_config.json")
+    return files
+
+
+def codex_toml_files(home):
+    files = []
+    default = home / ".codex"
+    if default.is_dir():
+        files.append(default / "config.toml")
+    accounts = home / ".local/share/cage/codex-accounts"
+    files += [d / "config.toml" for d in sorted(accounts.glob("*/config")) if d.is_dir()]
+    desktops = home / ".local/share/desktop-profiles"
+    for d in sorted(desktops.glob("*/home/.codex")):
+        if d.is_dir():
+            files.append(d / "config.toml")
+    return files
 
 
 def write_private(path, text, mode=0o600):
@@ -50,17 +90,12 @@ def write_private(path, text, mode=0o600):
 
 
 def add_server(path, name, entry, ours):
-    """Adds the entry to a client's configuration; returns whether it wrote.
-
-    ours tells whether an existing entry of this name is one written here, as
-    opposed to the user's own server, which is kept.
-    """
+    """Adds the entry to a JSON client's configuration; returns whether it wrote."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         data = {}
     except ValueError:
-        # The client may be part-way through rewriting it; the next start retries.
         return False
     if not isinstance(data, dict):
         return False
@@ -77,7 +112,7 @@ def add_server(path, name, entry, ours):
 
 
 def remove_server(path, name, ours):
-    """Removes the entry written here from a client's configuration."""
+    """Removes the entry written here from a JSON client's configuration."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, ValueError):
@@ -91,6 +126,62 @@ def remove_server(path, name, ours):
     return write_private(path, json.dumps(data, indent=2), path.stat().st_mode & 0o777)
 
 
+def _toml_header(name):
+    if re.fullmatch(r"[A-Za-z0-9_-]+", name):
+        return f"[mcp_servers.{name}]"
+    return f"[mcp_servers.{json.dumps(name)}]"
+
+
+def _toml_block(name, local):
+    header = _toml_header(name)
+    return (
+        f"# cage-managed-mcp-start:{name}\n"
+        f"{header}\n"
+        f"command = {json.dumps(local['command'])}\n"
+        f"args = {json.dumps(local['args'])}\n"
+        f"# cage-managed-mcp-end:{name}\n"
+    )
+
+
+def add_toml_server(path, name, local):
+    try:
+        existing = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        existing = ""
+    except OSError:
+        return False
+    start_marker = f"# cage-managed-mcp-start:{name}\n"
+    end_marker = f"# cage-managed-mcp-end:{name}\n"
+    block = _toml_block(name, local)
+    header = _toml_header(name)
+    if start_marker in existing and end_marker in existing:
+        before, rest = existing.split(start_marker, 1)
+        _, after = rest.split(end_marker, 1)
+        updated = before + block + after
+    else:
+        if any(line.strip() == header for line in existing.splitlines()):
+            return False
+        sep = "" if not existing or existing.endswith("\n\n") else ("\n" if existing.endswith("\n") else "\n\n")
+        updated = existing + sep + block
+    mode = path.stat().st_mode & 0o777 if path.exists() else 0o600
+    return write_private(path, updated, mode)
+
+
+def remove_toml_server(path, name):
+    try:
+        existing = path.read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError):
+        return False
+    start_marker = f"# cage-managed-mcp-start:{name}\n"
+    end_marker = f"# cage-managed-mcp-end:{name}\n"
+    if start_marker not in existing or end_marker not in existing:
+        return False
+    before, rest = existing.split(start_marker, 1)
+    _, after = rest.split(end_marker, 1)
+    updated = (before.rstrip("\n") + ("\n\n" if before.strip() and after.strip() else "\n" if (before.strip() or after.strip()) else "") + after.lstrip("\n"))
+    return write_private(path, updated, path.stat().st_mode & 0o777)
+
+
 def relay_files(home, name):
     return home / ".local/share/mcp-relay/relay.py", home / ".config/mcp-relay" / (name + ".json")
 
@@ -99,14 +190,21 @@ def configure(home, name, entry, relay):
     for file in profile_files(home):
         add_server(file, name, entry, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
     desktops = desktop_config_dirs(home)
-    if not desktops:
+    agy_files = antigravity_mcp_files(home)
+    codex_files = codex_toml_files(home)
+    if not desktops and not agy_files and not codex_files:
         return
     program, endpoint = relay_files(home, name)
     write_private(program, relay)
     write_private(endpoint, json.dumps({"url": entry["url"], "headers": entry.get("headers", {})}))
     local = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
+    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == local["args"]
     for desktop in desktops:
-        add_server(desktop / "claude_desktop_config.json", name, local, lambda current: isinstance(current, dict) and current.get("args") == local["args"])
+        add_server(desktop / "claude_desktop_config.json", name, local, ours_relay)
+    for file in agy_files:
+        add_server(file, name, local, ours_relay)
+    for file in codex_files:
+        add_toml_server(file, name, local)
 
 
 def unconfigure(home, name, entry):
@@ -115,12 +213,21 @@ def unconfigure(home, name, entry):
         remove_server(file, name, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
     program, endpoint = relay_files(home, name)
     args = [str(program), str(endpoint)]
+    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == args
     for desktop in desktop_config_dirs(home):
-        remove_server(desktop / "claude_desktop_config.json", name, lambda current: isinstance(current, dict) and current.get("args") == args)
-    # The endpoint file holds the token; the relay program has no other user.
-    for file in (endpoint, program):
+        remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
+    for file in antigravity_mcp_files(home):
+        remove_server(file, name, ours_relay)
+    for file in codex_toml_files(home):
+        remove_toml_server(file, name)
+    try:
+        endpoint.unlink()
+    except FileNotFoundError:
+        pass
+    remaining = list(endpoint.parent.glob("*.json")) if endpoint.parent.is_dir() else []
+    if not remaining:
         try:
-            file.unlink()
+            program.unlink()
         except FileNotFoundError:
             pass
     for directory in (endpoint.parent, program.parent):

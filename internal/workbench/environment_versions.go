@@ -73,7 +73,7 @@ env={**os.environ,'DISABLE_AUTOUPDATER':'1','PATH':str(Path.home()/'.local/bin')
 code_server_version=re.compile(r'^v?[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?(?:\s|$)')
 # code-server reads a config even for --version. Use an existing, empty file
 # so a version query neither creates nor depends on the user's config.
-for name,args in {'chromium':['/usr/bin/chromium','--version'],'code_server':['code-server','--version','--config','/dev/null'],'claude':['claude','--version'],'gh':['gh','--version'],'git':['git','--version'],'mise':[str(Path.home()/'.local/bin/mise'),'--version']}.items():
+for name,args in {'chromium':['/usr/bin/chromium','--version'],'code_server':['code-server','--version','--config','/dev/null'],'claude':['claude','--version'],'agy':['agy','--version'],'codex':['codex','--version'],'gh':['gh','--version'],'git':['git','--version'],'mise':[str(Path.home()/'.local/bin/mise'),'--version']}.items():
  try:
   result=subprocess.run(args,env=env,capture_output=True,text=True,timeout=4)
   lines=result.stdout.strip().splitlines() if result.returncode==0 else []
