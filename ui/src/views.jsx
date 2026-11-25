@@ -292,6 +292,14 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
   visibleRef.current = visible;
   const focusedRef = useRef(focused);
   focusedRef.current = focused;
+  const prevClosedRef = useRef(Boolean(session.closed));
+  useEffect(() => {
+    const wasClosed = prevClosedRef.current;
+    prevClosedRef.current = Boolean(session.closed);
+    if (wasClosed && !session.closed && !connected) {
+      setAttempt((v) => v + 1);
+    }
+  }, [session.closed, connected]);
   useEffect(() => {
     if (!contextMenu) return;
     const close = () => setContextMenu(null);
@@ -725,7 +733,7 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
       {!connected && (
         <div className="terminal-note">
           {session.closed
-            ? session.login_notice || tr("终端会话已结束。可点击项目右侧的终端图标新建终端。")
+            ? session.login_notice || (session.restorable ? tr("环境启动后将自动恢复此终端…") : tr("终端会话已结束。可点击项目右侧的终端图标新建终端。"))
             : tr("正在连接终端…")}
           {!session.closed && (
             <button onClick={() => setAttempt((v) => v + 1)}>

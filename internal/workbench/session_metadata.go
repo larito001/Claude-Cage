@@ -135,6 +135,7 @@ func (s *Server) setSessionArchived(id string, archived bool, requestContext con
 	if terminal := s.terminals.get(terminalID); archived && terminal != nil {
 		if terminal.summary()["cli_session_id"] == id {
 			s.terminals.remove(terminalID)
+			s.savePersistedTerminals()
 		}
 	}
 	if done != nil {

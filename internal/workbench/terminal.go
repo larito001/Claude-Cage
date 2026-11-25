@@ -39,6 +39,7 @@ func (s *Server) closeTerminal(w http.ResponseWriter, r *http.Request) {
 		if id, _ := terminal.summary()["cli_session_id"].(string); id != "" {
 			if err := s.setSessionArchived(id, true, nil); errors.Is(err, os.ErrNotExist) {
 				s.terminals.remove(terminal.id)
+				s.savePersistedTerminals()
 			} else if err != nil {
 				requestError(w, err)
 				return
@@ -48,14 +49,23 @@ func (s *Server) closeTerminal(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.terminals.remove(r.PathValue("id"))
+	s.savePersistedTerminals()
 	jsonReply(w, map[string]bool{"ok": true})
 }
 
 func (s *Server) terminalStream(w http.ResponseWriter, r *http.Request) {
-	session := s.terminals.get(r.PathValue("id"))
+	id := r.PathValue("id")
+	session := s.terminals.get(id)
 	if session == nil {
 		http.NotFound(w, r)
 		return
+	}
+	if session.isRestorable() {
+		if restored, err := s.restoreSingleTerminal(session, 0); err == nil && restored != nil {
+			session = restored
+		} else if current := s.terminals.get(id); current != nil {
+			session = current
+		}
 	}
 	ws, err := s.upgrade(w, r)
 	if err != nil {

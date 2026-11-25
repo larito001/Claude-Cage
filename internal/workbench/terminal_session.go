@@ -43,6 +43,7 @@ type terminalSession struct {
 	history               []byte
 	loginNotice           string
 	dismissed             bool
+	restorable            bool
 	exitOK                bool
 	closed                bool
 	clients               map[chan []byte]bool
@@ -90,10 +91,16 @@ func (t *terminalSession) ended() bool {
 	return true
 }
 
+func (t *terminalSession) isRestorable() bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.closed && !t.dismissed && t.restorable
+}
+
 func (t *terminalSession) replaceable() bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	return t.closed && !t.dismissed && isProviderLoginKind(t.kind)
+	return t.closed && !t.dismissed && (isProviderLoginKind(t.kind) || t.restorable)
 }
 
 func (t *terminalSession) ownsConversation() bool {
@@ -118,7 +125,8 @@ func (t *terminalSession) summary() map[string]any {
 			closed = false
 		}
 	}
-	return map[string]any{"id": t.id, "title": t.title, "closed": closed, "workspace": t.workspace, "kind": t.kind,
+	return map[string]any{"id": t.id, "title": t.title, "closed": closed, "restorable": closed && !t.dismissed && t.restorable,
+		"workspace": t.workspace, "kind": t.kind,
 		"provider": t.provider, "provider_account_id": t.providerAccountID, "login_guest_id": t.loginGuestID,
 		"claude_account_id": t.claudeAccountID, "claude_account_source": t.claudeAccountSource, "cli_session_id": t.sharedID,
 		"background_login": t.backgroundLogin, "login_notice": t.loginNotice, "cli_starting": t.cliStartupPendingLocked()}

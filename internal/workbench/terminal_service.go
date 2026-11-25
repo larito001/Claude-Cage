@@ -57,6 +57,8 @@ type terminalRequest struct {
 	loginDraft      *claudeSelection
 	afterLogin      *terminalSession
 	sharedID        string
+	restoring       bool
+	restoreOrdinal  int
 	requestContext  context.Context
 }
 
@@ -117,22 +119,32 @@ func (m *terminalManager) startReplacing(previous *terminalSession, background b
 	if err != nil {
 		return nil, errTerminalStart
 	}
-	m.sequence++
-	title := fmt.Sprintf("终端 %d", m.sequence)
 	spec, isLogin, _, isProvider := terminalProviderKind(kind)
-	if isProvider {
-		if isLogin {
-			title = fmt.Sprintf("%s 账号登录", spec.Name)
-		} else {
-			title = fmt.Sprintf("%s %d", spec.Name, m.sequence)
-		}
-	}
 	session := newTerminalSession(file)
-	session.creationOrder = m.sequence
 	session.backgroundLogin = background
-	session.id, session.title, session.workspace, session.cmd = randomToken()[:16], title, workspace, cmd
-	if previous != nil {
+	session.workspace, session.cmd = workspace, cmd
+	if previous != nil && !isProviderLoginKind(previous.kind) {
 		session.id = previous.id
+		session.title = previous.title
+		session.creationOrder = previous.creationOrder
+		if session.creationOrder > m.sequence {
+			m.sequence = session.creationOrder
+		}
+	} else {
+		m.sequence++
+		title := fmt.Sprintf("终端 %d", m.sequence)
+		if isProvider {
+			if isLogin {
+				title = fmt.Sprintf("%s 账号登录", spec.Name)
+			} else {
+				title = fmt.Sprintf("%s %d", spec.Name, m.sequence)
+			}
+		}
+		session.creationOrder = m.sequence
+		session.id, session.title = randomToken()[:16], title
+		if previous != nil {
+			session.id = previous.id
+		}
 	}
 	session.kind, session.physicalProfile = kind, selection.GuestID
 	if isProvider {
@@ -349,6 +361,34 @@ func (m *terminalManager) closeAll() {
 	m.mu.Unlock()
 	for _, session := range sessions {
 		session.close()
+	}
+}
+
+// suspendAll stops live PTYs when the environment stops or restarts, while
+// marking non-dismissed project terminals restorable so they reattach
+// automatically when the environment comes back up.
+func (m *terminalManager) suspendAll() {
+	m.mu.Lock()
+	sessions := make([]*terminalSession, 0, len(m.sessions))
+	for _, session := range m.sessions {
+		sessions = append(sessions, session)
+	}
+	m.mu.Unlock()
+	for _, session := range sessions {
+		session.mu.Lock()
+		canRestore := !session.dismissed && !session.backgroundLogin && isPersistableTerminalKind(session.kind) && session.workspace != ""
+		if canRestore {
+			session.restorable = true
+		}
+		session.mu.Unlock()
+		if canRestore {
+			session.stopPTY()
+			if session.done != nil {
+				<-session.done
+			}
+		} else {
+			session.close()
+		}
 	}
 }
 
@@ -637,7 +677,8 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 		if !isLoginKind {
 			notifyConnID = uuid.NewString()
 		}
-		script = managedProviderTerminalScript(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, notifyConnID, isLoginKind, isDeviceAuth)
+		resumeLatest := input.restoring && !isLoginKind && usesOfficialProviderBinary(providerCommand, providerSpec.CLI.Binary)
+		script = managedProviderTerminalScriptWithRestore(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, notifyConnID, isLoginKind, isDeviceAuth, resumeLatest, input.restoreOrdinal)
 		if isLoginKind && input.loginDraft == nil && selection.ID != "" {
 			provID := providerSpec.ID
 			selID := selection.ID
@@ -711,6 +752,9 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 	}
 	if err == nil && input.Kind == "claude" && selection.ID != "" {
 		s.noteClaudeSelection(selection.ID, workspace)
+	}
+	if err == nil && !isLoginKind && !input.BackgroundLogin {
+		s.savePersistedTerminals()
 	}
 	return session, err
 }
@@ -913,6 +957,10 @@ func managedClaudeTerminalScript(workspace, command, accountID, subject string, 
 }
 
 func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, accountID, subject, notifyConnID string, login, deviceAuth bool) string {
+	return managedProviderTerminalScriptWithRestore(spec, workspace, command, accountID, subject, notifyConnID, login, deviceAuth, false, 0)
+}
+
+func managedProviderTerminalScriptWithRestore(spec cage.ProviderSpec, workspace, command, accountID, subject, notifyConnID string, login, deviceAuth, resumeLatest bool, restoreOrdinal int) string {
 	if login {
 		extra := ""
 		if deviceAuth {
@@ -926,6 +974,9 @@ func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, a
 	if notifyConnID != "" {
 		env += `export CAGE_NOTIFY_CONNECTION=` + shellescape.Quote(notifyConnID) + "; "
 	}
+	if resumeLatest && restoreOrdinal > 0 {
+		env += fmt.Sprintf("export CAGE_RESTORE_ORDINAL=%d; ", restoreOrdinal)
+	}
 	if accountID != "default" {
 		switch spec.ID {
 		case "antigravity":
@@ -935,7 +986,40 @@ func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, a
 		}
 	}
 	env += `export PATH="/usr/local/lib/cage-` + spec.ID + `-bin:$HOME/.local/bin:$PATH"; `
-	body := env + `eval "$CAGE_TERMINAL_COMMAND"; unset CAGE_TERMINAL_COMMAND; exec bash -i`
+	launchSnippet := `eval "$CAGE_TERMINAL_COMMAND"`
+	if resumeLatest {
+		switch spec.ID {
+		case "codex":
+			py := `import glob,os,re,sqlite3
+h=os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
+cwd=os.getcwd()
+idx=int(os.environ.get("CAGE_RESTORE_ORDINAL","0"))
+for db in sorted(glob.glob(os.path.join(h,"state_*.sqlite")),reverse=True):
+ try:
+  c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
+  r=c.execute("SELECT id FROM threads WHERE cwd=? AND COALESCE(archived,0)=0 ORDER BY updated_at DESC LIMIT 1 OFFSET ?",(cwd,idx)).fetchone()
+  if r and r[0] and re.fullmatch(r"[0-9a-fA-F-]{36}",str(r[0])):
+   print(r[0]);break
+ except Exception:pass`
+			launchSnippet = `__cage_tid=$(python3 -c ` + shellescape.Quote(py) + ` 2>/dev/null || true); if [ -n "$__cage_tid" ]; then eval "$CAGE_TERMINAL_COMMAND resume $(printf '%q' "$__cage_tid")"; else eval "$CAGE_TERMINAL_COMMAND"; fi`
+		case "antigravity":
+			py := `import os,pathlib,re,sqlite3
+b=os.environ.get("ANTIGRAVITY_GEMINI_DIR") or os.path.expanduser("~/.gemini")
+db=os.path.join(b,"antigravity-cli","conversation_summaries.db")
+cwd=os.getcwd()
+uri=pathlib.Path(cwd).as_uri()
+idx=int(os.environ.get("CAGE_RESTORE_ORDINAL","0"))
+if os.path.isfile(db):
+ try:
+  c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
+  r=c.execute("SELECT conversation_id FROM conversation_summaries WHERE COALESCE(killed,0)=0 AND (workspace_uris LIKE ? OR workspace_uris LIKE ?) ORDER BY last_modified_time DESC LIMIT 1 OFFSET ?",("%"+uri+"%","%"+cwd+"%",idx)).fetchone()
+  if r and r[0] and re.fullmatch(r"[0-9a-zA-Z_-]{8,128}",str(r[0])):
+   print(r[0])
+ except Exception:pass`
+			launchSnippet = `__cage_cid=$(python3 -c ` + shellescape.Quote(py) + ` 2>/dev/null || true); if [ -n "$__cage_cid" ]; then eval "$CAGE_TERMINAL_COMMAND --resume $(printf '%q' "$__cage_cid")"; else eval "$CAGE_TERMINAL_COMMAND"; fi`
+		}
+	}
+	body := env + launchSnippet + `; unset CAGE_TERMINAL_COMMAND CAGE_RESTORE_ORDINAL; exec bash -i`
 	return "cd " + shellescape.Quote(workspace) +
 		" && exec env TERM=xterm-256color COLORTERM=truecolor CAGE_WORKBENCH=1 CAGE_TERMINAL_COMMAND=" +
 		shellescape.Quote(command) + " bash -lic " + shellescape.Quote(body)

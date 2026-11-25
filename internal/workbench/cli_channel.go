@@ -405,8 +405,12 @@ func (s *Server) discoverConversations(ctx context.Context, paths []string, reus
 			if terminal := s.terminals.forConversation(item.Connection); terminal != nil {
 				record.TerminalID = terminal.id
 				terminal.mu.Lock()
+				changedShared := terminal.sharedID != record.ID
 				terminal.sharedID = record.ID
 				terminal.mu.Unlock()
+				if changedShared {
+					defer s.savePersistedTerminals()
+				}
 			}
 		}
 		record.UpdatedAt = time.UnixMilli(int64(item.UpdatedAt * 1000)).UTC()

@@ -102,6 +102,7 @@ func (s *Server) removeProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.detachProjectFolders(folders)
+	s.removeProjectTerminals(folders)
 	jsonReply(w, map[string]string{"workspace": s.workspace()})
 }
 

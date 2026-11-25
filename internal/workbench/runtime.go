@@ -249,6 +249,7 @@ func (s *Server) attach() error {
 		s.applyGuestThemeAsync(v)
 	}
 	s.restoreProjectShares()
+	s.restorePersistedTerminalsAsync()
 	s.ensureHostTools()
 	s.desktopViews.background(s.changeDesktopVisibility)
 	s.browserViews.background(s.changeBrowserVisibility)
@@ -584,7 +585,7 @@ func (s *Server) stopEnvironment() (returned error) {
 	s.setGuestUpdateLocked(false, "")
 	s.safety.Error = ""
 	s.mu.Unlock()
-	s.terminals.closeAll()
+	s.terminals.suspendAll()
 	s.mobileCLI.stopAll()
 	s.closeProjectShares()
 	s.closeHostTools()

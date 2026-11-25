@@ -10,7 +10,7 @@ export function unassignedTerminalTabs(tabs, projects, projectGroups = []) {
 }
 
 export function projectSessionRows(tabs, sessions, saved, manualOrder, baseline) {
-  const live = tabs.filter(tab => !tab.closed || !sessions.some(session => session.id === tab.cli_session_id));
+  const live = tabs.filter(tab => !tab.closed || tab.restorable || !sessions.some(session => session.id === tab.cli_session_id));
   const rows = [
     ...sessions.map(session => live.find(tab => tab.cli_session_id === session.id) || ({
       id: `session:${session.id}`, kind: "terminal", workspace: session.workspace,

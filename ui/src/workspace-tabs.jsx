@@ -326,7 +326,7 @@ export function WorkspaceTabs({
             <div
               data-tab-id={tab.id}
               data-drop-position={drag?.drop?.to === tab.id ? drag.drop.after ? "after" : "before" : undefined}
-              className={`${horizontal || vertical ? "browser-tab" : "sidebar-tab"} ${runningElsewhere ? "session-occupied" : ""} ${tab.id === active ? "active" : ""} ${tab.closed ? "ended" : ""} ${drag?.id === tab.id ? "dragging" : ""} ${horizontal && tabWidth(tab.id) < 96 ? "compact" : ""} ${horizontal && tabWidth(tab.id) < 40 ? "tiny" : ""} ${horizontal && tabWidth(tab.id) < 24 ? "sliver" : ""}`}
+              className={`${horizontal || vertical ? "browser-tab" : "sidebar-tab"} ${runningElsewhere ? "session-occupied" : ""} ${tab.id === active ? "active" : ""} ${tab.closed && !tab.restorable ? "ended" : ""} ${drag?.id === tab.id ? "dragging" : ""} ${horizontal && tabWidth(tab.id) < 96 ? "compact" : ""} ${horizontal && tabWidth(tab.id) < 40 ? "tiny" : ""} ${horizontal && tabWidth(tab.id) < 24 ? "sliver" : ""}`}
               style={
                 horizontal
                   ? {

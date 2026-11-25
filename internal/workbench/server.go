@@ -131,6 +131,9 @@ type Server struct {
 	pluginSettingsMu sync.Mutex
 	// defaultPluginsMu serializes reading and writing default-plugins.json.
 	defaultPluginsMu sync.Mutex
+	// persistedTerminalsMu serializes reading and writing terminals.json.
+	persistedTerminalsMu sync.Mutex
+	terminalRestoreMu    sync.Mutex
 	// draftStoreOverride stands in for the guest extension-submissions folder in tests.
 	draftStoreOverride string
 	// tailnetTool stands in for the running Tailscale plugin in tests.
@@ -285,6 +288,7 @@ func serve(configPath string, clientOnly bool, fullConfigPath string) (returned 
 			}
 		}
 		s.ensureDefaultPlugins()
+		s.loadPersistedTerminals()
 		if e := s.retireLocalProxyCore(); e != nil {
 			// Revoke the gate even if the old process cannot be stopped.
 			// Keep the workbench available for importing its replacement.
