@@ -588,24 +588,15 @@ function checkedURL(value) {
 }
 async function newTab(url = homeURL, incognito = false, space = "", route = "") {
   const address = checkedURL(url);
-<<<<<<< HEAD
-  if (space) {
-    return browserSpaces.open(space, address, async tab => {
-      targets.set(tab.targetId, tab);
-      await activate(tab.targetId, true);
-      return session(tab.targetId);
-    }, { route });
-  }
-  if (incognito) {
-    const result = await privateBrowser.open("about:blank", async tab => {
-      targets.set(tab.targetId, tab);
-      await activate(tab.targetId, true);
-    });
-    await cdp("Page.navigate", { url: address }, await session(result.id));
-    return result;
-=======
   openingTargets++;
   try {
+    if (space) {
+      return await browserSpaces.open(space, address, async tab => {
+        targets.set(tab.targetId, tab);
+        await activate(tab.targetId, true);
+        return session(tab.targetId);
+      }, { route });
+    }
     if (incognito) {
       const result = await privateBrowser.open("about:blank", async tab => {
         targets.set(tab.targetId, tab);
@@ -626,7 +617,6 @@ async function newTab(url = homeURL, incognito = false, space = "", route = "") 
     return { id: targetId };
   } finally {
     openingTargets--;
->>>>>>> main
   }
 }
 async function browserSettings(section = "general") {
