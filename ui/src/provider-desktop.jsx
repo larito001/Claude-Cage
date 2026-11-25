@@ -29,8 +29,9 @@ export function ProviderDesktopView({
   const statusRequest = useRef(null);
   const statusRevision = useRef(0);
 
-  const jobPrefix = `${provider}-desktop-`;
-  const ownJob = status?.job?.kind?.startsWith(jobPrefix);
+  const ownJob =
+    status?.job?.kind?.startsWith(`${provider}-desktop-`) ||
+    status?.job?.kind === `desktop-app-install-${provider}`;
   const busy =
     submitting ||
     Boolean(status?.job?.running) ||

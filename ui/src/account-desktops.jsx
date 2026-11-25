@@ -394,7 +394,12 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
   const { catalog, expanded, panes, pending } = model;
   const [creating, setCreating] = useState(false);
   const [accountID, setAccountID] = useState("");
-  const instances = catalog?.instances ?? catalog?.accounts ?? [];
+  const instances = (
+    catalog?.providers?.claude?.instances ??
+    catalog?.instances ??
+    catalog?.accounts ??
+    []
+  ).filter((a) => !a.provider || a.provider === "claude");
   const original = instances.find(a => a.id === "default");
   const defaultEntry = original || { id: "default", label: tr("默认 Desktop") };
   const isDefaultRunning = Boolean(defaultEntry.running || defaultRunning);
