@@ -21,6 +21,12 @@ test('empty cursor uses opt-in fallback and real cursor shapes still win', async
     assert.equal(target.style.cursor, fallback);
     cursor.change(new Uint8Array([0, 0, 0, 255]), 0, 0, 1, 1);
     assert.match(target.style.cursor, /^url\(/);
+    cursor.change(new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]), 0, 0, 2, 1);
+    if (fallback === 'default') {
+      assert.equal(target.style.cursor, 'default');
+    } else {
+      assert.match(target.style.cursor, /^url\(/);
+    }
     cursor.change(new Uint8Array(), 0, 0, 0, 0);
     assert.equal(target.style.cursor, fallback);
   }

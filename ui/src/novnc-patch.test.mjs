@@ -196,3 +196,50 @@ test("a reader racing the application's read still completes once", async (t) =>
   p.fence("cage-paste-1-keys");
   await result;
 });
+
+test("lost mouseup recovers on trusted zero-button move or window blur without breaking active drag", async (t) => {
+  const RFB = await loadRFB(t);
+  if (!RFB) return;
+  const canvas = { setCapture() {}, getBoundingClientRect: () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 }) };
+  const events = [];
+  const rfb = {
+    _canvas: canvas,
+    dragViewport: false,
+    _mouseButtonMask: 0,
+    _mousePos: { x: 10, y: 20 },
+    _handleMouseButton(x, y, mask) {
+      this._mouseButtonMask = mask;
+      events.push(["button", x, y, mask]);
+    },
+    _handleMouseMove(x, y) {
+      this._mousePos = { x, y };
+      events.push(["move", x, y, this._mouseButtonMask]);
+    },
+  };
+  const send = (type, button, buttons, clientX = 50, clientY = 60, isTrusted = true) =>
+    RFB.prototype._handleMouse.call(rfb, {
+      type, button, buttons, clientX, clientY, isTrusted, target: canvas,
+      stopPropagation() {}, preventDefault() {},
+    });
+
+  // Press left button and drag normally while button remains held (buttons = 1).
+  send("mousedown", 0, 1, 40, 30);
+  send("mousemove", 0, 1, 60, 70);
+  assert.equal(rfb._mouseButtonMask, 1);
+  assert.deepEqual(events, [
+    ["button", 40, 30, 1],
+    ["move", 60, 70, 1],
+  ]);
+
+  // mouseup was swallowed (e.g. remote desktop / IME focus switch); next trusted move has buttons = 0.
+  send("mousemove", 0, 0, 80, 90);
+  assert.equal(rfb._mouseButtonMask, 0);
+  assert.deepEqual(events.at(-1), ["button", 80, 90, 0]);
+
+  // Press again and lose window focus; _cageReleaseMouse releases the stuck guest button.
+  send("mousedown", 0, 1, 100, 110);
+  assert.equal(rfb._mouseButtonMask, 1);
+  RFB.prototype._cageReleaseMouse.call(rfb);
+  assert.equal(rfb._mouseButtonMask, 0);
+  assert.deepEqual(events.at(-1), ["button", 60, 70, 0]);
+});

@@ -734,6 +734,7 @@ export function DesktopPane({
         if (!live) return;
         client = new RFB(container, runtimeSocketURL(path + "/vnc"), {
           credentials: { password },
+          cageCursorFallback: true,
         });
         rfb.current = client;
         keys = guestKeys(client.sendKey.bind(client));

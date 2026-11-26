@@ -46,16 +46,23 @@ function _captureProxy(e) {
         e.preventDefault();
     }
 
-    // Implicitly release the capture on button release
-    if (e.type === "mouseup") {
+    // Implicitly release the capture on button release, or when a real move
+    // reports every physical button released after a swallowed mouseup.
+    if (e.type === "mouseup" || (e.type === "mousemove" && e.isTrusted && e.buttons === 0)) {
         releaseCapture();
     }
+}
+
+function _handleCaptureWindowBlur() {
+    releaseCapture();
 }
 
 // Follow cursor style of target element
 function _capturedElemChanged() {
     const proxyElem = document.getElementById("noVNC_mouse_capture_elem");
-    proxyElem.style.cursor = window.getComputedStyle(document.captureElement).cursor;
+    if (!proxyElem || !document.captureElement) return;
+    const cursor = window.getComputedStyle(document.captureElement).cursor;
+    proxyElem.style.cursor = cursor === "none" ? "default" : cursor;
 }
 
 const _captureObserver = new MutationObserver(_capturedElemChanged);
@@ -104,6 +111,8 @@ export function setCapture(target) {
         // happens to leave the viewport
         window.addEventListener('mousemove', _captureProxy);
         window.addEventListener('mouseup', _captureProxy);
+        window.addEventListener('blur', _handleCaptureWindowBlur);
+        window.addEventListener('cage-window-deactivated', _handleCaptureWindowBlur);
     }
 }
 
@@ -130,9 +139,13 @@ export function releaseCapture() {
         _captureObserver.disconnect();
 
         const proxyElem = document.getElementById("noVNC_mouse_capture_elem");
-        proxyElem.style.display = "none";
+        if (proxyElem) {
+            proxyElem.style.display = "none";
+        }
 
         window.removeEventListener('mousemove', _captureProxy);
         window.removeEventListener('mouseup', _captureProxy);
+        window.removeEventListener('blur', _handleCaptureWindowBlur);
+        window.removeEventListener('cage-window-deactivated', _handleCaptureWindowBlur);
     }
 }

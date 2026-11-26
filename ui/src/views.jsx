@@ -88,7 +88,7 @@ export const RemoteView = forwardRef(function RemoteView(
           container,
           runtimeSocketURL(`${desktopPrefix}/vnc`),
           {
-            credentials: { password }, cageBrowserDisplay: !desktop,
+            credentials: { password }, cageBrowserDisplay: !desktop, cageCursorFallback: true,
             // The Linux browser scrolls its page by the distance of a trackpad
             // gesture. A menu or a second pane declines it and gets wheel steps.
             cageWheelSink: !desktop && pixel_wheel === true

@@ -27,6 +27,32 @@ def replace_once(old, new):
         raise SystemExit('Unsupported noVNC version: Cage input/clipboard patch did not apply')
     source = source.replace(old, new)
 
+replace_once(
+    "import { setCapture } from './util/events.js';",
+    "import { setCapture, releaseCapture } from './util/events.js';",
+)
+
+replace_once(
+    "            handleMouse: this._handleMouse.bind(this),",
+    "            handleMouse: this._handleMouse.bind(this),\n"
+    "            handleWindowBlur: this._cageReleaseMouse.bind(this),",
+)
+
+replace_once(
+    "        this._canvas.addEventListener('mousemove', this._eventHandlers.handleMouse);",
+    "        this._canvas.addEventListener('mousemove', this._eventHandlers.handleMouse);\n"
+    "        window.addEventListener('blur', this._eventHandlers.handleWindowBlur);\n"
+    "        window.addEventListener('cage-window-deactivated', this._eventHandlers.handleWindowBlur);",
+)
+
+replace_once(
+    "        this._canvas.removeEventListener('mousemove', this._eventHandlers.handleMouse);",
+    "        this._canvas.removeEventListener('mousemove', this._eventHandlers.handleMouse);\n"
+    "        window.removeEventListener('blur', this._eventHandlers.handleWindowBlur);\n"
+    "        window.removeEventListener('cage-window-deactivated', this._eventHandlers.handleWindowBlur);\n"
+    "        this._cageReleaseMouse();",
+)
+
 # Keep noVNC's key tracking and focus lifecycle when the workbench supplies an
 # editable host target for IME. Legacy viewers continue to use the canvas.
 replace_once('''    focus(options) {
@@ -188,7 +214,31 @@ replace_once('''        let bmask = RFB._convertButtonMask(ev.buttons);
         }
 
         let down = ev.type == 'mousedown';''')
-replace_once('''    _sendMouse(x, y, mask) {''', '''    _sendMouse(x, y, mask) {
+replace_once('''            case 'mousemove':
+                if (this._viewportDragging) {''', '''            case 'mousemove':
+                if (ev.isTrusted && ev.buttons === 0) {
+                    releaseCapture();
+                    if (this._viewportDragging) {
+                        this._viewportDragging = false;
+                        this._mouseButtonMask = 0;
+                        break;
+                    }
+                    if (this._mouseButtonMask) {
+                        this._handleMouseButton(pos.x, pos.y, 0);
+                        break;
+                    }
+                }
+                if (this._viewportDragging) {''')
+replace_once('''    _sendMouse(x, y, mask) {''', '''    _cageReleaseMouse() {
+        releaseCapture();
+        this._viewportDragging = false;
+        if (this._mouseButtonMask) {
+            const pos = this._mousePos || { x: 0, y: 0 };
+            this._handleMouseButton(pos.x, pos.y, 0);
+        }
+    }
+
+    _sendMouse(x, y, mask) {
         if (this._cageInputChain) {
             this._cageQueueInput(() => this._cageSendMouse(x, y, mask));
             return;

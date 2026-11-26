@@ -8,6 +8,18 @@ import { supportsCursorURIs, isTouchDevice } from './browser.js';
 
 const useFallback = !supportsCursorURIs || isTouchDevice;
 
+function hasVisiblePixels(rgba) {
+    if (!rgba || rgba.length < 4) {
+        return false;
+    }
+    for (let i = 3; i < rgba.length; i += 4) {
+        if (rgba[i] !== 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export default class Cursor {
     constructor(fallback = 'none') {
         this._target = null;
@@ -79,7 +91,7 @@ export default class Cursor {
     }
 
     change(rgba, hotx, hoty, w, h) {
-        if ((w === 0) || (h === 0)) {
+        if ((w === 0) || (h === 0) || (this._fallback === 'default' && !hasVisiblePixels(rgba))) {
             this.clear();
             return;
         }
