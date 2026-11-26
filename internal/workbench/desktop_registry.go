@@ -258,7 +258,7 @@ func (list *claudeAccountList) renameDesktop(id, raw string) (desktopEntry, erro
 }
 
 func (list *claudeAccountList) deleteDesktop(id string) bool {
-	if !list.hasDesktop(id) || list.desktopCount() <= 1 {
+	if !list.hasDesktop(id) {
 		return false
 	}
 	if id == "default" {
@@ -538,10 +538,6 @@ func (s *Server) deleteAccountDesktop(w http.ResponseWriter, r *http.Request) {
 	m.mu.Lock()
 	list, err := s.loadClaudeAccounts()
 	claudeExists := err == nil && list.hasDesktop(id)
-	remaining := 0
-	if err == nil {
-		remaining = list.desktopCount()
-	}
 	m.mu.Unlock()
 	if err != nil {
 		requestError(w, err)
@@ -549,10 +545,6 @@ func (s *Server) deleteAccountDesktop(w http.ResponseWriter, r *http.Request) {
 	}
 	if !claudeExists {
 		http.NotFound(w, r)
-		return
-	}
-	if remaining <= 1 {
-		http.Error(w, "至少保留一个 Desktop 实例，不能删除最后一个", http.StatusBadRequest)
 		return
 	}
 	if err := s.changeAccountDesktop(s.operationContext(), id, claudeAccount{}, "delete"); err != nil {
@@ -574,7 +566,7 @@ func (s *Server) deleteAccountDesktop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !deleted {
-		http.Error(w, "至少保留一个 Desktop 实例，不能删除最后一个", http.StatusBadRequest)
+		http.NotFound(w, r)
 		return
 	}
 	if id == "default" {

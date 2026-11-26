@@ -51,12 +51,14 @@ func TestInstallCurlNeverRunsUnderSudo(t *testing.T) {
 		t.Fatal(err)
 	}
 	scripts := map[string]string{
-		"tools update":   ToolsUpdateScriptFor(true),
-		"tool prelude":   ToolInstallPrelude(),
-		"claude desktop": ClaudeDesktopInstallScript(),
-		"guest setup":    GuestSetup,
-		"debian prepare": DebianPrepareScript,
-		"setup script":   string(setup),
+		"tools update":        ToolsUpdateScriptFor(true),
+		"tool prelude":        ToolInstallPrelude(),
+		"claude desktop":      ClaudeDesktopInstallScript(),
+		"antigravity desktop": AntigravityDesktopInstallScript(),
+		"codex desktop":       CodexDesktopInstallScript(),
+		"guest setup":         GuestSetup,
+		"debian prepare":      DebianPrepareScript,
+		"setup script":        string(setup),
 	}
 	if offenders := curlUnderSudo("sudo curl -fsSL https://example.com -o /tmp/x\nsudo env A=1 sh -s <<'X'\ncurl https://example.com\nX\n"); len(offenders) != 2 {
 		t.Fatalf("checker missed sudo curl: %v", offenders)

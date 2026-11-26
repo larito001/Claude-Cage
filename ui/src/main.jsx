@@ -2028,7 +2028,6 @@ function App() {
                 void accountDesktops.act(target, "start");
                 return;
               }
-              if (accountDesktops.catalog?.default_removed) return;
               accountDesktops.clear();
               setManagementPage("");
               setHome(false);
@@ -2165,7 +2164,7 @@ function App() {
               onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)}
             />}
             {!storageRecovery && desktopOpen && !accountDesktops.panes.length && (
-              desktopProvider === "claude" ? (
+              desktopProvider === "claude" && !status.account_desktops_supported ? (
                 <ClaudeDesktop
                   uploads={desktopFiles.uploads}
                   onProjectOpened={async () => { await refreshSettings(); await refreshStatus.current?.(); }}

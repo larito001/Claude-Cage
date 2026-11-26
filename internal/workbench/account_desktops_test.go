@@ -203,9 +203,12 @@ func TestDesktopDeleteHTTP(t *testing.T) {
 	if w := request(s, "DELETE", "/api/desktop-instances/"+instanceID, s.origin, "", true); w.Code != http.StatusOK {
 		t.Fatalf("delete bound instance: %d %s", w.Code, w.Body.String())
 	}
-	// Pending is now the sole remaining instance and cannot be deleted.
-	if w := request(s, "DELETE", "/api/desktop-instances/"+pendingID, s.origin, "", true); w.Code != http.StatusBadRequest {
-		t.Fatalf("last remaining desktop delete must return 400: %d %s", w.Code, w.Body.String())
+	// Pending is now the sole remaining instance and can also be deleted cleanly.
+	if w := request(s, "DELETE", "/api/desktop-instances/"+pendingID, s.origin, "", true); w.Code != http.StatusOK {
+		t.Fatalf("last remaining desktop delete should succeed: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(s, "DELETE", "/api/desktop-instances/"+pendingID, s.origin, "", true); w.Code != http.StatusNotFound {
+		t.Fatalf("second pending delete must return 404: %d", w.Code)
 	}
 	if w := request(s, "DELETE", "/api/desktop-instances/"+instanceID, s.origin, "", true); w.Code != http.StatusNotFound {
 		t.Fatalf("second delete must return 404: %d", w.Code)
@@ -214,19 +217,19 @@ func TestDesktopDeleteHTTP(t *testing.T) {
 		t.Fatal("delete did not advance desktopCatalogRevision")
 	}
 	list, err = s.loadClaudeAccounts()
-	if err != nil || !list.DefaultDesktopRemoved || len(list.Accounts) != 1 || list.Accounts[0].ID != accountID || list.Accounts[0].DesktopInstanceID != "" || list.PendingDesktop != pendingID || list.DesktopLabels[pendingID] != "待删桌面" || list.DesktopLabels[instanceID] != "" {
+	if err != nil || !list.DefaultDesktopRemoved || len(list.Accounts) != 1 || list.Accounts[0].ID != accountID || list.Accounts[0].DesktopInstanceID != "" || list.PendingDesktop != "" || list.DesktopLabels[pendingID] != "" || list.DesktopLabels[instanceID] != "" {
 		t.Fatalf("unexpected state after delete: %+v %v", list, err)
 	}
-	wantCalls := []string{"delete:default", "delete:" + instanceID, "delete:default", "delete:" + instanceID}
+	wantCalls := []string{"delete:default", "delete:" + instanceID, "delete:default", "delete:" + instanceID, "delete:" + pendingID}
 	if strings.Join(calls, ",") != strings.Join(wantCalls, ",") {
 		t.Fatalf("unexpected desktopAction calls: %v", calls)
 	}
-	// When only default remains, default itself cannot be deleted either.
+	// Even when only default exists, default itself can be deleted directly.
 	if err := s.saveClaudeAccounts(claudeAccountList{Accounts: []claudeAccount{{ID: accountID, Label: "工作"}}}); err != nil {
 		t.Fatal(err)
 	}
-	if w := request(s, "DELETE", "/api/desktop-instances/default", s.origin, "", true); w.Code != http.StatusBadRequest {
-		t.Fatalf("sole remaining default delete must return 400: %d %s", w.Code, w.Body.String())
+	if w := request(s, "DELETE", "/api/desktop-instances/default", s.origin, "", true); w.Code != http.StatusOK {
+		t.Fatalf("sole remaining default delete should succeed: %d %s", w.Code, w.Body.String())
 	}
 }
 

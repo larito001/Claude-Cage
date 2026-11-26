@@ -408,6 +408,9 @@ export function WorkspaceSidebar({
               defaultRunning={defaultDesktopRunning}
               onDefault={onClaudeDesktop}
               onDefaultStop={onDefaultDesktopStop}
+              onOpenInstaller={
+                onProviderDesktop ? () => onProviderDesktop("claude") : undefined
+              }
               onRename={onDesktopRename}
             />
             {PROVIDERS.filter((item) => item.id !== "claude").map((item) => (

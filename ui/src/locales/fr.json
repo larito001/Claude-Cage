@@ -3372,9 +3372,5 @@
   "查询主机后台命令的状态和输出，或停止该命令": "Consulte l’état et la sortie d’une commande d’arrière-plan sur l’hôte, ou l’arrête",
   "始终允许从这个项目启动主机命令？": "Toujours autoriser le lancement de commandes sur l’hôte depuis ce projet ?",
   "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Veuillez d’abord enregistrer votre travail dans l’application. L’application sera téléchargée et mise à jour depuis la source officielle, et les identifiants de chaque instance indépendante seront conservés.",
-  "默认值：{0}": "Par défaut : {0}",
-  "当前设置": "Réglage actuel",
-  "保存连接设置后即可刷新选项。": "Enregistrez les réglages de connexion pour actualiser les options.",
-  "正在获取选项…": "Récupération des options…",
-  "暂无可选项。": "Aucune option disponible."
+  "默认值：{0}": "Par défaut : {0}"
 }

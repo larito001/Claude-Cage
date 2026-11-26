@@ -398,16 +398,15 @@ func (s *Server) forgetPluginSettings(name string) {
 // hostSettingView is one setting as the plugin page shows it. A secret's
 // value is never sent; Set says whether it has one.
 type hostSettingView struct {
-	ID                  string   `json:"id"`
-	Title               string   `json:"title"`
-	Description         string   `json:"description,omitempty"`
-	Type                string   `json:"type"`
-	Required            bool     `json:"required,omitempty"`
-	Default             string   `json:"default,omitempty"`
-	Choices             []string `json:"choices,omitempty"`
-	OptionsDependencies []string `json:"options_dependencies,omitempty"`
-	Value               string   `json:"value,omitempty"`
-	Set                 bool     `json:"set,omitempty"`
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
+	Type        string   `json:"type"`
+	Required    bool     `json:"required,omitempty"`
+	Default     string   `json:"default,omitempty"`
+	Choices     []string `json:"choices,omitempty"`
+	Value       string   `json:"value,omitempty"`
+	Set         bool     `json:"set,omitempty"`
 }
 
 func pluginSettingsView(manifest hostbridge.Manifest, record pluginSettingsRecord) []hostSettingView {
@@ -416,12 +415,6 @@ func pluginSettingsView(manifest hostbridge.Manifest, record pluginSettingsRecor
 	for _, setting := range pluginSettingsOf(manifest) {
 		view := hostSettingView{ID: setting.ID, Title: setting.Title, Description: setting.Description, Type: setting.Type,
 			Required: setting.Required, Default: setting.Default, Choices: setting.Choices}
-		if source := setting.OptionsSource; source != nil {
-			view.OptionsDependencies = []string{source.EndpointSetting}
-			if source.TokenSetting != "" {
-				view.OptionsDependencies = append(view.OptionsDependencies, source.TokenSetting)
-			}
-		}
 		if setting.Type == hostbridge.SettingSecret {
 			// One kept from before the plugin moved inside the environment is
 			// not given to it, so it shows as unset until entered again.

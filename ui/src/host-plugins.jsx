@@ -783,38 +783,6 @@ function Grants({ model, plugin, onConfirm }) {
   );
 }
 
-function DynamicSettingSelect({ id, pluginName, item, value, onChange, busy, connectionEdited }) {
-  const tr = useTranslation();
-  const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState(null);
-  useEffect(() => {
-    if (connectionEdited) return;
-    const controller = new AbortController();
-    const query = new URLSearchParams({ plugin: pluginName, setting: item.id });
-    api(`/host-tools/setting-options?${query}`, undefined, "GET", {}, { signal: controller.signal })
-      .then(options => { if (!controller.signal.aborted) setResult({ options }); })
-      .catch(error => { if (!controller.signal.aborted) setResult({ error: error.message }); });
-    return () => controller.abort();
-  }, [attempt, connectionEdited, pluginName, item.id]);
-  const options = connectionEdited ? [] : result?.options || [];
-  const displayValue = value || item.default || "";
-  const currentListed = options.some(option => option.value === displayValue);
-  const loading = !connectionEdited && !result;
-  return <>
-    <div className="plugin-setting-row">
-      <select id={id} value={value} disabled={busy} onChange={event => onChange(event.target.value)}>
-        <option value="">{item.default ? tr("默认值：{0}", item.default) : tr("未选择")}</option>
-        {value && !currentListed && <option value={value}>{value} · {tr("当前设置")}</option>}
-        {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
-      <button type="button" disabled={busy || loading || connectionEdited}
-        onClick={() => { setResult(null); setAttempt(previous => previous + 1); }}>{tr("刷新")}</button>
-    </div>
-    <p role="status">{connectionEdited ? tr("保存连接设置后即可刷新选项。")
-      : loading ? tr("正在获取选项…") : result?.error || (!options.length ? tr("暂无可选项。") : "")}</p>
-  </>;
-}
-
 // PluginSettings is the form for the values a plugin asks the user for. The
 // app never sends a secret back: one that is set shows as such and can only
 // be replaced or cleared.
@@ -851,16 +819,10 @@ function PluginSettings({ model, plugin, onConfirm }) {
       {settings.map(item => {
         const id = `plugin-setting-${plugin.name}-${item.id}`, clearing = cleared.includes(item.id);
         const value = values[item.id] || "";
-        const connectionEdited = item.options_dependencies?.some(field =>
-          Boolean(secrets[field]) || cleared.includes(field) ||
-          (values[field] || "") !== (settings.find(setting => setting.id === field)?.value || ""));
         return <div key={item.id} className="plugin-setting">
           <label htmlFor={id}><strong>{item.title}</strong>{item.required && <em>{tr("必填")}</em>}</label>
           {item.description && <p>{item.description}</p>}
-          {item.options_dependencies?.length ? <DynamicSettingSelect pluginName={plugin.name} item={item} id={id} value={value} onChange={next => set(item.id, next)} busy={Boolean(busy)}
-            key={getClientContext().connection_id}
-            connectionEdited={connectionEdited} />
-          : item.type === "secret" ? <div className="plugin-setting-row">
+          {item.type === "secret" ? <div className="plugin-setting-row">
             <input id={id} type="password" autoComplete="new-password" spellCheck={false} maxLength={8192} disabled={Boolean(busy)}
               value={secrets[item.id] || ""} placeholder={item.set && !clearing ? tr("已设置，留空保持不变") : tr("未设置")}
               onChange={event => { const next = event.target.value; setSecrets(previous => ({ ...previous, [item.id]: next })); setCleared(previous => previous.filter(other => other !== item.id)); }} />

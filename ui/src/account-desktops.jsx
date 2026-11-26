@@ -35,6 +35,7 @@ import {
 } from "./account-desktop-state.mjs";
 
 const entry = (id) => "/desktop-instances/" + id;
+const controlEntry = (id) => (id === "default" ? "/claude-desktop" : entry(id));
 
 function DesktopAccountLabel({ account, provider = "claude" }) {
   return <>
@@ -135,23 +136,21 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
         });
         setPending(account.id);
       }
-      if (action === "start" && account.id === "default") {
-        setPanes([]); onShow(); return true;
-      }
       if (action === "start" && panesRef.current.some(p => p.id === account.id) && account.running) {
         onShow(); focus(account.id); return true;
       }
-      let job = await api(entry(account.id) + "/" + action, {});
+      let job = await api(controlEntry(account.id) + "/" + action, {});
       while (job.running) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         job = await api("/agent/jobs/" + job.id);
       }
       if (job.error || job.canceled) throw new Error(job.error || "操作已取消");
       if (action === "start") {
+        const started = { ...account, provider: account.provider || provider || "claude", running: true };
         setPanes((old) => {
-          if (old.some((pane) => pane.id === account.id)) return old;
-          if (!beside || !old.length) return [account];
-          return [old[0], account];
+          if (old.some((pane) => pane.id === started.id)) return old.map((pane) => pane.id === started.id ? started : pane);
+          if (!beside || !old.length) return [started];
+          return [old[0], started];
         });
         onShow();
       } else {
@@ -193,14 +192,16 @@ export function useAccountDesktops(onShow, onHide, notify, confirm, visible, rev
         try {
           await api(entry(account.id), undefined, "DELETE");
           if (account.id === "default") {
-            const viewingDefault = Boolean(visibleRef.current) && panesRef.current.length === 0;
             onDefaultRemovedRef.current?.();
-            if (viewingDefault) onHideRef.current?.();
-          } else {
-            const closingOnly = panesRef.current.length === 1 && panesRef.current[0].id === account.id;
-            setPanes((old) => old.filter((a) => a.id !== account.id));
-            if (closingOnly) onHideRef.current?.();
           }
+          const wasOpen = panesRef.current.some((a) => a.id === account.id);
+          const closingOnly =
+            (panesRef.current.length === 1 && wasOpen) ||
+            (account.id === "default" && panesRef.current.length === 0 && Boolean(visibleRef.current));
+          if (wasOpen) {
+            setPanes((old) => old.filter((a) => a.id !== account.id));
+          }
+          if (closingOnly) onHideRef.current?.();
           await refresh();
         } finally {
           lock.current = false;
@@ -418,7 +419,7 @@ export function ProviderDesktopList({
   );
 }
 
-export function DesktopList({ model, disabled, selected, defaultRunning = false, onDefault, onDefaultStop, onRename }) {
+export function DesktopList({ model, disabled, selected, defaultRunning = false, onDefault, onDefaultStop, onOpenInstaller, onRename }) {
   const tr = useTranslation();
   const { catalog, expanded, panes, pending } = model;
   const [creating, setCreating] = useState(false);
@@ -432,23 +433,51 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
   const showDefault = hasDefaultDesktop(catalog);
   const showDelete = canDeleteDesktop(catalog);
   const original = instances.find(a => a.id === "default");
-  const defaultEntry = original || { id: "default", label: tr("默认 Desktop") };
+  const defaultEntry = original || { id: "default", provider: "claude", label: tr("默认 Desktop") };
   const isDefaultRunning = Boolean(defaultEntry.running || defaultRunning);
-  const defaultSelected = selected && panes.length === 0;
+  const defaultSelected = selected && (panes.some((p) => p.id === "default") || panes.length === 0 && showDefault);
+  const defaultShowBeside = Boolean(catalog?.supported) && panes.length > 0 && !panes.some((p) => p.id === "default");
+  const nonDefaultInstances = instances.filter((a) => a.id !== "default");
   const focusRowActions = (event) => {
     event.preventDefault();
     event.currentTarget.focus();
     event.currentTarget.parentElement?.querySelector(".terminal-row-actions button:not(:disabled)")?.focus();
   };
+  const ensureInstalledBeforeStart = async () => {
+    try {
+      const app = await api("/desktop-apps/claude");
+      if (app && app.installed === false) {
+        onOpenInstaller?.();
+        return false;
+      }
+    } catch {
+      /* Let normal start report connection/runtime state if probe fails. */
+    }
+    return true;
+  };
   const choose = async () => {
-    if (await model.act({id:accountID}, "start", false, true)) setCreating(false);
+    if (!(await ensureInstalledBeforeStart())) return;
+    if (await model.act({id:accountID}, "start", false, true, null, "claude")) setCreating(false);
   };
   return (
     <div className="account-desktop-nav">
       <button
         className={"sidebar-link " + (selected ? "selected" : "")}
         aria-expanded={expanded}
-        onClick={model.toggle}
+        onClick={async () => {
+          const willExpand = !expanded;
+          model.toggle();
+          if (willExpand && !showDefault && nonDefaultInstances.length === 0 && !disabled) {
+            onOpenInstaller?.();
+          } else if (willExpand && !disabled) {
+            try {
+              const app = await api("/desktop-apps/claude");
+              if (app && app.installed === false) onOpenInstaller?.();
+            } catch {
+              /* Ignore offline state when expanding sidebar. */
+            }
+          }
+        }}
       >
         <ProviderIcon provider="claude" size={17} />
         Claude Desktop{" "}
@@ -460,10 +489,17 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
             <div className={`account-desktop-row ${defaultSelected ? "active" : ""}`}>
               <button
                 className="sidebar-link"
-                title={title(defaultEntry)}
+                title={title(defaultEntry) + (isDefaultRunning ? " " + tr("· 运行中") : " " + tr("· 未启动"))}
                 aria-pressed={defaultSelected}
                 disabled={Boolean(pending) || disabled}
-                onClick={onDefault}
+                onClick={async () => {
+                  if (catalog?.supported) {
+                    if (!(await ensureInstalledBeforeStart())) return;
+                    await model.act({ ...defaultEntry, running: isDefaultRunning }, "start", false, false, null, "claude");
+                    return;
+                  }
+                  onDefault?.();
+                }}
                 onContextMenu={focusRowActions}
                 onKeyDown={(event) => {
                   if (event.key === "F10" && event.shiftKey) focusRowActions(event);
@@ -472,14 +508,29 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
                 <DesktopAccountLabel account={defaultEntry} />
                 {pending === "default" || isDefaultRunning ? <span className="account-desktop-status" aria-hidden="true">{pending === "default" ? "…" : "●"}</span> : null}
               </button>
-              {((isDefaultRunning && onDefaultStop) || (catalog?.supported && (onRename || showDelete))) && (
+              {(defaultShowBeside || isDefaultRunning || (catalog?.supported && (onRename || showDelete))) && (
                 <div className="terminal-row-actions" role="group" aria-label={tr("{0} 的操作", title(defaultEntry))}>
-                  {isDefaultRunning && onDefaultStop && (
+                  {defaultShowBeside && (
+                    <DesktopRowAction
+                      label={tr("并排打开")}
+                      icon={Columns2}
+                      disabled={Boolean(pending) || disabled}
+                      onClick={async () => {
+                        if (!(await ensureInstalledBeforeStart())) return;
+                        await model.act({ ...defaultEntry, running: isDefaultRunning }, "start", true, false, null, "claude");
+                      }}
+                    />
+                  )}
+                  {isDefaultRunning && (catalog?.supported || onDefaultStop) && (
                     <DesktopRowAction
                       label={tr("关闭")}
                       icon={Power}
                       disabled={Boolean(pending) || disabled}
-                      onClick={(event) => onDefaultStop(defaultEntry, event.currentTarget)}
+                      onClick={(event) =>
+                        catalog?.supported
+                          ? model.act({ ...defaultEntry, running: isDefaultRunning }, "stop", false, false, event.currentTarget, "claude")
+                          : onDefaultStop?.(defaultEntry, event.currentTarget)
+                      }
                     />
                   )}
                   {catalog?.supported && onRename && (
@@ -586,7 +637,7 @@ export function DesktopList({ model, disabled, selected, defaultRunning = false,
 // application uses it too, with its own address and labels.
 export function DesktopPane({
   account,
-  path: instancePath = entry(account.id),
+  path: instancePath = controlEntry(account.id),
   heading,
   inputLabel = "Claude Desktop 输入",
   closeLabel = "关闭实例",
@@ -761,7 +812,7 @@ export function DesktopPane({
                   if (payload.files || payload.fileSelection) {
                     return sendFiles(payload, "desktop", undefined, {
                       valid,
-                      desktop: account.id,
+                      desktop: account.id === "default" ? undefined : account.id,
                     });
                   }
                   throw new Error("请从本机复制图片后，在此实例按粘贴快捷键，或以文件方式拖入图片");
@@ -898,8 +949,9 @@ export const DesktopPanes = forwardRef(function DesktopPanes(
     [activePaneID],
   );
   const paneIDs = new Set(model.panes.map((pane) => pane.id));
-  const paneUploads = uploads.filter((item) => item.desktop && paneIDs.has(item.desktop));
+  const paneUploads = uploads.filter((item) => paneIDs.has(item.desktop || "default"));
   const directoryRequest = paneUploads.find((item) => item.directory && item.id !== closedChooser);
+  const directoryDesktop = directoryRequest?.desktop && directoryRequest.desktop !== "default" ? directoryRequest.desktop : undefined;
   return (
     <div className="account-desktop-panes">
       {sidebarCollapsed && (
@@ -925,14 +977,14 @@ export const DesktopPanes = forwardRef(function DesktopPanes(
             void api("/input/files/cancel", {
               target: "desktop",
               id: directoryRequest.id,
-              desktop: directoryRequest.desktop,
+              ...(directoryDesktop ? { desktop: directoryDesktop } : {}),
             }).catch((e) => onStatus?.(e.message));
           }}
           onOpened={async (workspace) => {
             await api("/input/files/directory", {
               target: "desktop",
               id: directoryRequest.id,
-              desktop: directoryRequest.desktop,
+              ...(directoryDesktop ? { desktop: directoryDesktop } : {}),
               workspace,
             });
             setClosedChooser(directoryRequest.id);

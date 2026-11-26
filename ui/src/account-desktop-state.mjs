@@ -17,7 +17,7 @@ export function visibleDesktopCount(catalog) {
 }
 
 export function canDeleteDesktop(catalog) {
-  return Boolean(catalog?.supported) && visibleDesktopCount(catalog) > 1;
+  return Boolean(catalog?.supported) && visibleDesktopCount(catalog) > 0;
 }
 
 export function mergedDefaultInstance(catalog) {
@@ -41,13 +41,20 @@ export function reconcileAccountDesktopPanes(oldPanes, catalog, viewingDefault =
     const merged = mergedDefaultInstance(catalog);
     return merged && merged.id !== "default" ? [merged] : oldPanes;
   }
-  if (oldPanes.some((p) => catalog.redirects?.[p.id] === "default")) return [];
   const seen = new Set();
   const updated = [];
   for (const pane of oldPanes) {
     const id = catalog.redirects?.[pane.id] || pane.id;
+    if (seen.has(id)) continue;
+    if (id === "default") {
+      if (!hasDefaultDesktop(catalog)) continue;
+      const item = catalog.instances.find((a) => a.id === "default") || { ...pane, id: "default", provider: "claude" };
+      seen.add("default");
+      updated.push(item);
+      continue;
+    }
     const item = catalog.instances.find((a) => a.id === id);
-    if (!item || seen.has(id) || id === "default") continue;
+    if (!item) continue;
     seen.add(id);
     updated.push(item);
   }

@@ -152,16 +152,18 @@ func TestDesktopRenameAndDeletePreserveAccountState(t *testing.T) {
 	if _, err := list.renameDesktop(pending.ID, strings.Repeat("桌", 101)); err == nil {
 		t.Fatal("expected overly long rename error")
 	}
-	// Both default and isolated instances can be deleted as long as another instance remains.
+	// Both isolated and default instances can be deleted, including when default is the sole remaining instance.
 	if !list.deleteDesktop(pending.ID) {
 		t.Fatal("expected bound desktop deletion to succeed when default remains")
 	}
-	// Default is now the sole remaining instance and cannot be deleted.
-	if list.deleteDesktop("default") {
-		t.Fatal("sole remaining default desktop must not be deletable")
-	}
 	if list.Accounts[0].DesktopInstanceID != "" || list.Accounts[0].DesktopStatus != "" {
 		t.Fatalf("desktop binding not cleared: %+v", list.Accounts[0])
+	}
+	if !list.deleteDesktop("default") {
+		t.Fatal("sole remaining default desktop should also be deletable")
+	}
+	if !list.DefaultDesktopRemoved || list.hasDefaultDesktop() || list.desktopCount() != 0 {
+		t.Fatalf("default desktop was not marked removed: %+v", list)
 	}
 	if list.Accounts[0].Label != "工作账号" || list.Accounts[0].Status != "ready" || !list.Accounts[0].Enabled || list.Accounts[0].ProxyNodeID != account.ProxyNodeID {
 		t.Fatalf("deleting desktop mutated account data: %+v", list.Accounts[0])
@@ -205,26 +207,29 @@ func TestDeleteDefaultAndOnlyBlockLastRemainingDesktop(t *testing.T) {
 	if changed, _, _ := list.bindDesktop("default", claudeGuestSnapshot{LoggedIn: true, Email: first.Email, Organization: first.Organization}); changed {
 		t.Fatal("removed default desktop must not bind observations")
 	}
-	// Second is now the sole remaining instance and cannot be deleted.
-	if list.deleteDesktop(second.DesktopInstanceID) {
-		t.Fatal("sole remaining isolated desktop must not be deletable")
+	// Second is now the sole remaining instance and can also be deleted (matching Antigravity/Codex).
+	if !list.deleteDesktop(second.DesktopInstanceID) {
+		t.Fatal("sole remaining isolated desktop should also be deletable")
 	}
-	// Adding a third instance makes both isolated instances deletable again.
+	if list.desktopCount() != 0 {
+		t.Fatalf("expected 0 remaining desktops, got %d", list.desktopCount())
+	}
+	// Adding a third instance and deleting it leaves clean empty bindings.
 	third, err := list.createDesktop("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !list.deleteDesktop(second.DesktopInstanceID) {
-		t.Fatal("second desktop should be deletable once third exists")
+	if !list.deleteDesktop(third.ID) {
+		t.Fatal("pending desktop should be deletable")
 	}
 	if list.deleteDesktop(third.ID) {
-		t.Fatal("last remaining pending desktop must not be deletable")
+		t.Fatal("already deleted pending desktop must return false")
 	}
 	if err := list.validateDesktopBindings(); err != nil {
 		t.Fatalf("bindings invalid after default+isolated deletes: %v", err)
 	}
 
-	// Deleting a merged default's target while another desktop remains must not resurrect default.
+	// Deleting a merged default's target must not resurrect default, even when deleting down to zero.
 	merged := claudeAccountList{
 		Accounts: []claudeAccount{
 			{ID: strings.Repeat("a", 24), DesktopInstanceID: strings.Repeat("1", 24)},
@@ -233,13 +238,16 @@ func TestDeleteDefaultAndOnlyBlockLastRemainingDesktop(t *testing.T) {
 		DesktopRedirects: map[string]string{"default": strings.Repeat("1", 24)},
 	}
 	if !merged.deleteDesktop(strings.Repeat("1", 24)) {
-		t.Fatal("expected merged target deletion to succeed when another desktop exists")
+		t.Fatal("expected merged target deletion to succeed")
 	}
 	if !merged.DefaultDesktopRemoved || merged.hasDefaultDesktop() || merged.desktopCount() != 1 {
 		t.Fatalf("merged default must stay removed rather than resurrecting: %+v", merged)
 	}
-	if merged.deleteDesktop(strings.Repeat("2", 24)) {
-		t.Fatal("sole remaining desktop after merged target deletion must not be deletable")
+	if !merged.deleteDesktop(strings.Repeat("2", 24)) {
+		t.Fatal("sole remaining desktop after merged target deletion should also be deletable")
+	}
+	if merged.hasDefaultDesktop() || merged.desktopCount() != 0 {
+		t.Fatalf("deleting last desktop must not resurrect default: %+v", merged)
 	}
 	if err := merged.validateDesktopBindings(); err != nil {
 		t.Fatalf("merged bindings invalid: %v", err)

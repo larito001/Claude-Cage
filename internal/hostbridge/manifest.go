@@ -41,8 +41,7 @@ type Setting struct {
 	// Default is used while the user has entered nothing. Not for secrets.
 	Default string `json:"default,omitempty"`
 	// Choices are the values a choice may take.
-	Choices       []string              `json:"choices,omitempty"`
-	OptionsSource *SettingOptionsSource `json:"-"`
+	Choices []string `json:"choices,omitempty"`
 }
 
 // Types of setting. A secret is stored encrypted and never shown again.

@@ -79,6 +79,17 @@ class HostToolsConfigTests(unittest.TestCase):
         self.assertEqual(path.read_text(), "{not json")
         self.assertEqual([p.name for p in self.home.iterdir()], [".claude.json"])
 
+    def test_empty_zero_byte_file_is_initialized(self):
+        agy_cfg = self.home / ".gemini/config/mcp_config.json"
+        agy_cfg.parent.mkdir(parents=True)
+        agy_cfg.write_text("")
+        config.configure(self.home, "computer", ENTRY, "# relay\n")
+        program, endpoint = config.relay_files(self.home, "computer")
+        self.assertEqual(
+            json.loads(agy_cfg.read_text())["mcpServers"]["computer"],
+            {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "antigravity"]},
+        )
+
     def test_desktop_app_gets_a_relay_and_keeps_its_preferences(self):
         desktop = self.home / ".config/Claude"
         desktop.mkdir(parents=True)

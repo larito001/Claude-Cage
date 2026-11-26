@@ -253,6 +253,25 @@ class ProviderAccountTests(unittest.TestCase):
                 matched_ab = helper.list_workspace_sessions("antigravity", agy_cfg, str(ws_ab))
                 self.assertEqual(matched_ab, ["conv_ab_newer"])
 
+    def test_sync_managed_mcp_populates_zero_byte_target_config(self):
+        agy = helper.ADAPTERS["antigravity"]
+        with patch.object(Path, "home", return_value=self.home):
+            default_mcp = self.home / ".gemini/config/mcp_config.json"
+            default_mcp.parent.mkdir(parents=True)
+            relay_prog = str(self.home / ".local/share/mcp-relay/relay.py")
+            relay_ep = str(self.home / ".config/mcp-relay/computer-antigravity.json")
+            entry = {"command": "/usr/bin/python3", "args": [relay_prog, relay_ep, "antigravity"]}
+            default_mcp.write_text(json.dumps({"mcpServers": {"computer": entry}}))
+
+            base = helper.account_base("antigravity", "d" * 24)
+            cfg = agy.config_dir(base)
+            target_mcp = cfg / "config/mcp_config.json"
+            target_mcp.parent.mkdir(parents=True)
+            target_mcp.write_text("")  # 0-byte file created by Antigravity startup
+
+            agy.sync_managed_mcp(cfg)
+            self.assertEqual(json.loads(target_mcp.read_text())["mcpServers"]["computer"], entry)
+
 
 if __name__ == "__main__":
     unittest.main()

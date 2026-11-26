@@ -66,10 +66,14 @@ test("reconcileAccountDesktopPanes switches off retired default Desktop and emit
   assert.deepEqual(reconcileAccountDesktopPanes([], catalog, true), [instanceA]);
   assert.deepEqual(reconcileAccountDesktopPanes([], catalog, false), []);
 
-  // Redirecting an account pane back to default clears account panes.
+  // Redirecting an account pane back to default keeps default in panes if default exists.
   assert.deepEqual(
-    reconcileAccountDesktopPanes([instanceB], { instances: [instanceA], redirects: { [instanceB.id]: "default" } }, false),
-    [],
+    reconcileAccountDesktopPanes(
+      [instanceB],
+      { instances: [{ id: "default", label: "默认 Desktop", running: true }, instanceA], redirects: { [instanceB.id]: "default" } },
+      false,
+    ),
+    [{ id: "default", label: "默认 Desktop", running: true }],
   );
 
   // Merge notice fires only when default redirect changes to a new target.
@@ -77,7 +81,7 @@ test("reconcileAccountDesktopPanes switches off retired default Desktop and emit
   assert.equal(desktopMergeNoticeTarget(instanceA.id, catalog), null);
 });
 
-test("canDeleteDesktop allows deleting any instance including default only while more than one remains", () => {
+test("canDeleteDesktop allows deleting any instance including sole default or sole isolated desktop", () => {
   const defaultEntry = { id: "default", number: 0, label: "默认 Desktop", running: false };
   const stoppedA = { ...instanceA, running: false };
 
@@ -87,10 +91,10 @@ test("canDeleteDesktop allows deleting any instance including default only while
   assert.equal(canDeleteDesktop(null), false);
   assert.equal(canDeleteDesktop({ supported: false, instances: [defaultEntry, instanceA] }), false);
 
-  // Sole remaining default desktop cannot be deleted.
+  // Sole default desktop CAN be deleted directly.
   const onlyDefault = { supported: true, instances: [defaultEntry], redirects: {}, default_removed: false };
   assert.equal(visibleDesktopCount(onlyDefault), 1);
-  assert.equal(canDeleteDesktop(onlyDefault), false);
+  assert.equal(canDeleteDesktop(onlyDefault), true);
   assert.equal(fallbackDesktopInstance(onlyDefault), null);
 
   // Default + another desktop: both can be deleted.
@@ -104,12 +108,19 @@ test("canDeleteDesktop allows deleting any instance including default only while
   assert.equal(visibleDesktopCount(implicitDefaultAndOne), 2);
   assert.equal(canDeleteDesktop(implicitDefaultAndOne), true);
 
-  // Once default is removed and only one isolated desktop remains, it cannot be deleted.
+  // Once default is removed and only one isolated desktop remains, it can still be deleted.
   const onlyIsolated = { supported: true, instances: [stoppedA], redirects: {}, default_removed: true };
   assert.equal(hasDefaultDesktop(onlyIsolated), false);
   assert.equal(visibleDesktopCount(onlyIsolated), 1);
-  assert.equal(canDeleteDesktop(onlyIsolated), false);
+  assert.equal(canDeleteDesktop(onlyIsolated), true);
   assert.deepEqual(fallbackDesktopInstance(onlyIsolated), stoppedA);
+
+  // When all desktops are removed, visibleDesktopCount is 0 and canDeleteDesktop is false.
+  const noneRemaining = { supported: true, instances: [], redirects: {}, default_removed: true };
+  assert.equal(hasDefaultDesktop(noneRemaining), false);
+  assert.equal(visibleDesktopCount(noneRemaining), 0);
+  assert.equal(canDeleteDesktop(noneRemaining), false);
+  assert.equal(fallbackDesktopInstance(noneRemaining), null);
 
   // With default removed and two isolated desktops, deletion is allowed and fallback prefers running.
   const twoIsolated = { supported: true, instances: [stoppedA, instanceB], redirects: {}, default_removed: true };
@@ -117,10 +128,10 @@ test("canDeleteDesktop allows deleting any instance including default only while
   assert.equal(canDeleteDesktop(twoIsolated), true);
   assert.deepEqual(fallbackDesktopInstance(twoIsolated), instanceB);
 
-  // When default was merged into the sole remaining desktop, deletion is blocked.
+  // When default was merged into the sole remaining desktop, deletion is still allowed.
   const mergedSole = { supported: true, instances: [instanceA], redirects: { default: instanceA.id } };
   assert.equal(hasDefaultDesktop(mergedSole), false);
   assert.equal(visibleDesktopCount(mergedSole), 1);
-  assert.equal(canDeleteDesktop(mergedSole), false);
+  assert.equal(canDeleteDesktop(mergedSole), true);
   assert.deepEqual(fallbackDesktopInstance(mergedSole), instanceA);
 });

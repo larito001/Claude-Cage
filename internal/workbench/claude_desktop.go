@@ -119,7 +119,23 @@ func (s *Server) claudeDesktopAction(w http.ResponseWriter, r *http.Request) {
 			s.mu.Unlock()
 			script := cage.InstallTLS12Prelude(tls12Compat) + cage.ClaudeDesktopInstallScript()
 			if action == "update" {
-				script = "set -e\nsudo systemctl stop cage-claude-desktop.service\n" + script
+				stopClaudeInstances := `set -e
+sudo systemctl stop cage-claude-desktop.service || true
+python3 -I - <<'STOP_CLAUDE_DESKTOPS'
+from pathlib import Path
+import subprocess
+base = Path.home() / ".local/share/desktop-profiles"
+if base.is_dir():
+    for d in base.iterdir():
+        try:
+            prov = (d / "provider").read_text(encoding="utf-8").strip()
+        except OSError:
+            prov = ""
+        if prov in ("", "claude"):
+            subprocess.run(["sudo", "systemctl", "stop", f"desktop-{d.name}.service"], check=False)
+STOP_CLAUDE_DESKTOPS
+`
+				script = stopClaudeInstances + script
 			}
 			return RunMaintenanceScript(s.operationContext(), s.configPath, script, s.jobs.execution(), s.jobs.execution())
 		case "start":
@@ -206,19 +222,34 @@ printf '%s\n' "$password"
 if test -f /run/cage-desktop/base-display-scale; then cat /run/cage-desktop/base-display-scale
 elif test -f /run/cage-desktop/display-scale; then cat /run/cage-desktop/display-scale
 else echo; fi
-if test -f /run/cage-desktop/xsettings.pid; then echo dynamic; fi`)
-	password, scale, _ := strings.Cut(strings.TrimSpace(string(b)), "\n")
+if test -f /run/cage-desktop/xsettings.pid; then echo dynamic; else echo fixed; fi
+if test -S "$HOME/.cache/cage-input/input.sock"; then echo 1; else echo 0; fi`)
+	password, rest, _ := strings.Cut(strings.TrimSpace(string(b)), "\n")
 	if err != nil || len(password) != 8 {
 		http.Error(w, "Claude Desktop 尚未启动", 409)
 		return
 	}
 	// With a settings manager the viewer chooses the density of its own screen.
-	scale, dynamic, _ := strings.Cut(scale, "\n")
+	scale, rest, _ := strings.Cut(rest, "\n")
+	mode, nativeInput, _ := strings.Cut(rest, "\n")
 	density := 2.0
 	if scale == "1.5" {
 		density = 1.5
 	}
-	jsonReply(w, map[string]any{"password": password, "display_scale": density, "dynamic_scale": dynamic == "dynamic"})
+	jsonReply(w, map[string]any{
+		"password":      password,
+		"display_scale": density,
+		"dynamic_scale": mode == "dynamic",
+		"native_input":  strings.TrimSpace(nativeInput) == "1",
+	})
+}
+
+func (s *Server) claudeDesktopInput(w http.ResponseWriter, r *http.Request) {
+	if !s.vmRunning() {
+		http.Error(w, "环境尚未启动", 409)
+		return
+	}
+	s.streamDesktopCommand(w, r, `exec env HOME="$HOME" /usr/local/bin/cage-native-input --relay`)
 }
 
 // The zero value is a viewer that leaves the display's density alone.

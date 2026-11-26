@@ -96,7 +96,8 @@ def write_private(path, text, mode=0o600):
 def add_server(path, name, entry, ours):
     """Adds the entry to a JSON client's configuration; returns whether it wrote."""
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_text(encoding="utf-8")
+        data = json.loads(raw) if raw.strip() else {}
     except FileNotFoundError:
         data = {}
     except ValueError:

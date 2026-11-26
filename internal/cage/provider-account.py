@@ -627,7 +627,8 @@ class AntigravityAdapter:
         except (OSError, ValueError):
             shared_entry = None
         try:
-            dst = json.loads(target_mcp.read_text(encoding="utf-8")) if target_mcp.is_file() else {}
+            raw_dst = target_mcp.read_text(encoding="utf-8") if target_mcp.is_file() else ""
+            dst = json.loads(raw_dst) if raw_dst.strip() else {}
             if not isinstance(dst, dict):
                 return
         except (OSError, ValueError):

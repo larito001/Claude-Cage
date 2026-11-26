@@ -130,7 +130,6 @@ Declare up to 20 user-configurable settings. Values are passed to your MCP serve
 ]
 ```
 - `type`: `"string"`, `"secret"` (encrypted at rest, cannot have `default`), `"boolean"` (`"true"`/`"false"`), or `"choice"` (requires 1..20 unique `choices`).
-- A host plugin with network permission can ship a sibling `setting-options.json` to render a string setting as a dynamic selector. For example, `{"workspace":{"endpointSetting":"url","tokenSetting":"api-key","resource":"notes://workspaces","itemsPath":["rows"],"valueField":"id","labelField":"name"}}` reads a JSON array from a Streamable HTTP MCP resource. Token, path and label are optional. Omit valueField for arrays of strings.
 - `env`: `^[A-Z][A-Z0-9_]{0,63}$`, unique per extension, cannot be `HOME`, `USER`, `LOGNAME`, `SHELL`, `PATH`, `LANG`, `LC_ALL`, `TZ`, or start with `LD_` / `DYLD_`.
 """,
 }

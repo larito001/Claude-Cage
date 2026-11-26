@@ -115,11 +115,7 @@ func LoadManifest(dir string) (Manifest, error) {
 	if err != nil {
 		return Manifest{}, err
 	}
-	m, err := parseManifest(data)
-	if err == nil {
-		err = m.loadSettingOptions(dir)
-	}
-	return m, err
+	return parseManifest(data)
 }
 
 // Supported reports whether the plugin runs on this system.
