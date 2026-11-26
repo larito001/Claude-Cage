@@ -642,7 +642,7 @@ func (a *HostAgent) startHostAgentRoutines(ctx context.Context) error {
 set -eux -o pipefail
 ln -sf "${SSH_AUTH_SOCK}" /run/host-services/ssh-auth.sock`
 			faDesc := "linking ssh auth socket to static location /run/host-services/ssh-auth.sock"
-			stdout, stderr, err := ssh.ExecuteScript(a.instSSHAddress, a.sshLocalPort, a.sshConfig, faScript, faDesc)
+			stdout, stderr, err := ssh.ExecuteScript(a.instSSHAddress, a.sshLocalPort, sshCommandConfig(a.sshConfig), faScript, faDesc)
 			logrus.Debugf("stdout=%#q, stderr=%#q, err=%v", stdout, stderr, err)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("stdout=%#q, stderr=%#q: %w", stdout, stderr, err))
@@ -1042,8 +1042,36 @@ const (
 	verbCancel  = "cancel"
 )
 
-func executeSSH(ctx context.Context, sshConfig *ssh.SSHConfig, sshAddress string, sshPort int, command ...string) error {
+func sshCommandConfig(sshConfig *ssh.SSHConfig) *ssh.SSHConfig {
+	if sshConfig == nil || runtime.GOOS != "windows" {
+		return sshConfig
+	}
+	return &ssh.SSHConfig{
+		ConfigFile:     sshConfig.ConfigFile,
+		Persist:        false,
+		AdditionalArgs: sshutil.DisableControlMasterOptsFromSSHArgs(sshConfig.AdditionalArgs),
+	}
+}
+
+func sshCommandArgs(sshConfig *ssh.SSHConfig) []string {
 	args := sshConfig.Args()
+	if runtime.GOOS == "windows" {
+		// Windows SSH clients cannot multiplex remote command execution over Lima's mux socket.
+		args = sshutil.DisableControlMasterOptsFromSSHArgs(args)
+	}
+	return args
+}
+
+func (a *HostAgent) sshBinaryAndCommandArgs() (string, []string) {
+	args := sshCommandArgs(a.sshConfig)
+	if a.sshExe.Exe != "" {
+		return a.sshExe.Exe, append(slices.Clone(a.sshExe.Args), args...)
+	}
+	return a.sshConfig.Binary(), args
+}
+
+func executeSSH(ctx context.Context, sshConfig *ssh.SSHConfig, sshAddress string, sshPort int, command ...string) error {
+	args := sshCommandArgs(sshConfig)
 	args = append(args,
 		"-p", strconv.Itoa(sshPort),
 		sshAddress,
@@ -1051,6 +1079,7 @@ func executeSSH(ctx context.Context, sshConfig *ssh.SSHConfig, sshAddress string
 	)
 	args = append(args, command...)
 	cmd := exec.CommandContext(ctx, sshConfig.Binary(), args...)
+	hideResourceProbe(cmd)
 	if out, err := cmd.Output(); err != nil {
 		return fmt.Errorf("failed to run %v: %#q: %w", cmd.Args, string(out), err)
 	}
@@ -1340,15 +1369,28 @@ exit 1
 `, iid)
 }
 
+func (a *HostAgent) cloudInitProbeCommand(ctx context.Context) *exec.Cmd {
+	sshAddress, sshPort := a.sshAddressPort()
+	bin, args := a.sshBinaryAndCommandArgs()
+	args = append(args, "-T", "-p", strconv.Itoa(sshPort), sshAddress, "sh", "-s")
+	cmd := exec.CommandContext(ctx, bin, args...)
+	hideResourceProbe(cmd)
+	cmd.WaitDelay = time.Second
+	cmd.Stdin = strings.NewReader(cloudInitCompletedProbeScript(a.iid))
+	return cmd
+}
+
 func (a *HostAgent) probeCloudInitCompleted(ctx context.Context) bool {
 	probeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	sshAddress, sshPort := a.sshAddressPort()
-	args := a.sshConfig.Args()
-	args = append(args, "-T", "-p", strconv.Itoa(sshPort), sshAddress, "sh", "-s")
-	cmd := exec.CommandContext(probeCtx, a.sshConfig.Binary(), args...)
-	cmd.Stdin = strings.NewReader(cloudInitCompletedProbeScript(a.iid))
-	return cmd.Run() == nil
+	var stderr resourceProbeStderr
+	cmd := a.cloudInitProbeCommand(probeCtx)
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		logrus.WithError(err).Debugf("cloud-init completion probe did not pass (stderr=%#q)", strings.TrimSpace(string(stderr.data)))
+		return false
+	}
+	return true
 }
 
 // cloudInitStream runs one command that follows the guest's cloud-init log
@@ -1356,15 +1398,23 @@ func (a *HostAgent) probeCloudInitCompleted(ctx context.Context) bool {
 // command is ended once read returns.
 type cloudInitStream func(ctx context.Context, read func(io.Reader)) error
 
-func (a *HostAgent) streamCloudInitLog(ctx context.Context, read func(io.Reader)) error {
+func (a *HostAgent) cloudInitStreamCommand(ctx context.Context) *exec.Cmd {
 	sshAddress, sshPort := a.sshAddressPort()
-	args := a.sshConfig.Args()
+	bin, args := a.sshBinaryAndCommandArgs()
 	args = append(args, "-T", "-p", strconv.Itoa(sshPort), sshAddress, "sh", "-s")
+	cmd := exec.CommandContext(ctx, bin, args...)
+	hideResourceProbe(cmd)
+	cmd.WaitDelay = time.Second
+	cmd.Stdin = strings.NewReader(cloudInitLogStreamScript)
+	return cmd
+}
 
+func (a *HostAgent) streamCloudInitLog(ctx context.Context, read func(io.Reader)) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, a.sshConfig.Binary(), args...)
-	cmd.Stdin = strings.NewReader(cloudInitLogStreamScript)
+	var stderr resourceProbeStderr
+	cmd := a.cloudInitStreamCommand(ctx)
+	cmd.Stderr = &stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdout pipe for cloud-init monitoring: %w", err)
@@ -1375,7 +1425,13 @@ func (a *HostAgent) streamCloudInitLog(ctx context.Context, read func(io.Reader)
 	read(stdout)
 	// Ends `-f` once cloud-init has finished; a no-op if ssh already exited.
 	cancel()
-	return cmd.Wait()
+	if err := cmd.Wait(); err != nil {
+		if msg := strings.TrimSpace(string(stderr.data)); msg != "" {
+			return fmt.Errorf("%w (stderr=%#q)", err, msg)
+		}
+		return err
+	}
+	return nil
 }
 
 // followCloudInit reads cloud-init log streams until one shows that cloud-init
@@ -1512,7 +1568,7 @@ func isDeactivatedCloudInitMainService(line string) bool {
 }
 
 func copyToHost(ctx context.Context, sshConfig *ssh.SSHConfig, sshAddress string, sshPort int, local, remote string, skipIfMissing bool) error {
-	args := sshConfig.Args()
+	args := sshCommandArgs(sshConfig)
 	args = append(args,
 		"-p", strconv.Itoa(sshPort),
 		sshAddress,
@@ -1525,12 +1581,13 @@ func copyToHost(ctx context.Context, sshConfig *ssh.SSHConfig, sshAddress string
 		return fmt.Errorf("can't create directory for local file %#q: %w", local, err)
 	}
 	cmd := exec.CommandContext(ctx, sshConfig.Binary(), args...)
+	hideResourceProbe(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && strings.Contains(string(exitErr.Stderr), "Permission denied") {
 			logrus.Infof("Retrying %s with sudo (permission denied)", remote)
-			sudoArgs := sshConfig.Args()
+			sudoArgs := sshCommandArgs(sshConfig)
 			sudoArgs = append(sudoArgs,
 				"-p", strconv.Itoa(sshPort),
 				sshAddress,
@@ -1539,6 +1596,7 @@ func copyToHost(ctx context.Context, sshConfig *ssh.SSHConfig, sshAddress string
 				remote,
 			)
 			cmd = exec.CommandContext(ctx, sshConfig.Binary(), sudoArgs...)
+			hideResourceProbe(cmd)
 			out, err = cmd.Output()
 		}
 		if errors.As(err, &exitErr) && strings.Contains(string(exitErr.Stderr), "No such file or directory") {

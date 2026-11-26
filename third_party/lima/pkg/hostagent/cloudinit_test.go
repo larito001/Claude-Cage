@@ -7,11 +7,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,9 +21,11 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/lima-vm/sshocker/pkg/ssh"
 	"gotest.tools/v3/assert"
 
 	"github.com/lima-vm/lima/v2/pkg/hostagent/events"
+	"github.com/lima-vm/lima/v2/pkg/sshutil"
 )
 
 func TestEmitCloudInitProgressEventStripsControlChars(t *testing.T) {
@@ -506,4 +510,118 @@ func TestEmitStatusUpdatePreservesCloudInitProgressAndRunning(t *testing.T) {
 	last := evs[len(evs)-1].Status
 	assert.Assert(t, last.Running, "last status lost Running=true: %+v", last)
 	assert.Assert(t, last.CloudInitProgress != nil && last.CloudInitProgress.Completed, "last status lost CloudInitProgress.Completed: %+v", last)
+}
+
+func TestCloudInitSSHCommandsDisableControlMasterOnWindows(t *testing.T) {
+	agent := HostAgent{
+		sshLocalPort:   60022,
+		instSSHAddress: "127.0.0.1",
+		iid:            "iid-mux-test",
+		sshExe: sshutil.SSHExe{
+			Exe:  "custom-ssh",
+			Args: []string{"-q"},
+		},
+		sshConfig: &ssh.SSHConfig{
+			Persist: true,
+			AdditionalArgs: []string{
+				"-F", "/dev/null",
+				"-o", "IdentityFile='C:/Users/test/.lima/_config/user'",
+				"-o", "ControlMaster=auto",
+				"-o", "ControlPath='C:/Users/test/.lima/base/ssh.sock'",
+				"-o", "ControlPersist=yes",
+			},
+		},
+	}
+	configured := slices.Clone(agent.sshConfig.Args())
+
+	wantBase := slices.Clone(configured)
+	if runtime.GOOS == "windows" {
+		wantBase = []string{
+			"-o", "ControlMaster=no",
+			"-o", "ControlPath=none",
+			"-o", "ControlPersist=no",
+			"-F", "/dev/null",
+			"-o", "IdentityFile='C:/Users/test/.lima/_config/user'",
+		}
+	}
+	wantArgs := append(slices.Concat([]string{"-q"}, wantBase), "-T", "-p", "60022", "127.0.0.1", "sh", "-s")
+
+	for name, build := range map[string]func(context.Context) *exec.Cmd{
+		"stream": agent.cloudInitStreamCommand,
+		"probe":  agent.cloudInitProbeCommand,
+	} {
+		t.Run(name, func(t *testing.T) {
+			cmd := build(t.Context())
+			assert.Equal(t, cmd.Args[0], "custom-ssh")
+			assert.DeepEqual(t, cmd.Args[1:], wantArgs)
+		})
+	}
+
+	cmdCfg := sshCommandConfig(agent.sshConfig)
+	if runtime.GOOS == "windows" {
+		assert.Assert(t, !cmdCfg.Persist)
+		assert.DeepEqual(t, cmdCfg.Args(), []string{
+			"-o", "ControlMaster=no",
+			"-o", "ControlPath=none",
+			"-o", "ControlPersist=no",
+			"-F", "/dev/null",
+			"-o", "IdentityFile='C:/Users/test/.lima/_config/user'",
+		})
+	} else {
+		assert.DeepEqual(t, cmdCfg.Args(), configured)
+	}
+
+	assert.DeepEqual(t, agent.sshConfig.Args(), configured)
+}
+
+func TestCloudInitStreamAndProbeSurfaceSSHProcessOutcome(t *testing.T) {
+	if mode := os.Getenv("CAGE_CLOUDINIT_SSH_TEST"); mode != "" {
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		switch mode {
+		case "fail":
+			fmt.Fprintln(os.Stderr, "getsockname failed: Not a socket")
+			os.Exit(255)
+		case "ok":
+			fmt.Fprintln(os.Stdout, "Cloud-init v. 25.1 finished at Thu")
+			os.Exit(0)
+		}
+	}
+
+	exe, err := os.Executable()
+	assert.NilError(t, err)
+
+	newAgent := func(mode string) HostAgent {
+		t.Setenv("CAGE_CLOUDINIT_SSH_TEST", mode)
+		return HostAgent{
+			sshLocalPort:   60022,
+			instSSHAddress: "127.0.0.1",
+			iid:            "iid-proc-test",
+			sshExe: sshutil.SSHExe{
+				Exe:  exe,
+				Args: []string{"-test.run=^TestCloudInitStreamAndProbeSurfaceSSHProcessOutcome$", "--"},
+			},
+			sshConfig: &ssh.SSHConfig{},
+		}
+	}
+
+	t.Run("failure surfaces stderr and probe returns false", func(t *testing.T) {
+		agent := newAgent("fail")
+		var got string
+		err := agent.streamCloudInitLog(t.Context(), func(r io.Reader) {
+			b, _ := io.ReadAll(r)
+			got = string(b)
+		})
+		assert.Equal(t, got, "")
+		assert.Assert(t, err != nil)
+		assert.Assert(t, strings.Contains(err.Error(), "getsockname failed: Not a socket"), err.Error())
+		assert.Assert(t, !agent.probeCloudInitCompleted(t.Context()))
+	})
+
+	t.Run("success streams log and probe returns true", func(t *testing.T) {
+		agent := newAgent("ok")
+		var got []emittedLine
+		assert.Assert(t, followCloudInit(t.Context(), agent.streamCloudInitLog, collectLines(&got), noRetryDelay))
+		assert.DeepEqual(t, got, []emittedLine{{"Cloud-init v. 25.1 finished at Thu", true}})
+		assert.Assert(t, agent.probeCloudInitCompleted(t.Context()))
+	})
 }
