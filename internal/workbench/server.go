@@ -437,6 +437,7 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("POST /api/account/{action}", s.accountAction)
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("GET /api/host-tools", s.getHostTools)
+	mux.HandleFunc("GET "+settingOptionsPath, s.getSettingOptions)
 	mux.HandleFunc("POST /api/host-tools", s.setHostTools)
 	mux.HandleFunc("POST /api/host-tools/call", s.callHostTool)
 	mux.HandleFunc("GET /api/host-tools/market", s.getHostMarket)

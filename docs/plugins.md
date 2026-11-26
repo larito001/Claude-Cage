@@ -173,6 +173,25 @@ my-plugin/
 
 环境内插件的值在启动时经 SSH 标准输入写入环境里只有该用户能读的临时文件 `~/.local/share/plugins/<插件名>.env`，启动脚本读取后立即删除，不会出现在命令行或进程参数里。
 
+#### 从 MCP 资源加载下拉选项
+
+声明了 `network` 权限的主机插件可在 `plugin.json` 同目录提供 `setting-options.json`。每个键对应一个已有的 `string` 设置 ID。以下声明让 `workspace` 字段显示服务器返回的工作区名称，并把选中的 ID 作为原设置值保存。
+
+```json
+{
+  "workspace": {
+    "endpointSetting": "url",
+    "tokenSetting": "token",
+    "resource": "notes://workspaces",
+    "itemsPath": ["data", "workspaces"],
+    "valueField": "id",
+    "labelField": "name"
+  }
+}
+```
+
+`endpointSetting` 引用本插件的 HTTP(S) MCP 地址设置，`tokenSetting` 可选，引用本插件的密钥设置。打开设置页或点击刷新时，Cage 使用已保存的连接，通过 Streamable HTTP 读取指定的 MCP 资源。`itemsPath` 依次定位 JSON 对象中的数组，省略时读取根数组。字符串数组可直接作为选项；对象数组用 `valueField` 指定字符串值，`labelField` 可指定显示名称，默认显示值。已保存但暂时离线的选项可继续保留。旧版 Cage 仍可按字符串读取这个设置。
+
 `contributes.views[]`：
 
 | 字段 | 必需 | 说明 |

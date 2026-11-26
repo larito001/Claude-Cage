@@ -298,7 +298,7 @@ func (s *Server) routeRemote(w http.ResponseWriter, r *http.Request) bool {
 		http.NotFound(w, r)
 		return true
 	}
-	if remote && r.Method == http.MethodPost && (r.URL.Path == "/api/host-tools" || r.URL.Path == "/api/host-tools/sync" || r.URL.Path == "/api/host-tools/drafts/install" || r.URL.Path == "/api/host-tools/drafts/discard") && !s.hasTrustedView(r) {
+	if remote && (r.URL.Path == settingOptionsPath || r.Method == http.MethodPost && (r.URL.Path == "/api/host-tools" || r.URL.Path == "/api/host-tools/sync" || r.URL.Path == "/api/host-tools/drafts/install" || r.URL.Path == "/api/host-tools/drafts/discard")) && !s.hasTrustedView(r) {
 		http.Error(w, "请在本机 Cage 窗口管理远程插件", http.StatusForbidden)
 		return true
 	}

@@ -213,6 +213,9 @@ func ValidateDraftDir(dir, expectedName, overrideKind, minEngine string) (Manife
 	}
 
 	// Verify view files on the host side too.
+	if err := manifest.loadSettingOptions(dir); err != nil {
+		return Manifest{}, nil, err
+	}
 	for _, view := range manifest.Contributes.Views {
 		entryPath := filepath.Join(dir, filepath.FromSlash(view.Entry))
 		entryInfo, err := os.Lstat(entryPath)
