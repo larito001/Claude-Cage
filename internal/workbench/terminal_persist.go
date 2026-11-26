@@ -1,6 +1,7 @@
 package workbench
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -32,6 +33,8 @@ type persistedTerminal struct {
 	ClaudeAccountID     string `json:"claude_account_id,omitempty"`
 	ClaudeAccountSource string `json:"claude_account_source,omitempty"`
 	ProviderAccountID   string `json:"provider_account_id,omitempty"`
+	ProviderSessionID   string `json:"provider_session_id,omitempty"`
+	AccountExplicit     bool   `json:"account_explicit,omitempty"`
 	PhysicalProfile     string `json:"physical_profile,omitempty"`
 	SharedID            string `json:"shared_id,omitempty"`
 }
@@ -93,6 +96,8 @@ func (s *Server) savePersistedTerminals() {
 				ClaudeAccountID:     session.claudeAccountID,
 				ClaudeAccountSource: session.claudeAccountSource,
 				ProviderAccountID:   session.providerAccountID,
+				ProviderSessionID:   session.providerSessionID,
+				AccountExplicit:     session.accountExplicit,
 				PhysicalProfile:     session.physicalProfile,
 				SharedID:            session.sharedID,
 			}
@@ -207,6 +212,8 @@ func (s *Server) loadPersistedTerminals() {
 			claudeAccountID:     item.ClaudeAccountID,
 			claudeAccountSource: item.ClaudeAccountSource,
 			providerAccountID:   item.ProviderAccountID,
+			providerSessionID:   item.ProviderSessionID,
+			accountExplicit:     item.AccountExplicit,
 			physicalProfile:     item.PhysicalProfile,
 			sharedID:            item.SharedID,
 			closed:              true,
@@ -243,26 +250,74 @@ func (s *Server) removeProjectTerminals(folders []string) {
 	}
 }
 
+func terminalRestoreGroupKey(s *terminalSession) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.kind + "\x00" + s.claudeAccountID + "\x00" + s.providerAccountID + "\x00" + s.workspace
+}
+
+func (s *Server) computeRestoreOrdinal(target *terminalSession) int {
+	if target == nil {
+		return 0
+	}
+	targetKey := terminalRestoreGroupKey(target)
+	target.mu.Lock()
+	targetOrder := target.creationOrder
+	targetID := target.id
+	target.mu.Unlock()
+
+	s.terminals.mu.Lock()
+	var siblings []*terminalSession
+	for _, session := range s.terminals.sessions {
+		if session == target || session.isRestorable() {
+			siblings = append(siblings, session)
+		}
+	}
+	s.terminals.mu.Unlock()
+
+	ord := 0
+	for _, sib := range siblings {
+		if sib == target || terminalRestoreGroupKey(sib) != targetKey {
+			continue
+		}
+		sib.mu.Lock()
+		before := sib.creationOrder < targetOrder || (sib.creationOrder == targetOrder && sib.id < targetID)
+		sib.mu.Unlock()
+		if before {
+			ord++
+		}
+	}
+	return ord
+}
+
 func (s *Server) restoreSingleTerminal(prev *terminalSession, ordinal int) (*terminalSession, error) {
+	return s.restoreSingleTerminalWithContext(nil, prev, ordinal)
+}
+
+func (s *Server) restoreSingleTerminalWithContext(ctx context.Context, prev *terminalSession, ordinal int) (*terminalSession, error) {
 	if prev == nil || !prev.isRestorable() {
 		return nil, nil
 	}
 	prev.mu.Lock()
 	req := terminalRequest{
-		Workspace:       prev.workspace,
-		Kind:            prev.kind,
-		ClaudeAccountID: prev.claudeAccountID,
-		AccountID:       prev.providerAccountID,
-		sharedID:        prev.sharedID,
-		afterLogin:      prev,
-		restoring:       true,
-		restoreOrdinal:  ordinal,
+		Workspace:         prev.workspace,
+		Kind:              prev.kind,
+		ClaudeAccountID:   prev.claudeAccountID,
+		AccountID:         prev.providerAccountID,
+		sharedID:          prev.sharedID,
+		terminalID:        prev.id,
+		providerSessionID: prev.providerSessionID,
+		accountExplicit:   prev.accountExplicit,
+		afterLogin:        prev,
+		restoring:         true,
+		restoreOrdinal:    ordinal,
+		callerCtx:         ctx,
 	}
 	prev.mu.Unlock()
 
 	restored, err := s.createTerminal(req)
 	if err != nil {
-		if errors.Is(err, errTerminalBusy) || errors.Is(err, errTerminalNotReady) || errors.Is(err, errMobileLocked) || errors.Is(err, errTerminalsClosed) {
+		if errors.Is(err, errTerminalBusy) || errors.Is(err, errTerminalNotReady) || errors.Is(err, errMobileLocked) || errors.Is(err, errTerminalsClosed) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil, err
 		}
 		prev.mu.Lock()

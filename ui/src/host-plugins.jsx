@@ -723,11 +723,11 @@ function Grants({ model, plugin, onConfirm }) {
     const open = (model.view?.folders || []).filter(folder => !projects.includes(folder));
     const project = open.includes(choice) ? choice : open[0] || "";
     const revoke = async project => {
-      if (!project && !await onConfirm({ title: "撤销全部项目的授权？", body: "之后在任何项目中运行命令都会重新询问。", confirm: "全部撤销" })) return;
+      if (!project && !await onConfirm({ title: tr("撤销全部项目的授权？"), body: tr("之后在任何项目中运行命令都会重新询问。"), confirm: tr("全部撤销") })) return;
       await change({ plugin: plugin.name, always: false, ...(project ? { project } : {}) }, key);
     };
     const allow = async () => {
-      if (!project || !await onConfirm({ title: "始终允许从这个项目启动主机命令？", confirm: "始终允许",
+      if (!project || !await onConfirm({ title: tr("始终允许从这个项目启动主机命令？"), confirm: tr("始终允许"),
         body: translate("之后从 {0} 启动主机命令时不再询问。命令以运行服务的主机用户权限执行，仍可访问该用户有权访问的其他目录、程序和网络；此授权不提供项目隔离，可随时撤销。", project) })) return;
       await change({ plugin: plugin.name, always: true, project }, key);
     };

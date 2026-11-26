@@ -120,12 +120,31 @@ func OpenSaved(relayOrigin, lookupToken, trustedHostPin string, device DeviceSig
 	if err != nil {
 		return nil, err
 	}
-	identity, err := remotelink.IdentityFromSigner(adapter)
-	if err != nil {
+	lifetime, cancel := context.WithCancel(context.Background())
+	var certMu sync.Mutex
+	var cachedIdentity *remotelink.Identity
+	currentIdentity := func() (*remotelink.Identity, error) {
+		certMu.Lock()
+		defer certMu.Unlock()
+		if cachedIdentity != nil && cachedIdentity.Certificate.Leaf != nil && time.Until(cachedIdentity.Certificate.Leaf.NotAfter) > 30*time.Minute {
+			return cachedIdentity, nil
+		}
+		fresh, err := remotelink.IdentityFromSigner(adapter)
+		if err != nil {
+			return nil, err
+		}
+		cachedIdentity = fresh
+		return fresh, nil
+	}
+	if _, err := currentIdentity(); err != nil {
+		cancel()
 		return nil, err
 	}
-	lifetime, cancel := context.WithCancel(context.Background())
 	dial := func(parent context.Context) (*mobilelink.Client, error) {
+		identity, err := currentIdentity()
+		if err != nil {
+			return nil, err
+		}
 		ctx, stop := context.WithTimeout(parent, 25*time.Second)
 		defer stop()
 		room, err := lookupSaved(ctx, relayOrigin, lookupToken)

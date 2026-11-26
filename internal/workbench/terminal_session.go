@@ -31,6 +31,8 @@ type terminalSession struct {
 	kind, claudeAccountID string
 	provider              string
 	providerAccountID     string
+	providerSessionID     string
+	accountExplicit       bool
 	loginGuestID          string
 	physicalProfile       string
 	loginRequested        time.Time

@@ -121,8 +121,8 @@ export function EnvironmentVersions({ status, onConfirm }) {
     if (
       !(await onConfirm({
         title: tr("更新 {0}", appName) + "？",
-        body: "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。",
-        confirm: "更新应用",
+        body: tr("请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。"),
+        confirm: tr("更新应用"),
       }))
     )
       return;

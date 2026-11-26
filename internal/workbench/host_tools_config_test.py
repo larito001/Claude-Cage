@@ -247,6 +247,45 @@ class HostToolsConfigTests(unittest.TestCase):
             {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "antigravity"]},
         )
 
+    def test_per_client_tokens_write_isolated_endpoints_and_revoke_disabled(self):
+        (self.home / ".config/Claude").mkdir(parents=True)
+        (self.home / ".gemini").mkdir(parents=True)
+        (self.home / ".codex").mkdir(parents=True)
+        tokens = {"claude": "tok-claude", "antigravity": "tok-agy", "codex": "tok-codex"}
+
+        # Pre-seed legacy shared endpoint to verify it is purged when per-client tokens are active.
+        _, legacy_ep = config.relay_files(self.home, "computer")
+        legacy_ep.parent.mkdir(parents=True, exist_ok=True)
+        legacy_ep.write_text('{"url":"http://127.0.0.1:18962/"}')
+
+        config.configure(
+            self.home,
+            "computer",
+            ENTRY,
+            "# relay\n",
+            {"claude": True, "antigravity": True, "codex": False},
+            tokens,
+        )
+        self.assertFalse(legacy_ep.exists())
+        _, claude_ep = config.relay_files(self.home, "computer", "claude")
+        _, agy_ep = config.relay_files(self.home, "computer", "antigravity")
+        _, codex_ep = config.relay_files(self.home, "computer", "codex")
+
+        self.assertTrue(claude_ep.is_file())
+        self.assertTrue(agy_ep.is_file())
+        self.assertFalse(codex_ep.exists())
+        self.assertEqual(json.loads(claude_ep.read_text())["headers"]["Authorization"], "Bearer tok-claude")
+        self.assertEqual(json.loads(agy_ep.read_text())["headers"]["Authorization"], "Bearer tok-agy")
+        self.assertEqual(
+            json.loads((self.home / ".claude.json").read_text())["mcpServers"]["computer"]["headers"]["Authorization"],
+            "Bearer tok-claude",
+        )
+
+        config.unconfigure(self.home, "computer", ENTRY)
+        self.assertFalse(claude_ep.exists())
+        self.assertFalse(agy_ep.exists())
+        self.assertFalse((self.home / ".config/mcp-relay").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

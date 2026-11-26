@@ -68,7 +68,7 @@ def watch(request):
     # started; forwarding them would replay stale banners at once.
     max_age = max(1.0, float(request.get("max_age", 60.0)))
     fast, slow = 0.2, 1.5
-    file_stats, last_done, seen_approvals = {}, {}, set()
+    file_stats, last_done, last_cli_id, seen_approvals = {}, {}, {}, set()
     try:
         notifier = Inotify() if request.get("inotify", True) else None
     except (OSError, AttributeError):
@@ -105,6 +105,10 @@ def watch(request):
             changed = True
             state = read_json(path)
             updated = state.get("updated_at")
+            cli_id = state.get("cli_id")
+            if isinstance(cli_id, str) and cli_id and not state.get("closed") and last_cli_id.get(conn) != cli_id:
+                last_cli_id[conn] = cli_id
+                emit({"id": f"{conn}:session:{cli_id}", "event": "session_bound", "connection": conn, "cli_id": cli_id})
             fresh = isinstance(updated, (int, float)) and time.time() - updated <= max_age and not state.get("closed")
             done = state.get("turn_done")
             done = done if isinstance(done, int) and done > 0 else 0

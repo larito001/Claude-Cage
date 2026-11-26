@@ -66,6 +66,37 @@ func TestDesktopFileCommandsPreservePathsAndRevealSemantics(t *testing.T) {
 	}
 }
 
+func TestDesktopFileExecutableTypesDowngradeToReveal(t *testing.T) {
+	for _, unsafeName := range []string{
+		"payload.exe", "script.bat", "script.ps1", "shortcut.lnk",
+		"run.command", "Evil.app", "launcher.desktop", "install.sh",
+	} {
+		darwinArgs := hostFileCommand("darwin", "/tmp/proj/"+unsafeName, "open", strings.HasSuffix(unsafeName, ".app")).Args
+		if !reflect.DeepEqual(darwinArgs, []string{"/usr/bin/open", "-R", "--", "/tmp/proj/" + unsafeName}) {
+			t.Fatalf("darwin open did not downgrade %s to reveal: %#v", unsafeName, darwinArgs)
+		}
+		winArgs := hostFileCommand("windows", `C:\proj\`+unsafeName, "open", false).Args
+		if !reflect.DeepEqual(winArgs, []string{"explorer.exe", `/select,C:\proj\` + unsafeName}) {
+			t.Fatalf("windows open did not downgrade %s to reveal: %#v", unsafeName, winArgs)
+		}
+	}
+	dir := t.TempDir()
+	shebangFile := filepath.Join(dir, "README.txt")
+	if err := os.WriteFile(shebangFile, []byte("#!/bin/sh\nid\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if !hasExecutableFileHeader(shebangFile) {
+		t.Fatal("expected shebang header to be detected as executable")
+	}
+	plainDoc := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(plainDoc, []byte("hello world\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if hasExecutableFileHeader(plainDoc) {
+		t.Fatal("plain text falsely flagged as executable header")
+	}
+}
+
 func TestDesktopFileOpenAdmissionRejectsUntrustedRequests(t *testing.T) {
 	s := testServer(t)
 	s.ready = true

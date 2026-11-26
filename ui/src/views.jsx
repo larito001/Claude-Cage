@@ -524,7 +524,7 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     host.addEventListener("dragover", onDragOver);
     host.addEventListener("drop", onDrop);
     const copySelection = () => {
-      const text = normalizeTerminalCopyText(terminal.getSelection());
+      const text = normalizeTerminalCopyText(terminal.getSelection(), { cols: terminal.cols });
       if (!text) {
         // Claude owns its TUI selection while mouse reporting is enabled. CSI-u
         // preserves Ctrl+Shift+C, which cannot be represented as plain Ctrl+C.
@@ -553,7 +553,7 @@ export function TerminalView({ session, visible, focused = true, onStatus, onCon
     const onCopy = (event) => {
       if (!visibleRef.current || !focusedRef.current) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      const text = normalizeTerminalCopyText(terminal.getSelection());
+      const text = normalizeTerminalCopyText(terminal.getSelection(), { cols: terminal.cols });
       if (text) event.clipboardData?.setData("text/plain", text);
       copySelection();
     };

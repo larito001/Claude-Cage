@@ -29,6 +29,7 @@ export function useBrowserSpaces(ready) {
   }, [ready, refresh]);
 
   const setRoute = useCallback(async (space, proxyNodeID) => {
+    const current = ++seq.current;
     setLoading(true);
     try {
       const data = await api("/browser/spaces", {
@@ -36,7 +37,7 @@ export function useBrowserSpaces(ready) {
         space,
         proxy_node_id: proxyNodeID || "",
       });
-      if (Array.isArray(data?.spaces)) setSpaces(data.spaces);
+      if (current === seq.current && Array.isArray(data?.spaces)) setSpaces(data.spaces);
       return data?.spaces || [];
     } finally {
       setLoading(false);
@@ -156,7 +157,7 @@ export function BrowserSpaceMenuSection({
               {proxySources.map((source) => (
                 <optgroup key={source.id} label={source.name}>
                   {(source.nodes || []).map((node) => (
-                    <option key={node.id} value={node.id}>
+                    <option key={node.id} value={node.id} disabled={Boolean(node.blocked_reason)}>
                       {node.name}
                     </option>
                   ))}

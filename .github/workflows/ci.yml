@@ -5,7 +5,7 @@ on:
   # Branches are checked once, through their pull request (pr-checks.yml calls
   # this workflow). A branch without a pull request can be run by hand.
   push:
-    branches: [main]
+    branches: [main, allcage]
     paths-ignore:
       - 'README*.md'
       - 'www/**'

@@ -263,14 +263,35 @@ func (h *notificationHub) publish(ev notificationEvent) bool {
 }
 
 func (s *Server) dispatchGuestNotification(raw guestChannelEvent) bool {
-	if raw.Event != "turn_completed" && raw.Event != "approval_requested" {
-		return false
-	}
-	if raw.ID == "" || raw.Connection == "" {
+	if raw.Connection == "" {
 		return false
 	}
 	terminal := s.terminals.forConversation(raw.Connection)
 	if terminal == nil {
+		return false
+	}
+	if raw.CLIID != "" {
+		terminal.mu.Lock()
+		prov := terminal.provider
+		if prov == "" {
+			if spec, _, _, ok := terminalProviderKind(terminal.kind); ok {
+				prov = spec.ID
+			}
+		}
+		changedSession := false
+		if (prov == "codex" || prov == "antigravity") && !terminal.dismissed && terminal.providerSessionID != raw.CLIID {
+			terminal.providerSessionID = raw.CLIID
+			changedSession = true
+		}
+		terminal.mu.Unlock()
+		if changedSession {
+			s.savePersistedTerminals()
+		}
+	}
+	if raw.Event != "turn_completed" && raw.Event != "approval_requested" {
+		return false
+	}
+	if raw.ID == "" {
 		return false
 	}
 	terminal.mu.Lock()

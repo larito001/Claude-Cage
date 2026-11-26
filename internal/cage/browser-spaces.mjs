@@ -100,7 +100,6 @@ export class BrowserSpaces {
     if (!validSpaceId(space)) throw new Error("浏览器空间无效");
     const route = requestedRoute !== undefined ? (requestedRoute || "") : (this.routes.get(space) || "");
     if (route && !/^[a-f0-9]{24}$/.test(route)) throw new Error("浏览器空间出口无效");
-    this.routes.set(space, route);
     let entry = this.spaces.get(space);
     if (entry) {
       if (entry.route !== route) {
@@ -109,6 +108,7 @@ export class BrowserSpaces {
         entry = undefined;
       }
     }
+    this.routes.set(space, route);
     if (!entry) {
       const proxy = route ? await this.proxyFactory(route) : undefined;
       let browserContextId = "";

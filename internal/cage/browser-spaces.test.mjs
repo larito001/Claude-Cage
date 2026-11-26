@@ -86,8 +86,12 @@ test("claude, antigravity, and codex browser spaces isolate contexts, cookies, a
   assert.equal(popup.space, "claude");
   assert.equal(popup.incognito, false);
 
-  // Cannot switch exit route while tabs in that space are still open.
+  // Cannot switch exit route while tabs in that space are still open, and
+  // failed route switch via open() must not corrupt subsequent opens.
   await assert.rejects(() => first.spaces.setRoute("claude", routeB), /请先关闭此浏览器空间的标签页/);
+  await assert.rejects(() => first.spaces.open("claude", "https://claude.ai/new", async () => "sid-2", { route: routeB }), /请先关闭此浏览器空间的标签页/);
+  const claudeTab2 = await first.spaces.open("claude", "https://claude.ai/chats", async () => "sid-claude-2");
+  assert.equal(claudeTab2.space, "claude");
 
   await first.spaces.shutdown();
   assert.equal(first.contexts.size, 0);

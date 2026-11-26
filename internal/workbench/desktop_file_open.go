@@ -192,7 +192,51 @@ func desktopOpenCall(client *controllerClient, input map[string]string, output a
 	return nil
 }
 
+var blockedHostOpenExtensions = map[string]bool{
+	".action": true, ".app": true, ".appimage": true, ".applescript": true, ".appref-ms": true,
+	".appx": true, ".bash": true, ".bat": true, ".bin": true, ".chm": true, ".cmd": true,
+	".com": true, ".command": true, ".cpl": true, ".csh": true, ".deb": true, ".desktop": true,
+	".diagcab": true, ".dll": true, ".dmg": true, ".exe": true, ".fileloc": true, ".fish": true,
+	".gadget": true, ".hlp": true, ".hta": true, ".inetloc": true, ".inf": true, ".jar": true,
+	".js": true, ".jse": true, ".ksh": true, ".library-ms": true, ".lnk": true, ".mpkg": true,
+	".msc": true, ".msi": true, ".msix": true, ".msp": true, ".pif": true, ".pkg": true,
+	".pl": true, ".ps1": true, ".psd1": true, ".psm1": true, ".py": true, ".pyw": true,
+	".rb": true, ".reg": true, ".rpm": true, ".run": true, ".scf": true, ".scpt": true,
+	".scptd": true, ".scr": true, ".searchconnector-ms": true, ".settingcontent-ms": true,
+	".sh": true, ".terminal": true, ".tool": true, ".url": true, ".vbe": true, ".vbs": true,
+	".webloc": true, ".workflow": true, ".wsf": true, ".wsh": true, ".zsh": true,
+}
+
+func isExecutablePathOrBundle(path string) bool {
+	trimmed := strings.TrimRight(path, `/\ `)
+	ext := strings.ToLower(filepath.Ext(trimmed))
+	return blockedHostOpenExtensions[ext]
+}
+
+func hasExecutableFileHeader(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	var magic [4]byte
+	n, _ := io.ReadFull(f, magic[:])
+	if n >= 2 && ((magic[0] == '#' && magic[1] == '!') || (magic[0] == 'M' && magic[1] == 'Z')) {
+		return true
+	}
+	if n == 4 {
+		switch string(magic[:]) {
+		case "\x7fELF", "\xfe\xed\xfa\xce", "\xfe\xed\xfa\xcf", "\xce\xfa\xed\xfe", "\xcf\xfa\xed\xfe", "\xca\xfe\xba\xbe":
+			return true
+		}
+	}
+	return false
+}
+
 func hostFileCommand(platform, path, action string, directory bool) *exec.Cmd {
+	if action == "open" && isExecutablePathOrBundle(path) {
+		action = "reveal"
+	}
 	switch platform {
 	case "darwin":
 		if action == "reveal" {
@@ -220,6 +264,9 @@ func openHostFile(path, action string) error {
 	info, err := os.Stat(path)
 	if err != nil || (!info.Mode().IsRegular() && !info.IsDir()) {
 		return errors.New("文件已移动、删除或无法访问")
+	}
+	if action == "open" && (isExecutablePathOrBundle(path) || (info.Mode().IsRegular() && hasExecutableFileHeader(path))) {
+		action = "reveal"
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

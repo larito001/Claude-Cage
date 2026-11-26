@@ -11,6 +11,7 @@ Follows the exact same isolation model as cage-claude-account:
 """
 import base64
 from datetime import datetime
+import glob
 import hashlib
 import json
 import math
@@ -20,10 +21,12 @@ import re
 import runpy
 import shutil
 import signal
+import sqlite3
 import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 import uuid
 
 try:
@@ -55,7 +58,12 @@ def user_home():
 
 
 CLI_CHANNEL_ROOT = Path(os.environ.get("CAGE_CLI_STATE_ROOT") or (user_home() / ".local/share/cage/cli-channels"))
+TERMINAL_SESSION_ROOT = Path(os.environ.get("CAGE_TERMINAL_SESSION_ROOT") or (user_home() / ".local/share/cage/terminal-sessions"))
 NOTIFY_ENV_VAR = "__WORKBENCH_NOTIFY_CHANNEL"
+TERMINAL_ID_ENV_VAR = "__WORKBENCH_TERMINAL_ID"
+TERMINAL_ID_RE = re.compile(r"^[0-9a-f]{16}$")
+CODEX_SESSION_RE = re.compile(r"^[0-9a-fA-F-]{36}$")
+AGY_SESSION_RE = re.compile(r"^[0-9a-zA-Z_-]{8,128}$")
 
 _controller_context = {
     key: os.environ.pop(key)
@@ -65,6 +73,7 @@ _controller_context = {
         "CAGE_PROVIDER_SUBJECT",
         "CAGE_PROVIDER_ACCOUNT_ID",
         "CAGE_NOTIFY_CONNECTION",
+        "CAGE_TERMINAL_ID",
     )
     if key in os.environ
 }
@@ -195,22 +204,85 @@ def valid_notify_connection(value):
         return ""
 
 
-def record_channel_event(conn_id, event_kind):
+def valid_terminal_id(value):
+    if not isinstance(value, str):
+        return ""
+    cleaned = value.strip().lower()
+    return cleaned if TERMINAL_ID_RE.fullmatch(cleaned) else ""
+
+
+def valid_provider_session_id(provider_id, value):
+    if not isinstance(value, str):
+        return ""
+    cleaned = value.strip()
+    if provider_id == "codex":
+        return cleaned if CODEX_SESSION_RE.fullmatch(cleaned) else ""
+    if provider_id == "antigravity":
+        return cleaned if AGY_SESSION_RE.fullmatch(cleaned) else ""
+    return ""
+
+
+def _update_channel_state(conn_id, updater):
     conn = valid_notify_connection(conn_id)
-    if not conn or event_kind not in ("turn_completed", "approval_requested"):
+    if not conn:
         return
     folder = CLI_CHANNEL_ROOT / conn
     folder.mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
     state_path = folder / "state.json"
 
-    def _update():
+    def _apply():
         try:
             state = json.loads(state_path.read_text(encoding="utf-8"))
             if not isinstance(state, dict):
                 state = {}
         except (OSError, ValueError):
             state = {}
+        if updater(state):
+            atomic_write_json(state_path, state)
+
+    if os.name == "nt":
+        _apply()
+        return
+    import fcntl
+    with (folder / "lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _apply()
+
+
+def record_terminal_session(provider_id, terminal_id, conn_id, session_id):
+    clean_sid = valid_provider_session_id(provider_id, session_id)
+    if not clean_sid:
+        return False
+    clean_tid = valid_terminal_id(terminal_id)
+    if clean_tid:
+        target = TERMINAL_SESSION_ROOT / provider_id / f"{clean_tid}.json"
+        try:
+            atomic_write_json(target, {"session_id": clean_sid, "updated_at": time.time()})
+        except OSError:
+            pass
+    if valid_notify_connection(conn_id):
+        def _set_cli(state):
+            if state.get("cli_id") == clean_sid:
+                return False
+            state["cli_id"] = clean_sid
+            state["updated_at"] = time.time()
+            return True
+
+        try:
+            _update_channel_state(conn_id, _set_cli)
+        except OSError:
+            pass
+    return True
+
+
+def record_channel_event(conn_id, event_kind, cli_id=""):
+    if event_kind not in ("turn_completed", "approval_requested"):
+        return
+
+    def _mutate(state):
         state["updated_at"] = time.time()
+        if cli_id:
+            state["cli_id"] = cli_id
         if event_kind == "turn_completed":
             prev = state.get("turn_done")
             state["turn_done"] = (prev if isinstance(prev, int) and prev > 0 else 0) + 1
@@ -220,15 +292,154 @@ def record_channel_event(conn_id, event_kind):
                 approvals = []
             approvals.append({"id": uuid.uuid4().hex[:16]})
             state["approvals"] = approvals[-32:]
-        atomic_write_json(state_path, state)
+        return True
 
-    if os.name == "nt":
-        _update()
+    _update_channel_state(conn_id, _mutate)
+
+
+def _match_agy_workspace(raw_ws, cwd):
+    if not raw_ws or not cwd:
+        return False
+    clean_cwd = str(cwd).rstrip("/") or "/"
+    try:
+        uri = Path(clean_cwd).as_uri().rstrip("/")
+    except ValueError:
+        uri = "file://" + clean_cwd
+    targets = {clean_cwd, uri, "file://" + clean_cwd}
+    text = str(raw_ws).strip()
+    items = None
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            items = [str(x) for x in parsed if isinstance(x, str)]
+        elif isinstance(parsed, str):
+            items = [parsed]
+    except ValueError:
+        pass
+    if items is None:
+        items = [p.strip("\"'[]") for p in re.split(r"[\s,;]+", text) if p]
+    for item in items:
+        norm = item.rstrip("/") or "/"
+        unquoted = urllib.parse.unquote(norm).rstrip("/") or "/"
+        if norm in targets or unquoted in targets:
+            return True
+    return False
+
+
+def list_workspace_sessions(provider_id, config_dir, cwd):
+    results = []
+    if provider_id == "codex":
+        for db in sorted(glob.glob(str(Path(config_dir) / "state_*.sqlite")), reverse=True):
+            try:
+                conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+                rows = conn.execute(
+                    "SELECT id FROM threads WHERE cwd=? AND COALESCE(archived,0)=0 ORDER BY updated_at DESC",
+                    (cwd,),
+                ).fetchall()
+                conn.close()
+                for (rid,) in rows:
+                    sid = valid_provider_session_id("codex", str(rid or ""))
+                    if sid and sid not in results:
+                        results.append(sid)
+            except (sqlite3.Error, OSError):
+                pass
+    elif provider_id == "antigravity":
+        db_path = Path(config_dir) / "antigravity-cli" / "conversation_summaries.db"
+        if db_path.is_file():
+            try:
+                conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+                rows = conn.execute(
+                    "SELECT conversation_id, workspace_uris FROM conversation_summaries WHERE COALESCE(killed,0)=0 ORDER BY last_modified_time DESC"
+                ).fetchall()
+                conn.close()
+                for cid, ws in rows:
+                    sid = valid_provider_session_id("antigravity", str(cid or ""))
+                    if sid and sid not in results and _match_agy_workspace(ws, cwd):
+                        results.append(sid)
+            except (sqlite3.Error, OSError):
+                pass
+    return results
+
+
+def claimed_terminal_sessions(provider_id, exclude_tid=""):
+    claimed = set()
+    folder = TERMINAL_SESSION_ROOT / provider_id
+    if not folder.is_dir():
+        return claimed
+    for entry in folder.glob("*.json"):
+        if entry.stem == exclude_tid:
+            continue
+        try:
+            sid = valid_provider_session_id(provider_id, json.loads(entry.read_text(encoding="utf-8")).get("session_id", ""))
+            if sid:
+                claimed.add(sid)
+        except (OSError, ValueError):
+            pass
+    return claimed
+
+
+def extract_explicit_resume_id(provider_id, extra_args):
+    args = [str(x) for x in (extra_args or ())]
+    if provider_id == "codex":
+        for idx, arg in enumerate(args):
+            if arg == "resume" and idx + 1 < len(args):
+                return valid_provider_session_id("codex", args[idx + 1])
+    elif provider_id == "antigravity":
+        for idx, arg in enumerate(args):
+            if arg == "--resume" and idx + 1 < len(args):
+                return valid_provider_session_id("antigravity", args[idx + 1])
+            if arg.startswith("--resume="):
+                return valid_provider_session_id("antigravity", arg.split("=", 1)[1])
+    return ""
+
+
+def start_session_watcher(provider_id, config_dir, cwd, terminal_id, conn_id, target_pid):
+    clean_tid = valid_terminal_id(terminal_id)
+    clean_conn = valid_notify_connection(conn_id)
+    if os.name == "nt" or (not clean_tid and not clean_conn):
         return
-    import fcntl
-    with (folder / "lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        _update()
+    baseline = list_workspace_sessions(provider_id, config_dir, cwd)
+    script = (
+        "import json,os,runpy,sys,time\n"
+        "m=runpy.run_path(sys.argv[1])\n"
+        "prov,cdir,cwd,tid,conn,pid,base=sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6],int(sys.argv[7]),set(json.loads(sys.argv[8]))\n"
+        "tfile=m['TERMINAL_SESSION_ROOT']/prov/f'{tid}.json' if tid else None\n"
+        "end=time.monotonic()+600\n"
+        "while time.monotonic()<end:\n"
+        " time.sleep(1.5)\n"
+        " if tfile and tfile.is_file():break\n"
+        " try:os.kill(pid,0)\n"
+        " except OSError:break\n"
+        " claimed=m['claimed_terminal_sessions'](prov,tid)\n"
+        " for sid in m['list_workspace_sessions'](prov,cdir,cwd):\n"
+        "  if sid not in base and sid not in claimed:\n"
+        "   m['record_terminal_session'](prov,tid,conn,sid)\n"
+        "   sys.exit(0)\n"
+    )
+    try:
+        subprocess.Popen(
+            [
+                sys.executable,
+                "-I",
+                "-c",
+                script,
+                str(Path(__file__).resolve()),
+                provider_id,
+                str(config_dir),
+                str(cwd),
+                clean_tid,
+                clean_conn,
+                str(target_pid),
+                json.dumps(baseline),
+            ],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+            close_fds=True,
+        )
+    except OSError:
+        pass
 
 
 class AntigravityAdapter:
@@ -254,6 +465,28 @@ class AntigravityAdapter:
     def account_home(self, base):
         return user_home() if base.name == DEFAULT else base / "home"
 
+    excluded_home_entries = frozenset({
+        ".gemini",
+        ".claude",
+        ".claude.json",
+        ".codex",
+        ".ssh",
+        ".gnupg",
+        ".aws",
+        ".azure",
+        ".kube",
+        ".docker",
+        ".netrc",
+        ".npmrc",
+        ".pypirc",
+        ".git-credentials",
+        ".pki",
+        ".password-store",
+        ".config",
+        ".local",
+        ".cache",
+    })
+
     def ensure_home(self, base, config_dir):
         if base.name == DEFAULT or os.name == "nt":
             return
@@ -272,12 +505,37 @@ class AntigravityAdapter:
                 gemini_link.symlink_to(config_dir, target_is_directory=True)
         elif not gemini_link.exists():
             gemini_link.symlink_to(config_dir, target_is_directory=True)
+
+        # Clean up any legacy symlinks that exposed shared credentials/configs.
+        for excluded in self.excluded_home_entries:
+            if excluded == ".gemini":
+                continue
+            stale = home_dir / excluded
+            if stale.is_symlink():
+                try:
+                    stale.unlink()
+                except OSError:
+                    pass
+
+        for rel_dir in (Path(".config"), Path(".cache"), Path(".local/share")):
+            try:
+                (home_dir / rel_dir).mkdir(mode=PRIVATE_MODE, parents=True, exist_ok=True)
+            except OSError:
+                pass
+        real_local_bin = real / ".local/bin"
+        local_bin_link = home_dir / ".local/bin"
+        if real_local_bin.exists() and not local_bin_link.exists() and not local_bin_link.is_symlink():
+            try:
+                local_bin_link.symlink_to(real_local_bin, target_is_directory=True)
+            except OSError:
+                pass
+
         try:
             entries = list(real.iterdir())
         except OSError:
             entries = []
         for item in entries:
-            if item.name == ".gemini":
+            if item.name in self.excluded_home_entries:
                 continue
             link = home_dir / item.name
             if link.exists() or link.is_symlink():
@@ -348,14 +606,23 @@ class AntigravityAdapter:
         if default_mcp.resolve() == target_mcp.resolve() or target_mcp.is_symlink():
             return
         relay_prog = str(user_home() / ".local/share/mcp-relay/relay.py")
-        relay_ep = str(user_home() / ".config/mcp-relay/computer.json")
-        expected_prefix = [relay_prog, relay_ep]
+        relay_eps = {
+            str(user_home() / ".config/mcp-relay/computer.json"),
+            str(user_home() / ".config/mcp-relay/computer-antigravity.json"),
+        }
+        is_managed_relay = (
+            lambda entry: isinstance(entry, dict)
+            and isinstance(entry.get("args"), list)
+            and len(entry["args"]) >= 2
+            and entry["args"][0] == relay_prog
+            and entry["args"][1] in relay_eps
+        )
         shared_entry = None
         try:
             if default_mcp.is_file() and not default_mcp.is_symlink():
                 src = json.loads(default_mcp.read_text(encoding="utf-8"))
                 cand = (src.get("mcpServers") or {}).get("computer") if isinstance(src, dict) else None
-                if isinstance(cand, dict) and isinstance(cand.get("args"), list) and cand.get("args")[:2] == expected_prefix:
+                if is_managed_relay(cand):
                     shared_entry = cand
         except (OSError, ValueError):
             shared_entry = None
@@ -369,7 +636,7 @@ class AntigravityAdapter:
         if not isinstance(servers, dict):
             servers = {}
         current = servers.get("computer")
-        is_ours = isinstance(current, dict) and isinstance(current.get("args"), list) and current.get("args")[:2] == expected_prefix
+        is_ours = is_managed_relay(current)
         if shared_entry is not None:
             if current is None or is_ours:
                 if current != shared_entry:
@@ -780,33 +1047,63 @@ ADAPTERS = {
 
 def handle_notify(provider_id, rest):
     conn = valid_notify_connection(os.environ.get(NOTIFY_ENV_VAR, ""))
+    term_id = valid_terminal_id(os.environ.get(TERMINAL_ID_ENV_VAR, ""))
     if provider_id == "antigravity":
         raw = sys.stdin.read(256 << 10)
         sys.stdout.write('{"decision":"allow"}\n')
         sys.stdout.flush()
-        if not conn:
-            return 0
         try:
             payload = json.loads(raw) if raw.strip() else {}
         except ValueError:
             payload = {}
-        reason = payload.get("terminationReason") if isinstance(payload, dict) else ""
-        if reason not in ("USER_CANCELED", "ERROR"):
-            record_channel_event(conn, "turn_completed")
-        return 0
-    if provider_id == "codex":
+        if not isinstance(payload, dict):
+            payload = {}
+        sid = ""
+        for key in ("conversation_id", "conversationId", "session_id", "sessionId", "trajectory_id", "trajectoryId"):
+            sid = valid_provider_session_id("antigravity", payload.get(key, ""))
+            if sid:
+                break
+        if not sid and (conn or term_id):
+            acct_id = os.environ.get("CAGE_PROVIDER_ACCOUNT_ID") or DEFAULT
+            try:
+                cfg = ADAPTERS["antigravity"].config_dir(account_base("antigravity", acct_id))
+            except ValueError:
+                cfg = Path(os.environ.get("ANTIGRAVITY_GEMINI_DIR") or (user_home() / ".gemini"))
+            claimed = claimed_terminal_sessions("antigravity", term_id)
+            for cand in list_workspace_sessions("antigravity", cfg, os.getcwd()):
+                if cand not in claimed:
+                    sid = cand
+                    break
+        if sid:
+            record_terminal_session("antigravity", term_id, conn, sid)
         if not conn:
             return 0
+        reason = payload.get("terminationReason")
+        if reason not in ("USER_CANCELED", "ERROR"):
+            record_channel_event(conn, "turn_completed", cli_id=sid)
+        return 0
+    if provider_id == "codex":
         raw = rest[0] if rest else ""
         try:
             payload = json.loads(raw) if raw.strip() else {}
         except ValueError:
             payload = {}
-        kind = str(payload.get("type") or "") if isinstance(payload, dict) else ""
+        if not isinstance(payload, dict):
+            payload = {}
+        sid = ""
+        for key in ("thread-id", "thread_id", "session_id", "sessionId", "conversation_id"):
+            sid = valid_provider_session_id("codex", payload.get(key, ""))
+            if sid:
+                break
+        if sid:
+            record_terminal_session("codex", term_id, conn, sid)
+        if not conn:
+            return 0
+        kind = str(payload.get("type") or "")
         if "approval" in kind or "permission" in kind:
-            record_channel_event(conn, "approval_requested")
+            record_channel_event(conn, "approval_requested", cli_id=sid)
         elif not kind or "turn-complete" in kind or "turn_complete" in kind:
-            record_channel_event(conn, "turn_completed")
+            record_channel_event(conn, "turn_completed", cli_id=sid)
         return 0
     return 0
 
@@ -1126,6 +1423,9 @@ def run_provider(args):
         notify_conn = valid_notify_connection(_controller_context.get("CAGE_NOTIFY_CONNECTION", ""))
         if notify_conn:
             env[NOTIFY_ENV_VAR] = notify_conn
+        term_id = valid_terminal_id(_controller_context.get("CAGE_TERMINAL_ID", ""))
+        if term_id:
+            env[TERMINAL_ID_ENV_VAR] = term_id
         expected = _controller_context.get("CAGE_PROVIDER_SUBJECT")
         if expected:
             reading = adapter.identity(config_dir, env)
@@ -1137,6 +1437,11 @@ def run_provider(args):
                 adapter.trust_workspace(config_dir, os.getcwd())
             except OSError:
                 pass
+        resumed_id = extract_explicit_resume_id(provider_id, rest)
+        if resumed_id:
+            record_terminal_session(provider_id, term_id, notify_conn, resumed_id)
+        elif term_id or notify_conn:
+            start_session_watcher(provider_id, config_dir, os.getcwd(), term_id, notify_conn, os.getpid())
         os.umask(original_umask)
         cmd = adapter.run_command(binary, rest, account_id == DEFAULT)
         if os.name == "nt":

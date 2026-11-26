@@ -108,6 +108,16 @@ func (s *Server) clientRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/client/")
+	if !s.clientOnly && !s.desktopEntry && s.account != nil &&
+		(path == "ssh-config" || path == "browser-extensions" ||
+			path == "project-shares" || strings.HasPrefix(path, "project-shares/") ||
+			path == "plugins/sync" || path == "plugins/bridge") {
+		if _, access := s.account.accessStateFor(s.hasTrustedView(r), s.pairedPhoneRoom(r) != nil); access != accountAccessGranted {
+			s.account.markMissingAccount(w)
+			http.Error(w, "Cage 已锁定，请先登录", http.StatusLocked)
+			return
+		}
+	}
 	if path == "ssh-config" {
 		s.clientSSHConfig(w, r)
 		return

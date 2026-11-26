@@ -35,9 +35,21 @@ test("all 14 locale catalogs have identical key sets and cover every translated 
   const files = readdirSync(new URL(".", import.meta.url), { recursive: true })
     .filter(name => /\.(jsx|js|mjs)$/.test(name) && !/\.test\.mjs$/.test(name));
   for (const name of files) {
+    const content = read(`./${name}`);
     // Only double-quoted literals are catalog keys; template literals are not.
-    for (const [, literal] of read(`./${name}`).matchAll(/\b(?:tr|translate)\(("(?:[^"\\\n]|\\.)*")/g)) {
+    for (const [, literal] of content.matchAll(/\b(?:tr|translate)\(("(?:[^"\\\n]|\\.)*")/g)) {
       sources.add(JSON.parse(literal));
+    }
+    for (const [, literal] of content.matchAll(/\bonConfirm\(\s*\{[^}]*?\b(?:title|body|confirm)\s*:\s*("(?:[^"\\\n]|\\.)*")/gs)) {
+      const parsed = JSON.parse(literal);
+      if (/\p{Script=Han}/u.test(parsed)) sources.add(parsed);
+    }
+  }
+  const hostPluginsSrc = read("./host-plugins.jsx");
+  for (const block of hostPluginsSrc.matchAll(/\b(?:builtIn|toolNotes)\s*=\s*\{([\s\S]*?)\};/g)) {
+    for (const [, literal] of block[1].matchAll(/:\s*("(?:[^"\\\n]|\\.)*")/g)) {
+      const parsed = JSON.parse(literal);
+      if (/\p{Script=Han}/u.test(parsed)) sources.add(parsed);
     }
   }
   assert.ok(sources.size > 1000, `found only ${sources.size} translated texts`);

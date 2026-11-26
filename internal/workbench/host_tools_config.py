@@ -186,18 +186,29 @@ def remove_toml_server(path, name):
     return write_private(path, updated, path.stat().st_mode & 0o777)
 
 
-def relay_files(home, name):
-    return home / ".local/share/mcp-relay/relay.py", home / ".config/mcp-relay" / (name + ".json")
+def relay_files(home, name, client=""):
+    suffix = f"-{client}" if client else ""
+    return home / ".local/share/mcp-relay/relay.py", home / ".config/mcp-relay" / (name + suffix + ".json")
+
+
+def _all_relay_endpoints(home, name):
+    return {
+        str(relay_files(home, name)[1]),
+        *(str(relay_files(home, name, cid)[1]) for cid in ("claude", "antigravity", "codex")),
+    }
 
 
 def _cleanup_unused_relay(home, name, active_relay):
-    if active_relay:
-        return
     program, endpoint = relay_files(home, name)
-    try:
-        endpoint.unlink()
-    except FileNotFoundError:
-        pass
+    if not active_relay:
+        for candidate in (
+            endpoint,
+            *(relay_files(home, name, cid)[1] for cid in ("claude", "antigravity", "codex")),
+        ):
+            try:
+                candidate.unlink()
+            except FileNotFoundError:
+                pass
     remaining = list(endpoint.parent.glob("*.json")) if endpoint.parent.is_dir() else []
     if not remaining:
         try:
@@ -211,17 +222,27 @@ def _cleanup_unused_relay(home, name, active_relay):
             pass
 
 
-def configure(home, name, entry, relay, providers=None):
+def configure(home, name, entry, relay, providers=None, client_tokens=None):
     enabled = {"claude": True, "antigravity": True, "codex": True}
     if isinstance(providers, dict):
         for key in enabled:
             if key in providers:
                 enabled[key] = bool(providers[key])
 
+    per_client_tokens = client_tokens if isinstance(client_tokens, dict) and client_tokens else None
+
+    def headers_for(client, include_client_header=False):
+        tok = per_client_tokens.get(client) if per_client_tokens else None
+        if isinstance(tok, str) and tok.strip():
+            hdrs = {"Authorization": "Bearer " + tok.strip()}
+        else:
+            hdrs = dict(entry.get("headers") or {})
+        if include_client_header:
+            hdrs["X-MCP-Client"] = client
+        return hdrs
+
     ours_http = lambda current: isinstance(current, dict) and current.get("url") == entry["url"]
-    claude_headers = dict(entry.get("headers") or {})
-    claude_headers["X-MCP-Client"] = "claude"
-    claude_entry = dict(entry, headers=claude_headers)
+    claude_entry = dict(entry, headers=headers_for("claude", include_client_header=True))
     if enabled["claude"]:
         for file in profile_files(home):
             add_server(file, name, claude_entry, ours_http)
@@ -229,23 +250,49 @@ def configure(home, name, entry, relay, providers=None):
         for file in profile_files(home):
             remove_server(file, name, ours_http)
 
-    program, endpoint = relay_files(home, name)
-    base_args = [str(program), str(endpoint)]
-    local_for = lambda client: {"command": "/usr/bin/python3", "args": [*base_args, client]}
-    ours_relay = lambda current: isinstance(current, dict) and isinstance(current.get("args"), list) and current.get("args")[:2] == base_args
+    program, shared_endpoint = relay_files(home, name)
+    known_endpoints = _all_relay_endpoints(home, name)
+    ours_relay = (
+        lambda current: isinstance(current, dict)
+        and isinstance(current.get("args"), list)
+        and len(current.get("args")) >= 2
+        and current["args"][0] == str(program)
+        and current["args"][1] in known_endpoints
+    )
+
+    def endpoint_for(client):
+        return relay_files(home, name, client)[1] if per_client_tokens else shared_endpoint
+
+    local_for = lambda client: {"command": "/usr/bin/python3", "args": [str(program), str(endpoint_for(client)), client]}
 
     desktops = desktop_config_dirs(home)
     agy_files = antigravity_mcp_files(home)
     codex_files = codex_toml_files(home)
 
-    need_relay = (
-        (enabled["claude"] and bool(desktops))
-        or (enabled["antigravity"] and bool(agy_files))
-        or (enabled["codex"] and bool(codex_files))
-    )
+    relay_clients = {
+        "claude": enabled["claude"] and bool(desktops),
+        "antigravity": enabled["antigravity"] and bool(agy_files),
+        "codex": enabled["codex"] and bool(codex_files),
+    }
+    need_relay = any(relay_clients.values())
     if need_relay:
         write_private(program, relay)
-        write_private(endpoint, json.dumps({"url": entry["url"], "headers": entry.get("headers", {})}))
+        if per_client_tokens:
+            try:
+                shared_endpoint.unlink()
+            except FileNotFoundError:
+                pass
+            for cid, active in relay_clients.items():
+                ep = relay_files(home, name, cid)[1]
+                if active:
+                    write_private(ep, json.dumps({"url": entry["url"], "headers": headers_for(cid)}))
+                else:
+                    try:
+                        ep.unlink()
+                    except FileNotFoundError:
+                        pass
+        else:
+            write_private(shared_endpoint, json.dumps({"url": entry["url"], "headers": entry.get("headers", {})}))
 
     if enabled["claude"]:
         claude_local = local_for("claude")
@@ -278,9 +325,15 @@ def unconfigure(home, name, entry):
     """Takes back what configure wrote, leaving the user's own servers."""
     for file in profile_files(home):
         remove_server(file, name, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
-    program, endpoint = relay_files(home, name)
-    base_args = [str(program), str(endpoint)]
-    ours_relay = lambda current: isinstance(current, dict) and isinstance(current.get("args"), list) and current.get("args")[:2] == base_args
+    program, _ = relay_files(home, name)
+    known_endpoints = _all_relay_endpoints(home, name)
+    ours_relay = (
+        lambda current: isinstance(current, dict)
+        and isinstance(current.get("args"), list)
+        and len(current.get("args")) >= 2
+        and current["args"][0] == str(program)
+        and current["args"][1] in known_endpoints
+    )
     for desktop in desktop_config_dirs(home):
         remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
     for file in antigravity_mcp_files(home):
@@ -296,4 +349,6 @@ if __name__ == "__main__":
     else:
         raw_providers = globals().get("PROVIDERS")
         parsed_providers = json.loads(raw_providers) if isinstance(raw_providers, str) else None
-        configure(Path.home(), sys.argv[1], json.loads(ENTRY), RELAY, parsed_providers)  # noqa: F821
+        raw_tokens = globals().get("CLIENT_TOKENS")
+        parsed_tokens = json.loads(raw_tokens) if isinstance(raw_tokens, str) else None
+        configure(Path.home(), sys.argv[1], json.loads(ENTRY), RELAY, parsed_providers, parsed_tokens)  # noqa: F821

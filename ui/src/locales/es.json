@@ -3361,5 +3361,15 @@
   "之后从 {0} 启动主机命令时不再询问。命令以运行服务的主机用户权限执行，仍可访问该用户有权访问的其他目录、程序和网络；此授权不提供项目隔离，可随时撤销。": "No se volverá a preguntar al ejecutar comandos desde {0}. Se ejecutan con los permisos del usuario del servicio y pueden acceder a otras carpetas, programas y redes autorizados. Este permiso no aísla el proyecto y puede revocarse en cualquier momento.",
   "命令在远程主机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问远程服务用户有权访问的其他文件、程序和网络。": "Los comandos se ejecutan en el host remoto desde los directorios de proyectos abiertos indicados abajo. El directorio inicial no es un entorno aislado: pueden acceder a otros archivos, programas y redes permitidos al usuario del servicio remoto.",
   "命令在隔离环境外的本机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问主机用户有权访问的其他文件、程序和网络。": "Los comandos se ejecutan en este equipo, fuera del entorno aislado, desde los directorios de proyectos abiertos indicados abajo. El directorio inicial no es un entorno aislado: pueden acceder a otros archivos, programas y redes permitidos al usuario del host.",
-  "环境启动后将自动恢复此终端…": "Este terminal se restaurará automáticamente cuando se inicie el entorno…"
+  "环境启动后将自动恢复此终端…": "Este terminal se restaurará automáticamente cuando se inicie el entorno…",
+  "Antigravity 账号": "Cuenta de Antigravity",
+  "Codex 账号": "Cuenta de Codex",
+  "无法读取 {0} 账号列表": "No se puede leer la lista de cuentas de {0}",
+  "未命名账号": "Cuenta sin nombre",
+  "主机命令执行（环境外）": "Ejecución de comandos en el host (fuera del entorno)",
+  "让隔离环境内的 AI 在环境外的主机上执行命令，以运行服务的主机用户权限访问文件、程序和网络。项目文件夹只限定启动目录，不限制文件访问范围；支持后台任务。": "Permite que la IA del entorno aislado ejecute comandos en el host fuera del entorno con los permisos del usuario del servicio para acceder a archivos, programas y red. La carpeta del proyecto solo define el directorio inicial y no limita el acceso a archivos; admite tareas en segundo plano.",
+  "在主机执行命令；项目目录只是启动位置，不是文件访问边界": "Ejecuta un comando en el host; el directorio del proyecto es solo la ubicación inicial, no un límite de acceso a archivos",
+  "查询主机后台命令的状态和输出，或停止该命令": "Consulta el estado y la salida de un comando en segundo plano en el host, o lo detiene",
+  "始终允许从这个项目启动主机命令？": "¿Permitir siempre iniciar comandos en el host desde este proyecto?",
+  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Guarda primero tu trabajo en la aplicación. Se descargará y actualizará desde la fuente oficial, conservando los datos de inicio de sesión de cada instancia independiente."
 }

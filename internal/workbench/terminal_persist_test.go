@@ -233,4 +233,73 @@ func TestManagedProviderTerminalRestoreScriptContainsResumeLogic(t *testing.T) {
 	if !strings.Contains(agyScript, "--resume") || !strings.Contains(agyScript, "conversation_summaries.db") {
 		t.Fatalf("unexpected antigravity restore script: %s", agyScript)
 	}
+	if strings.Contains(agyScript, "LIKE ?") {
+		t.Fatalf("antigravity restore script still uses unsafe LIKE prefix match: %s", agyScript)
+	}
+
+	exactCodex := managedProviderTerminalScriptWithSession(
+		codexSpec,
+		"/mnt/cage/game",
+		"codex --dangerously-bypass-approvals-and-sandbox",
+		"06a21ad70df93a96f57d4ddd",
+		"deadbeef",
+		"conn-1",
+		"1122334455667788",
+		"aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+		false,
+		false,
+		true,
+		0,
+	)
+	if !strings.Contains(exactCodex, "CAGE_TERMINAL_ID=1122334455667788") ||
+		!strings.Contains(exactCodex, "CAGE_PROVIDER_SESSION_ID=aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee") {
+		t.Fatalf("exact codex session restore env missing: %s", exactCodex)
+	}
+}
+
+func TestAutoSelectedAccountWithCustomLauncherRestoresCleanly(t *testing.T) {
+	s := testServer(t)
+	projectDir := filepath.Join(t.TempDir(), "game")
+	if err := writePrivate(filepath.Join(s.profile, "projects.json"), sharedProjects{
+		Paths:  []string{projectDir},
+		Groups: []projectGroup{{Workspace: projectDir, Name: "game", Folders: []string{projectDir}}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	s.preferences.CodexTerminalCommand = "my-codex-wrapper --fast"
+	s.terminals.sessions = map[string]*terminalSession{
+		"1122334455667788": {
+			id:                "1122334455667788",
+			title:             "Codex 1",
+			creationOrder:     1,
+			workspace:         projectDir,
+			kind:              "codex",
+			provider:          "codex",
+			providerAccountID: "06a21ad70df93a96f57d4ddd",
+			providerSessionID: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+			accountExplicit:   false,
+			closed:            true,
+			restorable:        true,
+			clients:           map[chan []byte]bool{},
+			done:              closedTerminalDoneChan(),
+		},
+	}
+	s.savePersistedTerminals()
+
+	reloaded := &Server{profile: s.profile}
+	reloaded.preferences.CodexTerminalCommand = "my-codex-wrapper --fast"
+	reloaded.loadPersistedTerminals()
+	loaded := reloaded.terminals.get("1122334455667788")
+	if loaded == nil || loaded.providerSessionID != "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee" || loaded.accountExplicit {
+		t.Fatalf("unexpected reloaded session: %+v", loaded)
+	}
+	// Restore when VM is stopped must return transient errTerminalNotReady, NOT
+	// permanently fail with "手选账号需要使用官方 codex 启动命令".
+	_, err := reloaded.restoreSingleTerminal(loaded, 0)
+	if !errors.Is(err, errTerminalNotReady) {
+		t.Fatalf("expected errTerminalNotReady, got %v", err)
+	}
+	if !loaded.isRestorable() {
+		t.Fatalf("auto-selected terminal was permanently marked non-restorable: %s", loaded.loginNotice)
+	}
 }

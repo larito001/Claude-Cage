@@ -18,13 +18,26 @@ export function isTerminalLoginLink(uri) {
   return match?.[0] === uri;
 }
 
-export function normalizeTerminalCopyText(text) {
+export function normalizeTerminalCopyText(text, options = undefined) {
   if (typeof text !== "string" || !text.includes("\n")) return text;
-  const rawLines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  if (rawLines.length < 2 || !/^https?:\/\//i.test(rawLines[0])) return text;
+  const rawSplit = text.split(/\r?\n/);
+  while (rawSplit.length && !rawSplit[0].trim()) rawSplit.shift();
+  while (rawSplit.length && !rawSplit[rawSplit.length - 1].trim()) rawSplit.pop();
+  if (rawSplit.length < 2) return text;
+  // An interior blank line always separates distinct paragraphs/commands.
+  if (rawSplit.some(line => !line.trim())) return text;
+  const rawLines = rawSplit.map(line => line.trim());
+  if (!/^https?:\/\//i.test(rawLines[0])) return text;
   if (!rawLines.every(line => urlFragmentPattern.test(line))) return text;
   if (rawLines.slice(1).some(line => /^https?:\/\//i.test(line))) return text;
-  return rawLines.join("");
+  const joined = rawLines.join("");
+  if (isTerminalLoginLink(joined) || options?.wrapped === true) return joined;
+  const cols = Number(options?.cols);
+  const minWrapWidth = Number.isFinite(cols) && cols > 24 ? Math.max(68, cols - 12) : 68;
+  if (rawLines[0].includes("?") && rawLines.slice(0, -1).every(line => line.length >= minWrapWidth)) {
+    return joined;
+  }
+  return text;
 }
 
 export function extractTerminalLoginLink(lines) {

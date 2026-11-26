@@ -569,14 +569,17 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 
 	// Probe any unchecked or signed_out managed accounts lightly when VM is ready.
 	if environment == "ready" {
+		prevChecked := make(map[string]int64, len(list.Accounts))
 		changed := false
 		for i := range list.Accounts {
 			a := &list.Accounts[i]
 			if a.CodeUnlinked || (a.CheckedAt > 0 && time.Since(time.Unix(a.CheckedAt, 0)) < 60*time.Second) {
 				continue
 			}
+			prevChecked[a.ID] = a.CheckedAt
 			snap, probeErr := s.probeProviderGuest(ctx, provider, a.guestID())
 			if probeErr != nil {
+				delete(prevChecked, a.ID)
 				continue
 			}
 			a.CheckedAt = time.Now().Unix()
@@ -603,8 +606,13 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 		if changed {
 			st.mu.Lock()
 			if current, loadErr := s.loadProviderAccounts(provider); loadErr == nil {
+				wrote := false
 				for _, probed := range list.Accounts {
-					if target := current.find(probed.ID); target != nil {
+					expectedChecked, wasProbed := prevChecked[probed.ID]
+					if !wasProbed {
+						continue
+					}
+					if target := current.find(probed.ID); target != nil && target.CheckedAt == expectedChecked && target.ProfileID == probed.ProfileID {
 						target.CheckedAt = probed.CheckedAt
 						target.AuthState = probed.AuthState
 						target.Status = probed.Status
@@ -613,9 +621,12 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 							target.Organization = probed.Organization
 							target.Plan = probed.Plan
 						}
+						wrote = true
 					}
 				}
-				_ = s.saveProviderAccounts(provider, current)
+				if wrote {
+					_ = s.saveProviderAccounts(provider, current)
+				}
 				list = current
 			}
 			st.mu.Unlock()
@@ -932,32 +943,50 @@ func (s *Server) mutateProviderAccounts(w http.ResponseWriter, r *http.Request) 
 						break
 					}
 				}
-				if err == nil && s.vmRunning() {
-					if a.DesktopInstanceID != "" {
-						unit := "desktop-" + a.DesktopInstanceID + ".service"
-						state, probeErr := s.guest(ctx, fmt.Sprintf("systemctl show --property=ActiveState --value %s", unit))
-						if probeErr != nil {
-							err = errors.New("无法确认账号 Desktop 状态，暂未删除")
-						} else if trimmed := strings.TrimSpace(string(state)); trimmed != "inactive" && trimmed != "failed" {
-							err = errors.New("请先关闭该账号的 Desktop，再删除账号")
-						}
+				if err == nil && s.accountDesktopsSupported() && s.vmRunning() {
+					desktopID := a.DesktopInstanceID
+					if desktopID == "" {
+						desktopID = a.ID
+					}
+					unit := "desktop-" + desktopID + ".service"
+					state, probeErr := s.guest(ctx, fmt.Sprintf("systemctl show --property=ActiveState --value %s", unit))
+					if probeErr != nil {
+						err = errors.New("无法确认账号 Desktop 状态，暂未删除")
+					} else if trimmed := strings.TrimSpace(string(state)); trimmed != "inactive" && trimmed != "failed" {
+						err = errors.New("请先关闭该账号的 Desktop，再删除账号")
 					}
 					if err == nil && a.ProxyNodeID != "" {
 						err = s.checkAccountNetworkIdle(ctx, a.ID, "无法确认账号进程状态，暂未删除", "该账号仍有后台进程，请结束后再删除")
 					}
 				}
 				if err == nil {
-					if a.ProxyNodeID != "" {
-						s.stopAccountNetworkLink(a.ID)
+					removed := *a
+					if removed.DesktopInstanceID != "" {
+						delete(list.DesktopLabels, removed.DesktopInstanceID)
+						for old, target := range list.DesktopRedirects {
+							if old == removed.DesktopInstanceID || target == removed.DesktopInstanceID {
+								delete(list.DesktopRedirects, old)
+							}
+						}
 					}
-					if a.DesktopInstanceID != "" {
-						delete(list.DesktopLabels, a.DesktopInstanceID)
-					}
-					if sub := a.subject(); sub != "" && a.Source == "default" {
+					if sub := removed.subject(); sub != "" {
 						list.dismissDefault(sub)
 					}
 					list.Accounts = slices.DeleteFunc(list.Accounts, func(item providerAccount) bool { return item.ID == input.ID })
 					err = s.saveProviderAccounts(provider, list)
+					if err == nil {
+						if st.lastPick == removed.ID {
+							st.lastPick = ""
+						}
+						for project, picked := range st.recent {
+							if picked == removed.ID {
+								delete(st.recent, project)
+							}
+						}
+						if removed.ProxyNodeID != "" {
+							s.stopAccountNetworkLink(removed.ID)
+						}
+					}
 				}
 			}
 		}

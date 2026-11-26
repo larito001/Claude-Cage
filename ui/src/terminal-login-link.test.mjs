@@ -42,6 +42,14 @@ test("normalizeTerminalCopyText unwraps multi-line TUI URLs while preserving nor
     normalizeTerminalCopyText("https://claude.ai/oauth/authorize?a=1\nhttps://claude.ai/oauth/authorize?b=2"),
     "https://claude.ai/oauth/authorize?a=1\nhttps://claude.ai/oauth/authorize?b=2",
   );
+  assert.equal(
+    normalizeTerminalCopyText("https://example.com\nREADME.md\nmain.go"),
+    "https://example.com\nREADME.md\nmain.go",
+  );
+  assert.equal(
+    normalizeTerminalCopyText("https://example.com/api?foo=bar\n\nsecond_line"),
+    "https://example.com/api?foo=bar\n\nsecond_line",
+  );
   const wrapped = [
     " https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=107100",
     " 6060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com&code_chall",

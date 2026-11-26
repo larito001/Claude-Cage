@@ -47,19 +47,23 @@ var (
 )
 
 type terminalRequest struct {
-	BackgroundLogin bool    `json:"background_login,omitempty"`
-	LoginProxyNode  *string `json:"login_proxy_node,omitempty"`
-	Workspace       string  `json:"workspace"`
-	Kind            string  `json:"kind"`
-	ClaudeAccountID string  `json:"claude_account_id"`
-	AccountID       string  `json:"account_id,omitempty"`
-	AutoHandoff     *bool   `json:"auto_handoff,omitempty"`
-	loginDraft      *claudeSelection
-	afterLogin      *terminalSession
-	sharedID        string
-	restoring       bool
-	restoreOrdinal  int
-	requestContext  context.Context
+	BackgroundLogin   bool    `json:"background_login,omitempty"`
+	LoginProxyNode    *string `json:"login_proxy_node,omitempty"`
+	Workspace         string  `json:"workspace"`
+	Kind              string  `json:"kind"`
+	ClaudeAccountID   string  `json:"claude_account_id"`
+	AccountID         string  `json:"account_id,omitempty"`
+	AutoHandoff       *bool   `json:"auto_handoff,omitempty"`
+	loginDraft        *claudeSelection
+	afterLogin        *terminalSession
+	sharedID          string
+	terminalID        string
+	providerSessionID string
+	accountExplicit   bool
+	restoring         bool
+	restoreOrdinal    int
+	requestContext    context.Context
+	callerCtx         context.Context
 }
 
 func terminalProviderKind(kind string) (spec cage.ProviderSpec, login bool, deviceAuth bool, ok bool) {
@@ -104,6 +108,10 @@ func (m *terminalManager) startSessionWithPTY(cmd *exec.Cmd, workspace, kind str
 }
 
 func (m *terminalManager) startReplacing(previous *terminalSession, background bool, cmd *exec.Cmd, workspace, kind string, selection claudeSelection, finished func(), start func() (terminalPTY, error)) (*terminalSession, error) {
+	return m.startReplacingConfigured(previous, background, "", "", false, cmd, workspace, kind, selection, finished, start)
+}
+
+func (m *terminalManager) startReplacingConfigured(previous *terminalSession, background bool, preallocatedID, providerSessionID string, accountExplicit bool, cmd *exec.Cmd, workspace, kind string, selection claudeSelection, finished func(), start func() (terminalPTY, error)) (*terminalSession, error) {
 	var evicted []*terminalSession
 	m.mu.Lock()
 	defer func() {
@@ -122,6 +130,8 @@ func (m *terminalManager) startReplacing(previous *terminalSession, background b
 	spec, isLogin, _, isProvider := terminalProviderKind(kind)
 	session := newTerminalSession(file)
 	session.backgroundLogin = background
+	session.accountExplicit = accountExplicit
+	session.providerSessionID = providerSessionID
 	session.workspace, session.cmd = workspace, cmd
 	if previous != nil && !isProviderLoginKind(previous.kind) {
 		session.id = previous.id
@@ -141,7 +151,11 @@ func (m *terminalManager) startReplacing(previous *terminalSession, background b
 			}
 		}
 		session.creationOrder = m.sequence
-		session.id, session.title = randomToken()[:16], title
+		assignedID := preallocatedID
+		if assignedID == "" {
+			assignedID = randomToken()[:16]
+		}
+		session.id, session.title = assignedID, title
 		if previous != nil {
 			session.id = previous.id
 		}
@@ -402,36 +416,60 @@ func (m *terminalManager) close() {
 }
 
 func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error) {
-	if !s.op.TryLock() {
-		return nil, errTerminalBusy
-	}
-	defer s.op.Unlock()
 	if input.BackgroundLogin && !isProviderLoginKind(input.Kind) {
 		return nil, errors.New("后台授权只能用于账号登录")
 	}
 	if input.AutoHandoff != nil && input.Kind != "claude" {
 		return nil, errors.New("只有 Claude Code 会话可选择自动接续")
 	}
+	// Probe and auto-install missing provider CLIs outside Server.op so a slow
+	// or offline network never blocks environment stop, settings, or other tabs.
 	if spec, isLogin, _, ok := terminalProviderKind(input.Kind); ok && s.vmRunning() && !s.busy() {
 		s.mu.Lock()
 		updateReq := s.guestUpdateRequired
 		launcher := providerTerminalCommand(s.preferences, spec.ID)
 		s.mu.Unlock()
 		if !updateReq && (isLogin || usesOfficialProviderBinary(launcher, spec.CLI.Binary)) {
-			if err := s.ensureGuestProviderCLI(s.lifetimeContext(), spec); err != nil {
+			cliCtx := s.lifetimeContext()
+			var cancel context.CancelFunc
+			var stop func() bool
+			if input.callerCtx != nil {
+				cliCtx, cancel = context.WithCancel(input.callerCtx)
+				stop = context.AfterFunc(s.lifetimeContext(), cancel)
+			}
+			err := s.ensureGuestProviderCLI(cliCtx, spec)
+			if stop != nil {
+				stop()
+			}
+			if cancel != nil {
+				cancel()
+			}
+			if err != nil {
 				return nil, err
 			}
 		}
 	}
+	if !s.op.TryLock() {
+		return nil, errTerminalBusy
+	}
+	defer s.op.Unlock()
 	if input.Kind == "claude" && input.sharedID == "" {
 		s.mu.Lock()
 		launcher := claudeTerminalCommand(s.preferences)
 		s.mu.Unlock()
+		if !input.restoring {
+			input.accountExplicit = input.ClaudeAccountID != "" && input.ClaudeAccountID != "auto" && input.ClaudeAccountID != "login"
+		}
 		explicit := input.ClaudeAccountID != "" && input.ClaudeAccountID != "auto"
-		if launcher != "claude" && (explicit || input.AutoHandoff != nil) {
+		if input.restoring && !input.accountExplicit {
+			if parts, valid := mobileLaunchArgs(launcher, claudeSelection{}); valid == nil && len(parts) == 2 && parts[0] == "ccs" {
+				input.ClaudeAccountID = ""
+				explicit = false
+			}
+		} else if launcher != "claude" && (explicit || input.AutoHandoff != nil) {
 			return nil, errors.New("手选账号与自动接续需要使用官方 claude 启动命令")
 		}
-		if explicit && input.AutoHandoff == nil {
+		if explicit && input.accountExplicit && input.AutoHandoff == nil {
 			disabled := false
 			input.AutoHandoff = &disabled
 		}
@@ -441,10 +479,17 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 		if validClaudeID(input.ClaudeAccountID) {
 			a, err := s.accountForRoute(input.ClaudeAccountID)
 			if err != nil {
-				return nil, err
-			}
-			if a.Status != "ready" || a.CodeUnlinked {
-				return s.startCodeLogin(input, a.ID)
+				if input.restoring && !input.accountExplicit {
+					input.ClaudeAccountID = "auto"
+				} else {
+					return nil, err
+				}
+			} else if a.Status != "ready" || a.CodeUnlinked {
+				if input.restoring && !input.accountExplicit {
+					input.ClaudeAccountID = "auto"
+				} else {
+					return s.startCodeLogin(input, a.ID)
+				}
 			}
 		}
 	} else if spec, isLogin, _, ok := terminalProviderKind(input.Kind); ok && spec.ID != "claude" && !isLogin {
@@ -456,9 +501,17 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 			requested = input.ClaudeAccountID
 		}
 		input.AccountID = requested
+		if !input.restoring {
+			input.accountExplicit = requested != "" && requested != "auto" && requested != "login"
+		}
 		explicit := requested != "" && requested != "auto"
 		if !usesOfficialProviderBinary(launcher, spec.CLI.Binary) && explicit {
-			return nil, fmt.Errorf("手选账号需要使用官方 %s 启动命令", spec.CLI.Binary)
+			if input.restoring && !input.accountExplicit {
+				requested = "auto"
+				input.AccountID = "auto"
+			} else {
+				return nil, fmt.Errorf("手选账号需要使用官方 %s 启动命令", spec.CLI.Binary)
+			}
 		}
 		if requested == "login" {
 			return s.startProviderCodeLogin(spec.ID, input, "")
@@ -479,10 +532,17 @@ func (s *Server) createTerminal(input terminalRequest) (*terminalSession, error)
 			}
 			st.mu.Unlock()
 			if err != nil {
-				return nil, err
-			}
-			if needsLogin {
-				return s.startProviderCodeLogin(spec.ID, input, foundID)
+				if input.restoring && !input.accountExplicit {
+					input.AccountID = "auto"
+				} else {
+					return nil, err
+				}
+			} else if needsLogin {
+				if input.restoring && !input.accountExplicit {
+					input.AccountID = "auto"
+				} else {
+					return s.startProviderCodeLogin(spec.ID, input, foundID)
+				}
 			}
 		}
 	}
@@ -589,6 +649,12 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 		}
 	}
 	script := terminalScript(guestPath(workspace), input.Kind, launchCommand)
+	assignedTermID := input.terminalID
+	if input.afterLogin != nil {
+		assignedTermID = input.afterLogin.id
+	} else if assignedTermID == "" {
+		assignedTermID = randomToken()[:16]
+	}
 	var selection claudeSelection
 	var finished func()
 	notifyConnID := ""
@@ -678,7 +744,7 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 			notifyConnID = uuid.NewString()
 		}
 		resumeLatest := input.restoring && !isLoginKind && usesOfficialProviderBinary(providerCommand, providerSpec.CLI.Binary)
-		script = managedProviderTerminalScriptWithRestore(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, notifyConnID, isLoginKind, isDeviceAuth, resumeLatest, input.restoreOrdinal)
+		script = managedProviderTerminalScriptWithSession(providerSpec, guestPath(workspace), launchCommand, selection.GuestID, selection.Subject, notifyConnID, assignedTermID, input.providerSessionID, isLoginKind, isDeviceAuth, resumeLatest, input.restoreOrdinal)
 		if isLoginKind && input.loginDraft == nil && selection.ID != "" {
 			provID := providerSpec.ID
 			selID := selection.ID
@@ -718,7 +784,7 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 			return nil, errMobileLocked
 		}
 	}
-	session, err := s.terminals.startReplacing(input.afterLogin, input.BackgroundLogin, cmd, workspace, input.Kind, selection, finished, func() (terminalPTY, error) { return startTerminal(cmd, 100, 30) })
+	session, err := s.terminals.startReplacingConfigured(input.afterLogin, input.BackgroundLogin, assignedTermID, input.providerSessionID, input.accountExplicit, cmd, workspace, input.Kind, selection, finished, func() (terminalPTY, error) { return startTerminal(cmd, 100, 30) })
 	if input.requestContext != nil {
 		s.account.mu.Unlock()
 	}
@@ -961,6 +1027,10 @@ func managedProviderTerminalScript(spec cage.ProviderSpec, workspace, command, a
 }
 
 func managedProviderTerminalScriptWithRestore(spec cage.ProviderSpec, workspace, command, accountID, subject, notifyConnID string, login, deviceAuth, resumeLatest bool, restoreOrdinal int) string {
+	return managedProviderTerminalScriptWithSession(spec, workspace, command, accountID, subject, notifyConnID, "", "", login, deviceAuth, resumeLatest, restoreOrdinal)
+}
+
+func managedProviderTerminalScriptWithSession(spec cage.ProviderSpec, workspace, command, accountID, subject, notifyConnID, terminalID, providerSessionID string, login, deviceAuth, resumeLatest bool, restoreOrdinal int) string {
 	if login {
 		extra := ""
 		if deviceAuth {
@@ -973,6 +1043,12 @@ func managedProviderTerminalScriptWithRestore(spec cage.ProviderSpec, workspace,
 		` CAGE_PROVIDER_SUBJECT=` + shellescape.Quote(subject) + "; "
 	if notifyConnID != "" {
 		env += `export CAGE_NOTIFY_CONNECTION=` + shellescape.Quote(notifyConnID) + "; "
+	}
+	if terminalID != "" {
+		env += `export CAGE_TERMINAL_ID=` + shellescape.Quote(terminalID) + "; "
+	}
+	if resumeLatest && providerSessionID != "" {
+		env += `export CAGE_PROVIDER_SESSION_ID=` + shellescape.Quote(providerSessionID) + "; "
 	}
 	if resumeLatest && restoreOrdinal > 0 {
 		env += fmt.Sprintf("export CAGE_RESTORE_ORDINAL=%d; ", restoreOrdinal)
@@ -990,36 +1066,111 @@ func managedProviderTerminalScriptWithRestore(spec cage.ProviderSpec, workspace,
 	if resumeLatest {
 		switch spec.ID {
 		case "codex":
-			py := `import glob,os,re,sqlite3
+			py := `import glob,json,os,pathlib,re,sqlite3
+UUID_RE=re.compile(r"^[0-9a-fA-F-]{36}$")
 h=os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex")
 cwd=os.getcwd()
+tid=os.environ.get("CAGE_TERMINAL_ID","")
+sid=os.environ.get("CAGE_PROVIDER_SESSION_ID","").strip()
 idx=int(os.environ.get("CAGE_RESTORE_ORDINAL","0"))
-for db in sorted(glob.glob(os.path.join(h,"state_*.sqlite")),reverse=True):
- try:
-  c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
-  r=c.execute("SELECT id FROM threads WHERE cwd=? AND COALESCE(archived,0)=0 ORDER BY updated_at DESC LIMIT 1 OFFSET ?",(cwd,idx)).fetchone()
-  if r and r[0] and re.fullmatch(r"[0-9a-fA-F-]{36}",str(r[0])):
-   print(r[0]);break
- except Exception:pass`
+sdir=pathlib.Path.home()/".local/share/cage/terminal-sessions/codex"
+if not sid and re.fullmatch(r"[0-9a-f]{16}",tid) and (sdir/f"{tid}.json").is_file():
+ try:sid=str(json.loads((sdir/f"{tid}.json").read_text()).get("session_id","")).strip()
+ except Exception:sid=""
+dbs=sorted(glob.glob(os.path.join(h,"state_*.sqlite")),reverse=True)
+def alive(cand):
+ if not UUID_RE.fullmatch(cand):return False
+ if not dbs:return True
+ for db in dbs:
+  try:
+   c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
+   r=c.execute("SELECT 1 FROM threads WHERE id=? AND COALESCE(archived,0)=0 LIMIT 1",(cand,)).fetchone()
+   c.close()
+   if r:return True
+  except Exception:pass
+ return False
+chosen=sid if sid and alive(sid) else ""
+if not chosen:
+ claimed=set()
+ if sdir.is_dir():
+  for f in sdir.glob("*.json"):
+   if f.stem!=tid:
+    try:
+     v=str(json.loads(f.read_text()).get("session_id","")).strip()
+     if v:claimed.add(v)
+    except Exception:pass
+ seen=[]
+ for db in dbs:
+  try:
+   c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
+   for (rid,) in c.execute("SELECT id FROM threads WHERE cwd=? AND COALESCE(archived,0)=0 ORDER BY updated_at DESC",(cwd,)):
+    s=str(rid or "")
+    if UUID_RE.fullmatch(s) and s not in claimed and s not in seen:seen.append(s)
+   c.close()
+  except Exception:pass
+ if idx<len(seen):chosen=seen[idx]
+if chosen:print(chosen)`
 			launchSnippet = `__cage_tid=$(python3 -c ` + shellescape.Quote(py) + ` 2>/dev/null || true); if [ -n "$__cage_tid" ]; then eval "$CAGE_TERMINAL_COMMAND resume $(printf '%q' "$__cage_tid")"; else eval "$CAGE_TERMINAL_COMMAND"; fi`
 		case "antigravity":
-			py := `import os,pathlib,re,sqlite3
+			py := `import json,os,pathlib,re,sqlite3,urllib.parse
+ID_RE=re.compile(r"^[0-9a-zA-Z_-]{8,128}$")
 b=os.environ.get("ANTIGRAVITY_GEMINI_DIR") or os.path.expanduser("~/.gemini")
 db=os.path.join(b,"antigravity-cli","conversation_summaries.db")
-cwd=os.getcwd()
-uri=pathlib.Path(cwd).as_uri()
+cwd=os.getcwd().rstrip("/") or "/"
+uri=pathlib.Path(cwd).as_uri().rstrip("/")
+targets={cwd,uri,"file://"+cwd}
+tid=os.environ.get("CAGE_TERMINAL_ID","")
+sid=os.environ.get("CAGE_PROVIDER_SESSION_ID","").strip()
 idx=int(os.environ.get("CAGE_RESTORE_ORDINAL","0"))
+sdir=pathlib.Path.home()/".local/share/cage/terminal-sessions/antigravity"
+if not sid and re.fullmatch(r"[0-9a-f]{16}",tid) and (sdir/f"{tid}.json").is_file():
+ try:sid=str(json.loads((sdir/f"{tid}.json").read_text()).get("session_id","")).strip()
+ except Exception:sid=""
+def match_ws(raw):
+ if not raw:return False
+ s=str(raw).strip()
+ items=None
+ try:
+  v=json.loads(s)
+  if isinstance(v,list):items=[str(x) for x in v if isinstance(x,str)]
+  elif isinstance(v,str):items=[v]
+ except Exception:pass
+ if items is None:items=[p.strip("\"'[]") for p in re.split(r"[\s,;]+",s) if p]
+ for it in items:
+  n=it.rstrip("/") or "/"
+  u=urllib.parse.unquote(n).rstrip("/") or "/"
+  if n in targets or u in targets:return True
+ return False
+chosen=""
 if os.path.isfile(db):
  try:
   c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
-  r=c.execute("SELECT conversation_id FROM conversation_summaries WHERE COALESCE(killed,0)=0 AND (workspace_uris LIKE ? OR workspace_uris LIKE ?) ORDER BY last_modified_time DESC LIMIT 1 OFFSET ?",("%"+uri+"%","%"+cwd+"%",idx)).fetchone()
-  if r and r[0] and re.fullmatch(r"[0-9a-zA-Z_-]{8,128}",str(r[0])):
-   print(r[0])
- except Exception:pass`
+  if sid and ID_RE.fullmatch(sid):
+   r=c.execute("SELECT 1 FROM conversation_summaries WHERE conversation_id=? AND COALESCE(killed,0)=0 LIMIT 1",(sid,)).fetchone()
+   if r:chosen=sid
+  if not chosen:
+   claimed=set()
+   if sdir.is_dir():
+    for f in sdir.glob("*.json"):
+     if f.stem!=tid:
+      try:
+       v=str(json.loads(f.read_text()).get("session_id","")).strip()
+       if v:claimed.add(v)
+      except Exception:pass
+   seen=[]
+   for cid,ws in c.execute("SELECT conversation_id,workspace_uris FROM conversation_summaries WHERE COALESCE(killed,0)=0 ORDER BY last_modified_time DESC"):
+    s=str(cid or "")
+    if ID_RE.fullmatch(s) and s not in claimed and s not in seen and match_ws(ws):seen.append(s)
+   if idx<len(seen):chosen=seen[idx]
+  c.close()
+ except Exception:pass
+elif sid and ID_RE.fullmatch(sid):
+ chosen=sid
+if chosen:print(chosen)`
 			launchSnippet = `__cage_cid=$(python3 -c ` + shellescape.Quote(py) + ` 2>/dev/null || true); if [ -n "$__cage_cid" ]; then eval "$CAGE_TERMINAL_COMMAND --resume $(printf '%q' "$__cage_cid")"; else eval "$CAGE_TERMINAL_COMMAND"; fi`
 		}
 	}
-	body := env + launchSnippet + `; unset CAGE_TERMINAL_COMMAND CAGE_RESTORE_ORDINAL; exec bash -i`
+	body := env + launchSnippet + `; unset CAGE_TERMINAL_COMMAND CAGE_RESTORE_ORDINAL CAGE_PROVIDER_SESSION_ID; exec bash -i`
 	return "cd " + shellescape.Quote(workspace) +
 		" && exec env TERM=xterm-256color COLORTERM=truecolor CAGE_WORKBENCH=1 CAGE_TERMINAL_COMMAND=" +
 		shellescape.Quote(command) + " bash -lic " + shellescape.Quote(body)
@@ -1051,6 +1202,14 @@ func (s *Server) ensureGuestProviderCLI(ctx context.Context, spec cage.ProviderS
 	}
 	s.mu.Lock()
 	verified := s.verifiedGuestCLIs[binary]
+	s.mu.Unlock()
+	if verified {
+		return nil
+	}
+	s.cliInstallMu.Lock()
+	defer s.cliInstallMu.Unlock()
+	s.mu.Lock()
+	verified = s.verifiedGuestCLIs[binary]
 	tls12Compat := s.preferences.InstallTLS12Compat
 	s.mu.Unlock()
 	if verified {

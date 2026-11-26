@@ -251,6 +251,10 @@ func (s *Server) startHostTools(serving bool) error {
 	if err != nil {
 		return err
 	}
+	clientTokens, err := s.hostToolsClientTokens()
+	if err != nil {
+		return err
+	}
 	approvals := newHostApprovals()
 	approvals.remoteAsk = s.remoteApprovals.ask
 	approvals.neverAlways[workspaceControlPlugin+"/"+workspaceControlManageTool] = true
@@ -346,6 +350,10 @@ func (s *Server) startHostTools(serving bool) error {
 		tools.close()
 		return err
 	}
+	s.mu.Lock()
+	activeProviders := hostToolsProvidersMap(s.preferences)
+	s.mu.Unlock()
+	bridge.SetClientTokens(activeHostToolsClientTokens(clientTokens, activeProviders))
 	bridge.SetFilter(s.allowPluginForClient)
 	tools.bridge = bridge
 	s.reattachClientPluginBridge(bridge)
@@ -734,6 +742,62 @@ func (s *Server) hostToolsToken() (string, error) {
 	return token, os.WriteFile(path, []byte(token+"\n"), 0o600)
 }
 
+func activeHostToolsClientTokens(all map[string]string, providers map[string]bool) map[string]string {
+	out := make(map[string]string, len(all))
+	for _, id := range hostToolProviderIDs {
+		if providers[id] && len(all[id]) >= 32 {
+			out[id] = all[id]
+		}
+	}
+	return out
+}
+
+func (s *Server) updateRunningHostToolsClientTokens() {
+	s.mu.Lock()
+	var bridge *hostbridge.Bridge
+	if s.hostTools != nil {
+		bridge = s.hostTools.bridge
+	}
+	providers := hostToolsProvidersMap(s.preferences)
+	s.mu.Unlock()
+	if bridge == nil {
+		return
+	}
+	if all, err := s.hostToolsClientTokens(); err == nil {
+		bridge.SetClientTokens(activeHostToolsClientTokens(all, providers))
+	}
+}
+
+// hostToolsClientTokens returns persistent per-client bearer tokens so each AI
+// client (claude, antigravity, codex) authenticates with its own secret and
+// cannot impersonate another client via X-MCP-Client headers.
+func (s *Server) hostToolsClientTokens() (map[string]string, error) {
+	path := filepath.Join(s.profile, "host-tools-clients.json")
+	tokens := map[string]string{}
+	if data, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(data, &tokens)
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+	changed := false
+	for _, id := range hostToolProviderIDs {
+		if len(strings.TrimSpace(tokens[id])) < 32 {
+			tok, err := hostbridge.NewToken()
+			if err != nil {
+				return nil, err
+			}
+			tokens[id] = tok
+			changed = true
+		}
+	}
+	if changed {
+		if err := writePrivate(path, tokens); err != nil {
+			return nil, err
+		}
+	}
+	return tokens, nil
+}
+
 // hostToolsEntry is the server entry written into Claude's configuration.
 func hostToolsEntry(token string) map[string]any {
 	return map[string]any{
@@ -750,11 +814,18 @@ func (s *Server) writeHostToolsConfig(ctx context.Context, token, action string)
 	if err != nil {
 		return err
 	}
+	var clientTokens map[string]string
+	if action != "remove" {
+		clientTokens, err = s.hostToolsClientTokens()
+		if err != nil {
+			return err
+		}
+	}
 	s.mu.Lock()
 	providers := hostToolsProvidersMap(s.preferences)
 	s.mu.Unlock()
 	cmd := s.sshCommand(ctx, "-T", s.sshTarget(), "--", "exec python3 - computer "+action)
-	cmd.Stdin = strings.NewReader(hostToolsConfigInputForProviders(entry, providers))
+	cmd.Stdin = strings.NewReader(hostToolsConfigInputWithClientTokens(entry, providers, clientTokens))
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err = cmd.Run(); err != nil {
@@ -774,10 +845,20 @@ func hostToolsConfigInput(entry []byte) string {
 }
 
 func hostToolsConfigInputForProviders(entry []byte, providers map[string]bool) string {
+	return hostToolsConfigInputWithClientTokens(entry, providers, nil)
+}
+
+func hostToolsConfigInputWithClientTokens(entry []byte, providers map[string]bool, clientTokens map[string]string) string {
 	// A JSON string of ASCII is also a Python string literal.
 	literal, _ := json.Marshal(string(entry))
 	relay, _ := json.Marshal(hostToolsRelayScript)
 	providersBytes, _ := json.Marshal(providers)
 	providersLiteral, _ := json.Marshal(string(providersBytes))
-	return "ENTRY = " + string(literal) + "\nRELAY = " + string(relay) + "\nPROVIDERS = " + string(providersLiteral) + "\n" + hostToolsConfigScript
+	tokensLiteral := "None"
+	if len(clientTokens) > 0 {
+		tokensBytes, _ := json.Marshal(clientTokens)
+		rawLiteral, _ := json.Marshal(string(tokensBytes))
+		tokensLiteral = string(rawLiteral)
+	}
+	return "ENTRY = " + string(literal) + "\nRELAY = " + string(relay) + "\nPROVIDERS = " + string(providersLiteral) + "\nCLIENT_TOKENS = " + tokensLiteral + "\n" + hostToolsConfigScript
 }

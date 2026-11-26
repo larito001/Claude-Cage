@@ -5,7 +5,7 @@ on:
   # opening). A pull request retargeted to main has no Main PR CI result until
   # its next push or a reopen, so the required check keeps it unmergeable.
   pull_request:
-    branches: [main]
+    branches: [main, allcage]
     types: [opened, reopened, synchronize, ready_for_review]
   # Inert until a merge queue is enabled for main in branch protection. The
   # queue then runs the same required check, Main PR CI, on its merge commit.

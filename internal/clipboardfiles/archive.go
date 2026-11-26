@@ -165,6 +165,10 @@ func read(input io.Reader, directory func() (string, error)) (paths []string, er
 	}()
 	reader := tar.NewReader(input)
 	names := map[string]bool{}
+	const maxArchiveEntries = 4096
+	const maxArchiveBytes = int64(4 << 30)
+	var totalEntries int
+	var totalBytes int64
 	for {
 		header, readErr := reader.Next()
 		if readErr == io.EOF {
@@ -173,11 +177,16 @@ func read(input io.Reader, directory func() (string, error)) (paths []string, er
 		if readErr != nil {
 			return nil, readErr
 		}
+		totalEntries++
+		if totalEntries > maxArchiveEntries {
+			return nil, errors.New("剪贴板归档条目数量过多")
+		}
 		name := strings.TrimSuffix(header.Name, "/")
 		parts := strings.Split(name, "/")
-		if !filepath.IsLocal(filepath.FromSlash(name)) || header.Size < 0 || header.Size > FileLimit {
+		if !filepath.IsLocal(filepath.FromSlash(name)) || header.Size < 0 || header.Size > FileLimit || header.Size > maxArchiveBytes-totalBytes {
 			return nil, errors.New("剪贴板文件位置或大小无效")
 		}
+		totalBytes += header.Size
 		for _, part := range parts {
 			if !validName(part) || strings.Contains(part, ":") {
 				return nil, errors.New("剪贴板文件名称无效")

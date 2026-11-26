@@ -31,7 +31,7 @@ export function useProviderAccounts(provider) {
       try {
         const value = await api(`/provider-accounts/${provider}`, change);
         if (!Array.isArray(value?.accounts)) {
-          throw new Error(`无法读取 ${provider} 账号列表`);
+          throw new Error(translate("无法读取 {0} 账号列表", provider));
         }
         if (generation.current === request) {
           setRegistry(value);
@@ -103,7 +103,7 @@ const statusLabels = {
 };
 
 function accountCaption(profile) {
-  const label = profile.label || profile.email || "未命名账号";
+  const label = profile.label || profile.email || translate("未命名账号");
   return profile.number ? `#${String(profile.number).padStart(2, "0")} ${label}` : label;
 }
 

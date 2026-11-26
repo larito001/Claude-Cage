@@ -1,12 +1,15 @@
 package workbench
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
+	"al.essio.dev/pkg/shellescape"
 	"github.com/gorilla/websocket"
 )
 
@@ -19,6 +22,7 @@ func (s *Server) newTerminal(w http.ResponseWriter, r *http.Request) {
 	if !readJSON(w, r, &input) {
 		return
 	}
+	input.callerCtx = r.Context()
 	session, err := s.createTerminal(input)
 	switch {
 	case errors.Is(err, errTerminalsClosed):
@@ -35,21 +39,33 @@ func (s *Server) newTerminal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) closeTerminal(w http.ResponseWriter, r *http.Request) {
-	if terminal := s.terminals.get(r.PathValue("id")); terminal != nil && !terminal.ended() {
-		if id, _ := terminal.summary()["cli_session_id"].(string); id != "" {
-			if err := s.setSessionArchived(id, true, nil); errors.Is(err, os.ErrNotExist) {
-				s.terminals.remove(terminal.id)
-				s.savePersistedTerminals()
-			} else if err != nil {
-				requestError(w, err)
+	termID := r.PathValue("id")
+	var cleanupProvider string
+	if terminal := s.terminals.get(termID); terminal != nil {
+		cleanupProvider = terminal.providerName()
+		if !terminal.ended() {
+			if id, _ := terminal.summary()["cli_session_id"].(string); id != "" {
+				if err := s.setSessionArchived(id, true, nil); errors.Is(err, os.ErrNotExist) {
+					s.terminals.remove(terminal.id)
+					s.savePersistedTerminals()
+				} else if err != nil {
+					requestError(w, err)
+					return
+				}
+				jsonReply(w, map[string]bool{"ok": true})
 				return
 			}
-			jsonReply(w, map[string]bool{"ok": true})
-			return
 		}
 	}
-	s.terminals.remove(r.PathValue("id"))
+	s.terminals.remove(termID)
 	s.savePersistedTerminals()
+	if validPersistedTerminalID(termID) && (cleanupProvider == "codex" || cleanupProvider == "antigravity") && s.vmRunning() {
+		go func(prov, id string) {
+			ctx, cancel := context.WithTimeout(s.lifetimeContext(), 5*time.Second)
+			defer cancel()
+			_, _ = s.guestControl(ctx, "rm -f -- \"$HOME/.local/share/cage/terminal-sessions/"+prov+"/"+shellescape.Quote(id)+".json\"", "")
+		}(cleanupProvider, termID)
+	}
 	jsonReply(w, map[string]bool{"ok": true})
 }
 
@@ -60,8 +76,9 @@ func (s *Server) terminalStream(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if session.isRestorable() {
-		if restored, err := s.restoreSingleTerminal(session, 0); err == nil && restored != nil {
+	if strings.EqualFold(r.Header.Get("Upgrade"), "websocket") && session.isRestorable() {
+		ord := s.computeRestoreOrdinal(session)
+		if restored, err := s.restoreSingleTerminalWithContext(r.Context(), session, ord); err == nil && restored != nil {
 			session = restored
 		} else if current := s.terminals.get(id); current != nil {
 			session = current

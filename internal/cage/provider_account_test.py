@@ -182,6 +182,77 @@ class ProviderAccountTests(unittest.TestCase):
             self.assertTrue(result["logged_in"])
             self.assertEqual(result["email"], "join@example.test")
 
+    def test_antigravity_home_excludes_shared_credentials_and_cleans_legacy_links(self):
+        agy = helper.ADAPTERS["antigravity"]
+        for secret_dir in (".ssh", ".codex", ".claude", ".aws", ".gnupg", ".kube"):
+            (self.home / secret_dir).mkdir(parents=True)
+            (self.home / secret_dir / "secret").write_text("top-secret")
+        (self.home / ".claude.json").write_text('{"oauthAccount":"x"}')
+        (self.home / ".netrc").write_text("machine example.com password secret")
+        (self.home / ".local/bin").mkdir(parents=True)
+        (self.home / ".local/share/cage").mkdir(parents=True)
+        (self.home / ".gitconfig").write_text("[user]\nname = Safe\n")
+
+        with patch.object(Path, "home", return_value=self.home):
+            base = helper.account_base("antigravity", "e" * 24)
+            cfg = agy.config_dir(base)
+            home_dir = agy.account_home(base)
+            home_dir.mkdir(parents=True, exist_ok=True)
+            if os.name != "nt":
+                (home_dir / ".ssh").symlink_to(self.home / ".ssh", target_is_directory=True)
+                agy.ensure_home(base, cfg)
+                for blocked in (".ssh", ".codex", ".claude", ".claude.json", ".aws", ".gnupg", ".kube", ".netrc"):
+                    self.assertFalse((home_dir / blocked).exists(), f"{blocked} leaked into isolated home")
+                    self.assertFalse((home_dir / blocked).is_symlink(), f"{blocked} symlink remained")
+                self.assertFalse((home_dir / ".local/share/cage").exists())
+                self.assertTrue((home_dir / ".local/bin").is_symlink())
+                self.assertTrue((home_dir / ".gitconfig").is_symlink())
+
+    def test_exact_session_binding_and_workspace_matching(self):
+        import sqlite3
+        with tempfile.TemporaryDirectory() as state_tmp:
+            state_root = Path(state_tmp) / "channels"
+            term_root = Path(state_tmp) / "terminals"
+            conn_id = "11111111-2222-4333-8444-555555555555"
+            tid1 = "0123456789abcdef"
+            tid2 = "fedcba9876543210"
+            codex_uuid = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+
+            with patch.object(helper, "CLI_CHANNEL_ROOT", state_root), patch.object(helper, "TERMINAL_SESSION_ROOT", term_root):
+                with patch.dict(os.environ, {helper.NOTIFY_ENV_VAR: conn_id, helper.TERMINAL_ID_ENV_VAR: tid1}):
+                    rc = helper.handle_notify(
+                        "codex",
+                        [json.dumps({"type": "agent-turn-complete", "thread-id": codex_uuid})],
+                    )
+                self.assertEqual(rc, 0)
+                bound = json.loads((term_root / "codex" / f"{tid1}.json").read_text())
+                self.assertEqual(bound["session_id"], codex_uuid)
+                ch_state = json.loads((state_root / conn_id / "state.json").read_text())
+                self.assertEqual(ch_state["cli_id"], codex_uuid)
+                self.assertEqual(ch_state["turn_done"], 1)
+                self.assertEqual(helper.claimed_terminal_sessions("codex", tid2), {codex_uuid})
+                self.assertEqual(helper.claimed_terminal_sessions("codex", tid1), set())
+
+                # Verify Antigravity workspace matching rejects prefix collisions (/work/a vs /work/ab) and wildcards.
+                agy_cfg = Path(state_tmp) / "agy-cfg"
+                (agy_cfg / "antigravity-cli").mkdir(parents=True)
+                db_path = agy_cfg / "antigravity-cli" / "conversation_summaries.db"
+                db = sqlite3.connect(str(db_path))
+                db.execute("CREATE TABLE conversation_summaries (conversation_id TEXT, workspace_uris TEXT, killed INTEGER, last_modified_time INTEGER)")
+                ws_a = Path(state_tmp) / "work_a"
+                ws_ab = Path(state_tmp) / "work_ab"
+                ws_a.mkdir()
+                ws_ab.mkdir()
+                db.execute("INSERT INTO conversation_summaries VALUES (?, ?, 0, 200)", ("conv_ab_newer", json.dumps([ws_ab.as_uri()])))
+                db.execute("INSERT INTO conversation_summaries VALUES (?, ?, 0, 100)", ("conv_a_exact", json.dumps([ws_a.as_uri()])))
+                db.commit()
+                db.close()
+
+                matched_a = helper.list_workspace_sessions("antigravity", agy_cfg, str(ws_a))
+                self.assertEqual(matched_a, ["conv_a_exact"])
+                matched_ab = helper.list_workspace_sessions("antigravity", agy_cfg, str(ws_ab))
+                self.assertEqual(matched_ab, ["conv_ab_newer"])
+
 
 if __name__ == "__main__":
     unittest.main()

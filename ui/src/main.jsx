@@ -397,6 +397,7 @@ function App() {
   const accountLoginProvider = useRef("claude");
   const tabsBeforeLogin = useRef("");
   const [enrollmentID, setEnrollmentID] = useState("");
+  const [enrollmentProvider, setEnrollmentProvider] = useState("claude");
   const terminalAccounts = [...new Set(tabs.map(t=>t.claude_account_id).filter(Boolean))].sort().join(",");
   useEffect(() => {
     if (terminalAccounts && terminalAccounts.split(",").some(id => !claudeProfiles.accounts?.some(a => a.id === id))) {
@@ -758,6 +759,7 @@ function App() {
     }
     accountLoginProvider.current = spec.id;
     accountLogin.current = result.id;
+    setEnrollmentProvider(spec.id);
     setEnrollmentID(result.id);
     const tab = browserSnapshot.current?.tabs?.find(t => t.id === browserSnapshot.current.active && t.login);
     if (tab) showBrowserResult(tab);
@@ -1047,7 +1049,10 @@ function App() {
           setBrowser((previous) => (sameState(previous, b) ? previous : b));
           const enrollment = t.find(item => item.background_login);
           if (enrollment) {
+            const enrollProv = enrollment.provider || terminalProvider(enrollment.kind)?.id || "claude";
             accountLogin.current = enrollment.id;
+            accountLoginProvider.current = enrollProv;
+            setEnrollmentProvider(enrollProv);
             setEnrollmentID(enrollment.id);
           } else if (accountLogin.current) {
             const finishedProvider = accountLoginProvider.current || "claude";
@@ -1615,16 +1620,16 @@ function App() {
     if (!providerID) return null;
     if (providerID === "antigravity") {
       const id = tab.provider_account_id || tab.claude_account_id;
-      const label = antigravityLabels.get(id) || (tab.terminalKind === "antigravity-login" ? "新账号登录" : id ? "Antigravity 账号" : "");
+      const label = antigravityLabels.get(id) || (tab.terminalKind === "antigravity-login" ? tr("新账号登录") : id ? tr("Antigravity 账号") : "");
       return { provider: "antigravity", providerName: "Antigravity", label, number: antigravityNumbers.get(id), isLogin: tab.terminalKind === "antigravity-login" };
     }
     if (providerID === "codex") {
       const id = tab.provider_account_id || tab.claude_account_id;
-      const label = codexLabels.get(id) || (tab.terminalKind === "codex-login" ? "新账号登录" : id ? "Codex 账号" : "");
+      const label = codexLabels.get(id) || (tab.terminalKind === "codex-login" ? tr("新账号登录") : id ? tr("Codex 账号") : "");
       return { provider: "codex", providerName: "Codex", label, number: codexNumbers.get(id), isLogin: tab.terminalKind === "codex-login" };
     }
     const id = tab.claude_account_id;
-    const label = claudeLabels.get(id) || (tab.terminalKind === "claude-login" ? "新账号登录" : id ? "Claude 账号" : "");
+    const label = claudeLabels.get(id) || (tab.terminalKind === "claude-login" ? tr("新账号登录") : id ? tr("Claude 账号") : "");
     return { provider: "claude", providerName: "Claude", label, number: claudeNumbers.get(id), isLogin: tab.terminalKind === "claude-login" };
   };
   const displayTabs = orderedTabs(tabs, metadata).map((tab) => {
@@ -2122,7 +2127,7 @@ function App() {
                     await action("/tailscale/install", {});
                   }} /> : accountProvider === "claude" ? <ClaudeAccountsPanel proxySources={proxy?.sources || []} desktopNetwork={status.account_desktops_supported} store={claudeProfiles} tabs={tabs} onConfirm={confirm}
                   running={status.vm_running} environmentBusy={busy || storageRecovery}
-                  login={authorizeAccount} enrollmentID={accountLoginProvider.current === "claude" ? enrollmentID : ""} cancelLogin={() => api("/terminals/"+enrollmentID, undefined, "DELETE")} />
+                  login={authorizeAccount} enrollmentID={enrollmentProvider === "claude" ? enrollmentID : ""} cancelLogin={() => api("/terminals/"+enrollmentID, undefined, "DELETE")} />
                   : <ProviderAccountsPanel
                       provider={accountProvider}
                       proxySources={proxy?.sources || []}
@@ -2133,7 +2138,7 @@ function App() {
                       running={status.vm_running}
                       environmentBusy={busy || storageRecovery}
                       login={authorizeProviderAccount}
-                      enrollmentID={accountLoginProvider.current === accountProvider ? enrollmentID : ""}
+                      enrollmentID={enrollmentProvider === accountProvider ? enrollmentID : ""}
                       cancelLogin={() => api("/terminals/"+enrollmentID, undefined, "DELETE")}
                       onOpenDesktop={openProviderAccountDesktop}
                     />}

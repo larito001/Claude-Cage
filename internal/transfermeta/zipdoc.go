@@ -37,11 +37,16 @@ func sanitizeZipArchive(reader *zip.Reader, dst io.Writer, kind format, options 
 		if entry.UncompressedSize64 > 64<<20 || total > 256<<20-entry.UncompressedSize64 {
 			return false, ErrUnsupported
 		}
-		total += entry.UncompressedSize64
-		data, err := readZipEntry(entry)
+		budget := min(uint64(64<<20), 256<<20-total)
+		data, err := readZipEntry(entry, budget)
 		if err != nil {
 			return false, err
 		}
+		actual := uint64(len(data))
+		if actual > 64<<20 || total > 256<<20-actual {
+			return false, ErrUnsupported
+		}
+		total += actual
 		content := data
 		switch {
 		case kind == formatOOXML && ooxmlMetadataName(entry.Name):
@@ -105,13 +110,20 @@ func sanitizeZipArchive(reader *zip.Reader, dst io.Writer, kind format, options 
 	return true, nil
 }
 
-func readZipEntry(entry *zip.File) ([]byte, error) {
+func readZipEntry(entry *zip.File, maxBytes uint64) ([]byte, error) {
 	reader, err := entry.Open()
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
-	return io.ReadAll(io.LimitReader(reader, 64<<20+1))
+	data, err := io.ReadAll(io.LimitReader(reader, int64(maxBytes)+1))
+	if err != nil {
+		return nil, err
+	}
+	if uint64(len(data)) > maxBytes {
+		return nil, ErrUnsupported
+	}
+	return data, nil
 }
 
 func ooxmlMetadataName(name string) bool {

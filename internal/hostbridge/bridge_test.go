@@ -445,3 +445,69 @@ func TestBridgeFiltersPluginsPerClient(t *testing.T) {
 		t.Fatalf("codex tools after live toggle = %v, want [notes_read]", codexToolsAfter)
 	}
 }
+
+func TestBridgeClientTokensPreventHeaderSpoofing(t *testing.T) {
+	dir := t.TempDir()
+	masterTok, err := NewToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	claudeTok, err := NewToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	codexTok, err := NewToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bridge, err := Start(masterTok, Command{Dirs: func() []string { return []string{dir} }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = bridge.Close() })
+
+	bridge.SetClientTokens(map[string]string{
+		"claude": claudeTok,
+		"codex":  codexTok,
+	})
+	bridge.SetFilter(func(client, pluginName string) bool {
+		return client == "claude" && pluginName == "commands"
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Codex presenting its own token while spoofing X-MCP-Client: claude must still be treated as codex.
+	spoofSession, err := bridge.connectAs(ctx, codexTok, "claude")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer spoofSession.Close()
+	toolsRes, err := spoofSession.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(toolsRes.Tools) != 0 {
+		t.Fatalf("codex spoofed X-MCP-Client=claude and saw tools: %+v", toolsRes.Tools)
+	}
+	if _, err := spoofSession.CallTool(ctx, &mcp.CallToolParams{Name: "run_command", Arguments: commandInput{Command: "echo pwned"}}); err == nil {
+		t.Fatal("codex spoofed X-MCP-Client=claude and executed run_command")
+	}
+
+	// Authentic claude token succeeds.
+	claudeSession, err := bridge.connectAs(ctx, claudeTok, "claude")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer claudeSession.Close()
+	claudeTools, err := claudeSession.ListTools(ctx, nil)
+	if err != nil || len(claudeTools.Tools) == 0 {
+		t.Fatalf("claude token failed to list tools: %v %+v", err, claudeTools)
+	}
+
+	// Revoking codex token rejects connections at HTTP auth gate.
+	bridge.SetClientTokens(map[string]string{"claude": claudeTok})
+	if _, err := bridge.connectAs(ctx, codexTok, "codex"); err == nil {
+		t.Fatal("revoked codex token was still accepted")
+	}
+}

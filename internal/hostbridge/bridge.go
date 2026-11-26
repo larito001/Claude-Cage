@@ -63,17 +63,21 @@ type PromptInfo struct {
 	Description string `json:"description,omitempty"`
 }
 
+type authClientKey struct{}
+
 // Bridge is a running MCP endpoint.
 type Bridge struct {
-	token       string
-	listener    net.Listener
-	server      *http.Server
-	base        []Plugin
-	ephemeralMu sync.RWMutex
-	ephemeral   []Plugin
-	filterMu    sync.RWMutex
-	filter      func(client, pluginName string) bool
-	once        sync.Once
+	token           string
+	listener        net.Listener
+	server          *http.Server
+	base            []Plugin
+	ephemeralMu     sync.RWMutex
+	ephemeral       []Plugin
+	filterMu        sync.RWMutex
+	filter          func(client, pluginName string) bool
+	useClientTokens bool
+	clientTokens    map[string]string
+	once            sync.Once
 }
 
 // NewToken returns a random bearer token.
@@ -180,17 +184,37 @@ func (b *Bridge) SetEphemeral(plugins ...Plugin) {
 }
 
 // SetFilter sets an optional predicate consulted per MCP HTTP request to decide
-// whether pluginName is exposed to client (identified via X-MCP-Client header
-// or URL path segment, or empty when unspecified).
+// whether pluginName is exposed to client.
 func (b *Bridge) SetFilter(allow func(client, pluginName string) bool) {
 	b.filterMu.Lock()
 	b.filter = allow
 	b.filterMu.Unlock()
 }
 
+// SetClientTokens binds distinct bearer tokens to canonical client identifiers
+// (such as "claude", "antigravity", "codex"). Once called, client identity is
+// derived strictly from the presented bearer token and self-reported headers or
+// URL paths are ignored.
+func (b *Bridge) SetClientTokens(tokens map[string]string) {
+	cloned := make(map[string]string, len(tokens))
+	for client, tok := range tokens {
+		id := strings.ToLower(strings.TrimSpace(client))
+		if id != "" && len(tok) >= 32 {
+			cloned[id] = tok
+		}
+	}
+	b.filterMu.Lock()
+	b.useClientTokens = true
+	b.clientTokens = cloned
+	b.filterMu.Unlock()
+}
+
 func requestClient(r *http.Request) string {
 	if r == nil {
 		return ""
+	}
+	if authenticated, ok := r.Context().Value(authClientKey{}).(string); ok {
+		return authenticated
 	}
 	if header := strings.ToLower(strings.TrimSpace(r.Header.Get("X-MCP-Client"))); header != "" {
 		return header
@@ -220,7 +244,37 @@ func (b *Bridge) Close() error {
 func (b *Bridge) authorize(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		presented, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if !ok || subtle.ConstantTimeCompare([]byte(presented), []byte(b.token)) != 1 {
+		if !ok || presented == "" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		b.filterMu.RLock()
+		usePerClient := b.useClientTokens
+		clientTokens := b.clientTokens
+		b.filterMu.RUnlock()
+
+		masterMatch := subtle.ConstantTimeCompare([]byte(presented), []byte(b.token)) == 1
+		if usePerClient {
+			matchedClient := ""
+			clientMatch := false
+			for cid, ctok := range clientTokens {
+				if subtle.ConstantTimeCompare([]byte(presented), []byte(ctok)) == 1 {
+					matchedClient = cid
+					clientMatch = true
+				}
+			}
+			if clientMatch {
+				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authClientKey{}, matchedClient)))
+				return
+			}
+			if masterMatch {
+				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authClientKey{}, "")))
+				return
+			}
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if !masterMatch {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

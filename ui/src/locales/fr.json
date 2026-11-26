@@ -3361,5 +3361,15 @@
   "之后从 {0} 启动主机命令时不再询问。命令以运行服务的主机用户权限执行，仍可访问该用户有权访问的其他目录、程序和网络；此授权不提供项目隔离，可随时撤销。": "Les commandes lancées depuis {0} ne demanderont plus de confirmation. Elles utilisent les droits de l’utilisateur du service et peuvent accéder aux autres dossiers, programmes et réseaux autorisés. Cette autorisation n’isole pas le projet et peut être révoquée à tout moment.",
   "命令在远程主机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问远程服务用户有权访问的其他文件、程序和网络。": "Les commandes s’exécutent sur l’hôte distant depuis les dossiers de projets ouverts ci-dessous. Le dossier de lancement n’est pas un bac à sable : les autres fichiers, programmes et réseaux accessibles à l’utilisateur du service distant restent accessibles.",
   "命令在隔离环境外的本机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问主机用户有权访问的其他文件、程序和网络。": "Les commandes s’exécutent sur cet ordinateur, hors de l’environnement isolé, depuis les dossiers de projets ouverts ci-dessous. Le dossier de lancement n’est pas un bac à sable : les autres fichiers, programmes et réseaux accessibles à l’utilisateur hôte restent accessibles.",
-  "环境启动后将自动恢复此终端…": "Ce terminal sera restauré automatiquement au démarrage de l’environnement…"
+  "环境启动后将自动恢复此终端…": "Ce terminal sera restauré automatiquement au démarrage de l’environnement…",
+  "Antigravity 账号": "Compte Antigravity",
+  "Codex 账号": "Compte Codex",
+  "无法读取 {0} 账号列表": "Impossible de lire la liste des comptes {0}",
+  "未命名账号": "Compte sans nom",
+  "主机命令执行（环境外）": "Exécution de commandes sur l’hôte (hors environnement)",
+  "让隔离环境内的 AI 在环境外的主机上执行命令，以运行服务的主机用户权限访问文件、程序和网络。项目文件夹只限定启动目录，不限制文件访问范围；支持后台任务。": "Permet à l’IA de l’environnement isolé d’exécuter des commandes sur l’hôte hors de l’environnement avec les droits de l’utilisateur du service pour accéder aux fichiers, programmes et au réseau. Le dossier du projet définit uniquement le répertoire de départ sans limiter l’accès aux fichiers ; prend en charge les tâches en arrière-plan.",
+  "在主机执行命令；项目目录只是启动位置，不是文件访问边界": "Exécute une commande sur l’hôte ; le dossier du projet n’est que le répertoire de départ, pas une limite d’accès aux fichiers",
+  "查询主机后台命令的状态和输出，或停止该命令": "Consulte l’état et la sortie d’une commande d’arrière-plan sur l’hôte, ou l’arrête",
+  "始终允许从这个项目启动主机命令？": "Toujours autoriser le lancement de commandes sur l’hôte depuis ce projet ?",
+  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Veuillez d’abord enregistrer votre travail dans l’application. L’application sera téléchargée et mise à jour depuis la source officielle, et les identifiants de chaque instance indépendante seront conservés."
 }

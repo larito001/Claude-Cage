@@ -3361,5 +3361,15 @@
   "之后从 {0} 启动主机命令时不再询问。命令以运行服务的主机用户权限执行，仍可访问该用户有权访问的其他目录、程序和网络；此授权不提供项目隔离，可随时撤销。": "Mar dambe laguma weydiin doono marka amar laga bilaabo {0}. Amaradu waxay adeegsadaan xuquuqda isticmaalaha adeegga, waxayna geli karaan galal, barnaamijyo iyo shabakado kale oo loo oggol yahay. Oggolaanshahani mashruuca ma go’doomiyo, waana laga noqon karaa wakhti kasta.",
   "命令在远程主机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问远程服务用户有权访问的其他文件、程序和网络。": "Amarada waxaa lagu fuliyaa martigeliyaha fog, iyadoo laga bilaabayo galalka mashaariicda furan ee hoose. Galka bilowgu ma aha deegaan go’doonsan: faylasha, barnaamijyada iyo shabakadaha kale ee isticmaalaha adeegga fog loo oggol yahay waa la geli karaa.",
   "命令在隔离环境外的本机上执行，须从下列已打开的项目目录启动。启动目录不是沙箱：命令仍可访问主机用户有权访问的其他文件、程序和网络。": "Amarada waxaa lagu fuliyaa kombiyuutarkan, bannaanka deegaanka go’doonsan, iyadoo laga bilaabayo galalka mashaariicda furan ee hoose. Galka bilowgu ma aha deegaan go’doonsan: faylasha, barnaamijyada iyo shabakadaha kale ee isticmaalaha martigeliyaha loo oggol yahay waa la geli karaa.",
-  "环境启动后将自动恢复此终端…": "Terminalkan si toos ah ayaa loo soo celin doonaa marka deegaanku bilaabmo…"
+  "环境启动后将自动恢复此终端…": "Terminalkan si toos ah ayaa loo soo celin doonaa marka deegaanku bilaabmo…",
+  "Antigravity 账号": "Akoonka Antigravity",
+  "Codex 账号": "Akoonka Codex",
+  "无法读取 {0} 账号列表": "Liiska akoonnada {0} lama akhrin karo",
+  "未命名账号": "Akoon aan magac lahayn",
+  "主机命令执行（环境外）": "Fulinta amarrada martigeliyaha (dibadda deegaanka)",
+  "让隔离环境内的 AI 在环境外的主机上执行命令，以运行服务的主机用户权限访问文件、程序和网络。项目文件夹只限定启动目录，不限制文件访问范围；支持后台任务。": "Waxay u oggolaaneysaa AI-da ku jirta deegaanka go’doonsan inay amarrada ku fuliso martigeliyaha dibadda ka ah deegaanka iyadoo adeegsanaysa xuquuqda isticmaalaha adeegga si ay u gasho faylasha, barnaamijyada iyo shabakadda. Galka mashruucu wuxuu xaddidaa oo keliya tusaha bilowga mana xaddido gelitaanka faylasha; wuxuu taageeraa hawlaha gadaal ka socda.",
+  "在主机执行命令；项目目录只是启动位置，不是文件访问边界": "Amar ku fuli martigeliyaha; tusaha mashruucu waa goobta bilowga oo keliya, ma aha xadka gelitaanka faylasha",
+  "查询主机后台命令的状态和输出，或停止该命令": "Hubi xaaladda iyo soo-saarka amarka gadaal ka socda ee martigeliyaha, ama jooji amarkaas",
+  "始终允许从这个项目启动主机命令？": "Had iyo jeer ma loo oggolaadaa in amarrada martigeliyaha laga bilaabo mashruucan?",
+  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Fadlan marka hore kaydi shaqadaada gudaha abka. Abka waxaa laga soo dejin doonaa oo laga cusbooneysiin doonaa isha rasmiga ah, xogta gelitaanka ee nuqul kasta oo madax-bannaanna waa la sii hayn doonaa."
 }

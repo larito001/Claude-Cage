@@ -642,9 +642,14 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 	}
 	if ready || !s.hostToolsView().Enabled {
 		s.ensureHostTools()
+		if providersChanged {
+			s.updateRunningHostToolsClientTokens()
+		}
 		if providersChanged && ready && s.hostToolsServing() {
 			s.syncHostToolsConfigNow(r.Context())
 		}
+	} else if providersChanged {
+		s.updateRunningHostToolsClientTokens()
 	}
 	jsonReply(w, s.hostToolsView())
 }
