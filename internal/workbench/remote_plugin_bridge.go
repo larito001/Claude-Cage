@@ -236,6 +236,7 @@ func (b *serverClientPluginBridge) applyToBridge(bridge *hostbridge.Bridge) ([]h
 		}
 		return nil, []hostbridge.ProxySkipped{{Name: "*", Reason: err.Error()}}
 	}
+	proxy.SetToolOwners(toolOwner)
 	accepted := proxy.ToolList()
 	skipped := proxy.Skipped()
 

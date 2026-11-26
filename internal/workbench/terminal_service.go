@@ -519,7 +519,7 @@ func (s *Server) createTerminalLocked(input terminalRequest) (*terminalSession, 
 		if existing := s.terminals.get(record.TerminalID); existing != nil && existing.ownsConversation() {
 			return existing, nil
 		}
-		if existing := s.terminals.get(record.TerminalID); existing != nil && existing.ended() {
+		if existing := s.terminals.get(record.TerminalID); existing != nil && existing != input.afterLogin && existing.ended() {
 			s.terminals.remove(record.TerminalID)
 		}
 	}

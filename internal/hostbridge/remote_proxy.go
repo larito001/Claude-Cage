@@ -32,6 +32,7 @@ type ProxyPromptGroup struct {
 }
 
 type proxyPromptEntry struct {
+	plugin  string
 	prompt  *mcp.Prompt
 	handler mcp.PromptHandler
 }
@@ -40,10 +41,11 @@ type proxyPromptEntry struct {
 // a connected desktop client over a reverse tunnel. It never shadows tools
 // or prompts already registered by the server's own plugins.
 type ProxyPlugin struct {
-	tools   []*mcp.Tool
-	prompts []proxyPromptEntry
-	call    ProxyCall
-	skipped []ProxySkipped
+	tools      []*mcp.Tool
+	toolOwners map[string]string
+	prompts    []proxyPromptEntry
+	call       ProxyCall
+	skipped    []ProxySkipped
 }
 
 // NewProxyPlugin validates tools against reserved wording and taken names.
@@ -156,9 +158,22 @@ func (p *ProxyPlugin) SetPluginPrompts(groups []ProxyPromptGroup, taken map[stri
 			continue
 		}
 		seen[prompt.Name] = true
-		entries = append(entries, proxyPromptEntry{prompt: prompt, handler: handler})
+		entries = append(entries, proxyPromptEntry{plugin: name, prompt: prompt, handler: handler})
 	}
 	p.prompts = entries
+}
+
+// SetToolOwners records which bridged plugin owns each tool name for per-client filtering.
+func (p *ProxyPlugin) SetToolOwners(owners map[string]string) {
+	if len(owners) == 0 {
+		p.toolOwners = nil
+		return
+	}
+	cloned := make(map[string]string, len(owners))
+	for k, v := range owners {
+		cloned[k] = v
+	}
+	p.toolOwners = cloned
 }
 
 // Prompts reports the prompt names registered by this proxy.
@@ -186,7 +201,18 @@ func (p *ProxyPlugin) Skipped() []ProxySkipped {
 
 // Register adds all accepted proxied tools and prompts to server.
 func (p *ProxyPlugin) Register(server *mcp.Server) {
+	p.RegisterFiltered(server, nil)
+}
+
+// RegisterFiltered adds accepted proxied tools and prompts whose owning plugin
+// passes allow (or all when allow is nil).
+func (p *ProxyPlugin) RegisterFiltered(server *mcp.Server, allow func(pluginName string) bool) {
 	for _, tool := range p.tools {
+		if allow != nil && p.toolOwners != nil {
+			if owner := p.toolOwners[tool.Name]; owner != "" && !allow(owner) {
+				continue
+			}
+		}
 		toolName := tool.Name
 		server.AddTool(tool, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 			var args json.RawMessage
@@ -206,6 +232,9 @@ func (p *ProxyPlugin) Register(server *mcp.Server) {
 		})
 	}
 	for _, entry := range p.prompts {
+		if allow != nil && entry.plugin != "" && !allow(entry.plugin) {
+			continue
+		}
 		server.AddPrompt(entry.prompt, entry.handler)
 	}
 }

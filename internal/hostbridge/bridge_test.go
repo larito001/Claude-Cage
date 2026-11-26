@@ -336,3 +336,112 @@ func TestBackgroundCommandsAreBoundedAndEndWithTheBridge(t *testing.T) {
 		t.Fatal("a background command started without Jobs")
 	}
 }
+
+func TestBridgeFiltersPluginsPerClient(t *testing.T) {
+	dir := t.TempDir()
+	token, err := NewToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bridge, err := Start(token, Command{Dirs: func() []string { return []string{dir} }})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = bridge.Close() })
+
+	proxy, err := NewProxyPlugin(
+		[]*mcp.Tool{
+			{Name: "clock_now", Description: "Return the current local time."},
+			{Name: "notes_read", Description: "Read a note."},
+		},
+		bridge.BaseToolNames(),
+		func(_ context.Context, name string, _ json.RawMessage) (*mcp.CallToolResult, error) {
+			return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "ok:" + name}}}, nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	proxy.SetToolOwners(map[string]string{"clock_now": "clock", "notes_read": "notes"})
+	proxy.SetPluginPrompts([]ProxyPromptGroup{
+		{Name: "clock", DisplayName: "Clock", Tools: []string{"clock_now"}},
+		{Name: "notes", DisplayName: "Notes", Tools: []string{"notes_read"}},
+	}, bridge.BasePromptNames())
+	bridge.SetEphemeral(proxy)
+
+	allowed := map[string]map[string]bool{
+		"claude":      {"commands": true, "clock": true, "notes": false},
+		"antigravity": {"commands": false, "clock": true, "notes": true},
+		"codex":       {"commands": false, "clock": false, "notes": false},
+	}
+	bridge.SetFilter(func(client, pluginName string) bool {
+		return allowed[client][pluginName]
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	listFor := func(client string) ([]string, []string) {
+		t.Helper()
+		session, err := bridge.connectAs(ctx, token, client)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer session.Close()
+		toolsRes, err := session.ListTools(ctx, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var tools []string
+		for _, tool := range toolsRes.Tools {
+			tools = append(tools, tool.Name)
+		}
+		promptsRes, err := session.ListPrompts(ctx, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var prompts []string
+		for _, prompt := range promptsRes.Prompts {
+			prompts = append(prompts, prompt.Name)
+		}
+		return tools, prompts
+	}
+
+	claudeTools, claudePrompts := listFor("claude")
+	if strings.Join(claudeTools, ",") != "clock_now,run_command" && strings.Join(claudeTools, ",") != "run_command,clock_now" {
+		t.Fatalf("claude tools = %v", claudeTools)
+	}
+	if strings.Join(claudePrompts, ",") != "clock,commands" && strings.Join(claudePrompts, ",") != "commands,clock" {
+		t.Fatalf("claude prompts = %v", claudePrompts)
+	}
+
+	agyTools, agyPrompts := listFor("antigravity")
+	if strings.Join(agyTools, ",") != "clock_now,notes_read" && strings.Join(agyTools, ",") != "notes_read,clock_now" {
+		t.Fatalf("antigravity tools = %v", agyTools)
+	}
+	if strings.Join(agyPrompts, ",") != "clock,notes" && strings.Join(agyPrompts, ",") != "notes,clock" {
+		t.Fatalf("antigravity prompts = %v", agyPrompts)
+	}
+
+	codexTools, codexPrompts := listFor("codex")
+	if len(codexTools) != 0 || len(codexPrompts) != 0 {
+		t.Fatalf("codex tools=%v prompts=%v, want empty", codexTools, codexPrompts)
+	}
+
+	// Calling a tool disabled for codex must fail.
+	codexSession, err := bridge.connectAs(ctx, token, "codex")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer codexSession.Close()
+	if _, err := codexSession.CallTool(ctx, &mcp.CallToolParams{Name: "run_command", Arguments: commandInput{Command: "echo no"}}); err == nil {
+		t.Fatal("codex called a tool from a plugin disabled for codex")
+	}
+
+	// Dynamic toggle without restarting Bridge takes effect immediately.
+	allowed["codex"]["notes"] = true
+	codexToolsAfter, _ := listFor("codex")
+	if len(codexToolsAfter) != 1 || codexToolsAfter[0] != "notes_read" {
+		t.Fatalf("codex tools after live toggle = %v, want [notes_read]", codexToolsAfter)
+	}
+}

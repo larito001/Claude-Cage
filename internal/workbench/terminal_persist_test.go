@@ -1,23 +1,74 @@
 package workbench
 
 import (
+	"errors"
 	"io"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sylvinus/agent-vm/internal/cage"
 )
 
+func TestRestorePreflightPreservesConversationTerminal(t *testing.T) {
+	s, id, _ := metadataFixture(t)
+	record, err := s.mobileCLI.record(s.profile, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	previous := s.terminals.get(record.TerminalID)
+	previous.mu.Lock()
+	previous.restorable = true
+	previous.mu.Unlock()
+	// Stop before any guest IO, after the shared-conversation preflight.
+	s.closing = true
+	_, err = s.createTerminalLocked(terminalRequest{Kind: "claude", sharedID: id, afterLogin: previous, restoring: true})
+	if !errors.Is(err, errTerminalsClosed) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.terminals.get(previous.id) != previous || !previous.replaceable() {
+		t.Fatal("restore preflight removed or dismissed the terminal it must replace")
+	}
+}
+
+func TestTerminalRestoreOutlastsSlowStartupAndStopsOnShutdown(t *testing.T) {
+	s := &Server{profile: t.TempDir(), ready: true}
+	s.lifetimeContext()
+	defer s.lifeCancel()
+	s.terminals.sessions = map[string]*terminalSession{"pending": {
+		id: "pending", kind: "shell", workspace: "project", closed: true, restorable: true,
+	}}
+	s.op.Lock()
+	defer s.op.Unlock()
+	s.restorePersistedTerminalsAsync()
+	// The former ten-attempt budget ended after six seconds.
+	time.Sleep(6500 * time.Millisecond)
+	if s.terminalRestoreMu.TryLock() {
+		s.terminalRestoreMu.Unlock()
+		t.Fatal("restore worker abandoned terminals during slow startup")
+	}
+	s.lifeCancel()
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		if s.terminalRestoreMu.TryLock() {
+			s.terminalRestoreMu.Unlock()
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("restore worker ignored shutdown")
+}
+
 type stubPersistPTY struct{}
 
-func (stubPersistPTY) Read([]byte) (int, error)  { return 0, io.EOF }
+func (stubPersistPTY) Read([]byte) (int, error)    { return 0, io.EOF }
 func (stubPersistPTY) Write(p []byte) (int, error) { return len(p), nil }
-func (stubPersistPTY) Close() error              { return nil }
+func (stubPersistPTY) Close() error                { return nil }
 func (stubPersistPTY) Resize(uint16, uint16) error { return nil }
-func (stubPersistPTY) Wait() error               { return nil }
-func (stubPersistPTY) Kill() error               { return nil }
+func (stubPersistPTY) Wait() error                 { return nil }
+func (stubPersistPTY) Kill() error                 { return nil }
 
 func TestPersistedTerminalsSurviveRestartAndRespectDismissal(t *testing.T) {
 	s := testServer(t)

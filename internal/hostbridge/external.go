@@ -436,6 +436,11 @@ func (e *External) open(ctx context.Context, projectDir string) (*mcp.ClientSess
 	return session, listed.Tools, prompts, nil
 }
 
+// PluginName identifies this external plugin for per-client filtering.
+func (e *External) PluginName() string {
+	return e.Manifest.Name
+}
+
 // Tools are the names of the tools the plugin offers the model, once
 // started.
 func (e *External) Tools() []string {

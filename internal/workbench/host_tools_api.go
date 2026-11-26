@@ -18,6 +18,7 @@ import (
 	"github.com/sylvinus/agent-vm/internal/hostbridge"
 	"github.com/sylvinus/agent-vm/internal/hostproxy"
 	"github.com/sylvinus/agent-vm/internal/version"
+	"golang.org/x/mod/semver"
 )
 
 // hostPluginView is one plugin as the plugin page shows it.
@@ -31,7 +32,7 @@ type hostPluginView struct {
 	// Categories are the plugin's market sections this application knows.
 	Categories []string `json:"categories,omitempty"`
 	// Kind is host or guest: where the plugin's programs run.
-	Kind        string               `json:"kind,omitempty"`
+	Kind          string               `json:"kind,omitempty"`
 	Contributes   *hostContributesView `json:"contributes,omitempty"`
 	BuiltIn       bool                 `json:"built_in,omitempty"`
 	Default       bool                 `json:"default,omitempty"`
@@ -45,10 +46,13 @@ type hostPluginView struct {
 	Always         bool     `json:"always"`
 	AlwaysProjects []string `json:"always_projects,omitempty"`
 	// Enabled is false for a plugin the user turned off.
-	Enabled bool                    `json:"enabled"`
-	Loaded  bool                    `json:"loaded"`
-	Tools   []hostbridge.ToolInfo   `json:"tools,omitempty"`
-	Prompts []hostbridge.PromptInfo `json:"prompts,omitempty"`
+	Enabled bool `json:"enabled"`
+	// Providers reports which AI clients (claude, antigravity, codex) receive
+	// this plugin's MCP tools when Enabled is true.
+	Providers map[string]bool         `json:"providers,omitempty"`
+	Loaded    bool                    `json:"loaded"`
+	Tools     []hostbridge.ToolInfo   `json:"tools,omitempty"`
+	Prompts   []hostbridge.PromptInfo `json:"prompts,omitempty"`
 	// Problem is why the plugin's folder cannot be used.
 	Problem string `json:"problem,omitempty"`
 	// MissingProgram names the host program (such as uv, uvx, npx, node or
@@ -155,7 +159,7 @@ type hostToolsView struct {
 	Running   bool            `json:"running"`
 	Providers map[string]bool `json:"providers,omitempty"`
 	Headless  bool            `json:"headless,omitempty"`
-	Platform  string `json:"platform,omitempty"`
+	Platform  string          `json:"platform,omitempty"`
 	// Directory is where the user puts plugin folders.
 	Directory    string                 `json:"directory"`
 	Folders      []string               `json:"folders"`
@@ -182,7 +186,7 @@ func (s *Server) hostPluginDir() string { return filepath.Join(s.profile, "plugi
 
 func (s *Server) hostToolsView() hostToolsView {
 	s.mu.Lock()
-	enabled, tools, off, providers := s.preferences.HostTools, s.hostTools, hostPluginsOff(s.preferences), hostToolsProvidersMap(s.preferences)
+	prefs, enabled, tools, off, providers := s.preferences, s.preferences.HostTools, s.hostTools, hostPluginsOff(s.preferences), hostToolsProvidersMap(s.preferences)
 	var pluginProblems, missingPrograms map[string]string
 	var problems []string
 	if tools != nil {
@@ -220,6 +224,7 @@ func (s *Server) hostToolsView() hostToolsView {
 		}
 	}
 	view.Plugins = []hostPluginView{{Name: hostCommandsPlugin, BuiltIn: true, Supported: true, Enabled: !slices.Contains(off, hostCommandsPlugin),
+		Providers:      hostPluginProvidersMap(prefs, hostCommandsPlugin),
 		AlwaysProjects: s.hostGrantStore().projects(),
 		Loaded:         tools != nil && tools.serving && !slices.Contains(off, hostCommandsPlugin), Permissions: []string{"commands"},
 		Tools:   []hostbridge.ToolInfo{{Name: "run_command"}, {Name: "command_job"}},
@@ -246,7 +251,9 @@ func (s *Server) hostToolsView() hostToolsView {
 			Categories:  hostbridge.ShownCategories(manifest.Categories),
 			Permissions: manifest.Permissions, Kind: manifest.Kind, Contributes: hostContributes(manifest.Contributes),
 			Default: isDefault, DefaultUpdate: s.defaultPluginUpdateVersion(manifest.Name, manifest.Version),
-			Supported: manifest.Supported() && unavailable == "", Icon: manifest.Icon != "", Enabled: !slices.Contains(off, entry.Name())}
+			Supported: manifest.Supported() && unavailable == "", Icon: manifest.Icon != "",
+			Enabled:   !slices.Contains(off, entry.Name()),
+			Providers: hostPluginProvidersMap(prefs, entry.Name())}
 		if manifest.Name == entry.Name() {
 			installedNames = append(installedNames, manifest.Name)
 			plugin.Settings = pluginSettingsView(manifest, settings[manifest.Name])
@@ -308,18 +315,93 @@ func (s *Server) setAsideHostPlugin(name string) (string, error) {
 	return target, os.Rename(source, target)
 }
 
+// validateHostPluginTarget verifies name refers to the built-in command plugin
+// or an installed plugin directory.
+func (s *Server) validateHostPluginTarget(name string) error {
+	if name == hostCommandsPlugin {
+		return nil
+	}
+	if name == "" || name != filepath.Base(name) || strings.HasPrefix(name, ".") {
+		return errors.New("插件名称无效")
+	}
+	if info, err := os.Lstat(filepath.Join(s.hostPluginDir(), name)); err != nil || !info.IsDir() {
+		return errors.New("没有找到这个插件")
+	}
+	return nil
+}
+
 // setHostPluginOn records whether the plugin is started with the others. It
 // takes effect when the tools are next started.
 func (s *Server) setHostPluginOn(name string, on bool) error {
-	if name != hostCommandsPlugin {
-		if name == "" || name != filepath.Base(name) || strings.HasPrefix(name, ".") {
-			return errors.New("插件名称无效")
-		}
-		if info, err := os.Lstat(filepath.Join(s.hostPluginDir(), name)); err != nil || !info.IsDir() {
-			return errors.New("没有找到这个插件")
-		}
+	if err := s.validateHostPluginTarget(name); err != nil {
+		return err
 	}
 	return s.recordHostPluginOn(name, on)
+}
+
+// setHostPluginProviders records per-provider enable/disable state for one
+// plugin. Changes take effect immediately on the running MCP bridge.
+func (s *Server) setHostPluginProviders(name string, patch map[string]bool) error {
+	if err := s.validateHostPluginTarget(name); err != nil {
+		return err
+	}
+	for key := range patch {
+		if !validHostToolProviderID(key) {
+			return errors.New("不支持的 AI 助手类型")
+		}
+	}
+	s.mu.Lock()
+	next := s.preferences
+	s.mu.Unlock()
+	offMap := parseHostPluginProvidersOff(next.HostPluginProvidersOff)
+	pluginOff := offMap[name]
+	if pluginOff == nil {
+		pluginOff = map[string]bool{}
+	}
+	for key, enabled := range patch {
+		if enabled {
+			delete(pluginOff, key)
+		} else {
+			pluginOff[key] = true
+		}
+	}
+	if len(pluginOff) == 0 {
+		delete(offMap, name)
+	} else {
+		offMap[name] = pluginOff
+	}
+	encoded := formatHostPluginProvidersOff(offMap)
+	if encoded == next.HostPluginProvidersOff {
+		return nil
+	}
+	next.HostPluginProvidersOff = encoded
+	if err := writePrivate(filepath.Join(s.profile, "workbench.json"), next); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.preferences.HostPluginProvidersOff = encoded
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *Server) clearHostPluginProviders(name string) error {
+	s.mu.Lock()
+	next := s.preferences
+	s.mu.Unlock()
+	offMap := parseHostPluginProvidersOff(next.HostPluginProvidersOff)
+	if _, exists := offMap[name]; !exists {
+		return nil
+	}
+	delete(offMap, name)
+	encoded := formatHostPluginProvidersOff(offMap)
+	next.HostPluginProvidersOff = encoded
+	if err := writePrivate(filepath.Join(s.profile, "workbench.json"), next); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	s.preferences.HostPluginProvidersOff = encoded
+	s.mu.Unlock()
+	return nil
 }
 
 // hostToolProject finds dir among the project folders the commands may run
@@ -414,12 +496,12 @@ func (s *Server) getHostTools(w http.ResponseWriter, r *http.Request) {
 // Only this computer's own window may: the tools act on this computer.
 func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Enabled   *bool           `json:"enabled"`
-		Providers map[string]bool `json:"providers"`
-		Reload    bool            `json:"reload"`
-		Install        string `json:"install"`
-		RestoreDefault string `json:"restore_default"`
-		Remove         string `json:"remove"`
+		Enabled        *bool           `json:"enabled"`
+		Providers      map[string]bool `json:"providers"`
+		Reload         bool            `json:"reload"`
+		Install        string          `json:"install"`
+		RestoreDefault string          `json:"restore_default"`
+		Remove         string          `json:"remove"`
 		// Install names a plugin on the community list; Replace sets an
 		// installed version aside first. Source is accepted and ignored.
 		Source  string `json:"source"`
@@ -475,10 +557,10 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 	}
 	providersChanged := false
-	if body.Providers != nil {
+	if body.Plugin == "" && body.Providers != nil {
 		merged := hostToolsProvidersMap(previous)
 		for key, val := range body.Providers {
-			if key != "claude" && key != "antigravity" && key != "codex" {
+			if !validHostToolProviderID(key) {
 				http.Error(w, "不支持的 AI 助手类型", http.StatusBadRequest)
 				return
 			}
@@ -496,6 +578,18 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 			s.preferences.HostToolsProvidersOff = encodedOff
 			s.mu.Unlock()
 			providersChanged = true
+		}
+	}
+	if body.Plugin != "" && body.Providers != nil {
+		for key := range body.Providers {
+			if !validHostToolProviderID(key) {
+				http.Error(w, "不支持的 AI 助手类型", http.StatusBadRequest)
+				return
+			}
+		}
+		if err := s.setHostPluginProviders(body.Plugin, body.Providers); err != nil {
+			requestError(w, err)
+			return
 		}
 	}
 	if body.Plugin != "" && body.Always != nil {
@@ -537,6 +631,7 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 		}
 		// A plugin installed again later starts turned on, and asks again.
 		_ = s.recordHostPluginOn(body.Remove, true)
+		_ = s.clearHostPluginProviders(body.Remove)
 		_ = s.hostGrantStore().revokePlugin(body.Remove)
 		s.forgetPluginSettings(body.Remove)
 		s.markDefaultPluginDismissed(body.Remove, true)
@@ -599,9 +694,9 @@ type hostMarketEntryView struct {
 	Author      *hostbridge.MarketAuthor            `json:"author,omitempty"`
 	I18n        map[string]hostbridge.LocalizedText `json:"i18n,omitempty"`
 	Permissions []string                            `json:"permissions"`
-	Categories  []string                 `json:"categories,omitempty"`
-	Kind        string                   `json:"kind,omitempty"`
-	Contributes *hostContributesView     `json:"contributes,omitempty"`
+	Categories  []string                            `json:"categories,omitempty"`
+	Kind        string                              `json:"kind,omitempty"`
+	Contributes *hostContributesView                `json:"contributes,omitempty"`
 	// Problem is why the plugin cannot be used with this application.
 	Problem   string `json:"problem,omitempty"`
 	Supported bool   `json:"supported"`
@@ -660,6 +755,15 @@ func (s *Server) hostPluginIcon(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(data)
 }
 
+func compareMarketVersions(offered, installed string) (int, bool) {
+	offered = "v" + strings.TrimPrefix(offered, "v")
+	installed = "v" + strings.TrimPrefix(installed, "v")
+	if !semver.IsValid(offered) || !semver.IsValid(installed) {
+		return 0, false
+	}
+	return semver.Compare(offered, installed), true
+}
+
 func (s *Server) getHostMarket(w http.ResponseWriter, r *http.Request) {
 	entries, fetched, err := s.hostMarketEntries(r.Context(), r.URL.Query().Get("refresh") == "1")
 	view := struct {
@@ -689,7 +793,8 @@ func (s *Server) getHostMarket(w http.ResponseWriter, r *http.Request) {
 			Runtime: entry.Runtime, Platforms: platforms, Source: entry.Source}
 		if manifest, err := hostbridge.LoadManifest(filepath.Join(s.hostPluginDir(), entry.Name)); err == nil {
 			item.InstalledVersion = manifest.Version
-			item.Update = manifest.Version != entry.Version
+			order, comparable := compareMarketVersions(entry.Version, manifest.Version)
+			item.Update = comparable && order > 0
 		} else if _, statErr := os.Lstat(filepath.Join(s.hostPluginDir(), entry.Name)); statErr == nil {
 			// A folder of that name that is not a usable plugin.
 			item.InstalledVersion, item.Update = "?", true
@@ -721,9 +826,15 @@ func (s *Server) installFromMarket(ctx context.Context, name string, replace boo
 		return errors.New("需要更新 Cage 才能安装这个插件")
 	}
 	aside := ""
-	if _, statErr := os.Lstat(filepath.Join(s.hostPluginDir(), name)); statErr == nil {
+	target := filepath.Join(s.hostPluginDir(), name)
+	if _, statErr := os.Lstat(target); statErr == nil {
 		if !replace {
 			return errors.New("这个插件已经安装")
+		}
+		if installed, err := hostbridge.LoadManifest(target); err == nil {
+			if order, ok := compareMarketVersions(entries[index].Version, installed.Version); ok && order < 0 {
+				return fmt.Errorf("市场版本 %s 低于已安装版本 %s", entries[index].Version, installed.Version)
+			}
 		}
 		// Stop the plugin's program before its folder moves.
 		s.closeHostTools()

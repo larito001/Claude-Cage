@@ -284,7 +284,9 @@ func (s *Server) restorePersistedTerminalsAsync() {
 		}
 		defer s.terminalRestoreMu.Unlock()
 
-		for attempt := 0; attempt < 10; attempt++ {
+		// Startup may hold the operation lock while slow plugins initialize.
+		// Keep retrying transient failures until shutdown or suspension.
+		for {
 			s.mu.Lock()
 			ready, closing := s.ready, s.closing
 			s.mu.Unlock()
@@ -322,7 +324,7 @@ func (s *Server) restorePersistedTerminalsAsync() {
 				ordinalByGroup[groupKey] = ord + 1
 
 				_, err := s.restoreSingleTerminal(prev, ord)
-				if errors.Is(err, errTerminalBusy) {
+				if errors.Is(err, errTerminalBusy) || errors.Is(err, errTerminalNotReady) {
 					needRetry = true
 				}
 			}

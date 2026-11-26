@@ -559,6 +559,9 @@ def evaluate_provider(
         verdict = "error"
         notes.append("无法连接官方边缘服务，请检查代理节点或网络连通性。")
     else:
+        if not prov_cc or item.get("supported_region") is None:
+            verdict = "warn"
+            notes.append("未能确认厂商识别的地区或支持状态，请重试检测。")
         if item.get("supported_region") is False:
             verdict = "blocked"
             notes.append(f"当前被官方识别为受限地区 {country_label(prov_cc) or '未知'}，服务可能拒绝访问。")
@@ -671,9 +674,10 @@ def run_exit_check(route_id: str = "", expected_country: str = "") -> dict[str, 
         seen_ips.add(baseline["ip"])
     seen_countries = {p["country"] for p in providers if p.get("country")}
 
-    all_ips_match = len(seen_ips) <= 1 and bool(seen_ips)
+    all_ips_match = len(seen_ips) == 1 and all(p.get("ip") for p in providers)
     all_regions_match = (
-        len(seen_countries) == 1
+        all(p.get("country") for p in providers)
+        and len(seen_countries) == 1
         and (not baseline.get("country") or baseline["country"] in seen_countries)
         and (not clean_expected or clean_expected in seen_countries)
     )
@@ -770,7 +774,7 @@ def answer(message: dict[str, Any]) -> dict[str, Any] | None:
         return {
             "protocolVersion": params.get("protocolVersion", "2024-11-05"),
             "capabilities": {"tools": {}},
-            "serverInfo": {"name": "ai-exit-check", "version": "0.1.0"},
+            "serverInfo": {"name": "ai-exit-check", "version": "0.1.1"},
         }
     if method == "tools/list":
         return {"tools": TOOLS}

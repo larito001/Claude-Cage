@@ -268,7 +268,7 @@ func TestMarketViewKeepsListingAttribution(t *testing.T) {
 	s.getHostMarket(recorder, httptest.NewRequest(http.MethodGet, "/api/host-tools/market", nil))
 	var view struct {
 		Entries []struct {
-			Author *hostbridge.MarketAuthor             `json:"author"`
+			Author *hostbridge.MarketAuthor            `json:"author"`
 			I18n   map[string]hostbridge.LocalizedText `json:"i18n"`
 		} `json:"entries"`
 	}
@@ -344,6 +344,28 @@ func TestInstallFromMarketReplacesAndRestores(t *testing.T) {
 	if kept, _ := filepath.Glob(filepath.Join(s.profile, "plugins-removed", "notes-*", hostbridge.ManifestFile)); len(kept) != 1 {
 		t.Fatalf("old version was not kept: %v", kept)
 	}
+	for _, tc := range []struct {
+		offer  string
+		update bool
+	}{
+		{"1.9.9", false}, {"2.0.0-rc.1", false}, {"2.0.0", false},
+		{"2.0.0+rebuild", false}, {"2.0.1", true}, {"10.0.0", true}, {"unknown", false},
+	} {
+		s.hostMarket.entries[0].Version = tc.offer
+		recorder := httptest.NewRecorder()
+		s.getHostMarket(recorder, httptest.NewRequest(http.MethodGet, "/api/host-tools/market", nil))
+		var view struct{ Entries []hostMarketEntryView }
+		if err := json.Unmarshal(recorder.Body.Bytes(), &view); err != nil || len(view.Entries) != 1 {
+			t.Fatalf("market response for %s: %s", tc.offer, recorder.Body.String())
+		}
+		if item := view.Entries[0]; item.InstalledVersion != "2.0.0" || item.Update != tc.update {
+			t.Errorf("offer %s: installed=%s update=%v", tc.offer, item.InstalledVersion, item.Update)
+		}
+	}
+	s.hostMarket.entries[0].Version = "1.9.9"
+	if err := s.installFromMarket(context.Background(), "notes", true); err == nil || !strings.Contains(err.Error(), "低于已安装版本") || version() != "2.0.0" {
+		t.Fatalf("stale market offer was not rejected before replacement: %v", err)
+	}
 	if err := s.installFromMarket(context.Background(), "missing", false); err == nil {
 		t.Fatal("installed a plugin the list does not have")
 	}
@@ -415,5 +437,104 @@ func TestMissingProgramMessageAndProjectPlaceholderHelpers(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("blender not found in hostToolsView")
+	}
+}
+
+func TestHostPluginProvidersPerModelFilteringAndPersistence(t *testing.T) {
+	s := &Server{profile: t.TempDir(), token: randomToken(), origin: "http://localhost:19001"}
+	s.preferences.HostTools = true
+	postHostTools := func(body string) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		s.setHostTools(rec, trustedPluginRequest(s, http.MethodPost, "/api/host-tools", body))
+		return rec
+	}
+
+	clockDir := filepath.Join(s.hostPluginDir(), "clock")
+	if err := os.MkdirAll(clockDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(clockDir, hostbridge.ManifestFile), []byte(
+		`{"name":"clock","version":"1.0.0","description":"Tells the time","permissions":[],"command":["python3","server.py"]}`,
+	), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Default: all three providers enabled for every plugin.
+	initial := s.hostToolsView()
+	for _, p := range initial.Plugins {
+		for _, id := range []string{"claude", "antigravity", "codex"} {
+			if !p.Providers[id] {
+				t.Fatalf("plugin %s provider %s defaulted to false", p.Name, id)
+			}
+		}
+	}
+
+	// Disable commands for codex and clock for antigravity via HTTP API.
+	w1 := postHostTools(`{"plugin":"commands","providers":{"codex":false}}`)
+	if w1.Code != http.StatusOK {
+		t.Fatalf("disable commands for codex: %d %s", w1.Code, w1.Body.String())
+	}
+	w2 := postHostTools(`{"plugin":"clock","providers":{"antigravity":false}}`)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("disable clock for antigravity: %d %s", w2.Code, w2.Body.String())
+	}
+	if got, want := s.preferences.HostPluginProvidersOff, "clock:antigravity,commands:codex"; got != want {
+		t.Fatalf("HostPluginProvidersOff = %q, want %q", got, want)
+	}
+	saved, err := os.ReadFile(filepath.Join(s.profile, "workbench.json"))
+	if err != nil || !strings.Contains(string(saved), `"clock:antigravity,commands:codex"`) {
+		t.Fatalf("workbench.json missing host_plugin_providers_off: %v %s", err, saved)
+	}
+
+	// Reject unknown provider IDs.
+	wBad := postHostTools(`{"plugin":"clock","providers":{"unknown":false}}`)
+	if wBad.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for unknown provider, got %d", wBad.Code)
+	}
+
+	// Verify per-client runtime filtering predicate.
+	if !s.allowPluginForClient("claude", "commands") || !s.allowPluginForClient("antigravity", "commands") || s.allowPluginForClient("codex", "commands") {
+		t.Fatal("unexpected allowPluginForClient result for commands")
+	}
+	if !s.allowPluginForClient("claude", "clock") || s.allowPluginForClient("antigravity", "clock") || !s.allowPluginForClient("codex", "clock") {
+		t.Fatal("unexpected allowPluginForClient result for clock")
+	}
+
+	// Global provider disable still overrides per-plugin enable.
+	wGlobal := postHostTools(`{"providers":{"claude":false}}`)
+	if wGlobal.Code != http.StatusOK {
+		t.Fatalf("disable global claude: %d %s", wGlobal.Code, wGlobal.Body.String())
+	}
+	if s.allowPluginForClient("claude", "commands") {
+		t.Fatal("global claude disable should block commands for claude")
+	}
+
+	// Uninstalling a plugin clears its per-provider disables.
+	wRemove := postHostTools(`{"remove":"clock"}`)
+	if wRemove.Code != http.StatusOK {
+		t.Fatalf("remove clock: %d %s", wRemove.Code, wRemove.Body.String())
+	}
+	if got, want := s.preferences.HostPluginProvidersOff, "commands:codex"; got != want {
+		t.Fatalf("HostPluginProvidersOff after remove = %q, want %q", got, want)
+	}
+}
+
+func TestUnidentifiedHostToolClientRespectsAllProviderRestrictions(t *testing.T) {
+	s := &Server{}
+	s.preferences.HostTools = true
+	if !s.allowPluginForClient("", "commands") {
+		t.Fatal("unrestricted legacy client should be allowed")
+	}
+	for _, provider := range hostToolProviderIDs {
+		s.preferences.HostToolsProvidersOff = provider
+		if s.allowPluginForClient("", "commands") {
+			t.Fatalf("legacy client bypassed global %s disable", provider)
+		}
+		s.preferences.HostToolsProvidersOff = ""
+		s.preferences.HostPluginProvidersOff = "commands:" + provider
+		if s.allowPluginForClient("", "commands") {
+			t.Fatalf("legacy client bypassed plugin %s disable", provider)
+		}
+		s.preferences.HostPluginProvidersOff = ""
 	}
 }

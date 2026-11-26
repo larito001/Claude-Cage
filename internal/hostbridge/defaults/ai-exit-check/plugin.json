@@ -1,7 +1,7 @@
 {
   "name": "ai-exit-check",
   "displayName": "AI Exit IP & Region Check",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Checks exit IPs, vendor-detected regions, service availability, and region consistency across Google, Anthropic, and OpenAI.",
   "icon": "icon.svg",
   "engines": {

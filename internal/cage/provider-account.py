@@ -26,6 +26,11 @@ import tempfile
 import time
 import uuid
 
+try:
+    import tomllib
+except ImportError:  # Older native Python installations can still run accounts.
+    tomllib = None
+
 DEFAULT = "default"
 PRIVATE_MODE = 0o700
 ACCOUNT_ID_RE = re.compile(r"^[0-9a-f]{24}$")
@@ -344,13 +349,13 @@ class AntigravityAdapter:
             return
         relay_prog = str(user_home() / ".local/share/mcp-relay/relay.py")
         relay_ep = str(user_home() / ".config/mcp-relay/computer.json")
-        expected_args = [relay_prog, relay_ep]
+        expected_prefix = [relay_prog, relay_ep]
         shared_entry = None
         try:
             if default_mcp.is_file() and not default_mcp.is_symlink():
                 src = json.loads(default_mcp.read_text(encoding="utf-8"))
                 cand = (src.get("mcpServers") or {}).get("computer") if isinstance(src, dict) else None
-                if isinstance(cand, dict) and cand.get("args") == expected_args:
+                if isinstance(cand, dict) and isinstance(cand.get("args"), list) and cand.get("args")[:2] == expected_prefix:
                     shared_entry = cand
         except (OSError, ValueError):
             shared_entry = None
@@ -364,7 +369,7 @@ class AntigravityAdapter:
         if not isinstance(servers, dict):
             servers = {}
         current = servers.get("computer")
-        is_ours = isinstance(current, dict) and current.get("args") == expected_args
+        is_ours = isinstance(current, dict) and isinstance(current.get("args"), list) and current.get("args")[:2] == expected_prefix
         if shared_entry is not None:
             if current is None or is_ours:
                 if current != shared_entry:
@@ -600,9 +605,22 @@ class CodexAdapter:
         updated = existing
         if "cli_auth_credentials_store" not in updated:
             updated = key_line + "\n" + updated
-        if "screen_reader_detection_done" not in updated:
-            suffix = "" if not updated or updated.endswith("\n") else "\n"
-            updated = updated + suffix + "\n[tui]\nscreen_reader_detection_done = true\n"
+        # Add the default within an existing table without duplicating it.
+        # Validate the candidate so inline tables or unusual user TOML remain intact.
+        if tomllib is not None:
+            try:
+                parsed = tomllib.loads(updated)
+                if "screen_reader_detection_done" not in parsed.get("tui", {}):
+                    header = re.search(r'''(?m)^[ \t]*\[[ \t]*(?:tui|"tui"|'tui')[ \t]*\][ \t]*(?:\#[^\n]*)?(?:\n|$)''', updated)
+                    setting = "screen_reader_detection_done = true\n"
+                    if header:
+                        candidate = updated[:header.end()].rstrip("\n") + "\n" + setting + updated[header.end():]
+                    else:
+                        candidate = updated.rstrip("\n") + "\n\n[tui]\n" + setting
+                    if tomllib.loads(candidate).get("tui", {}).get("screen_reader_detection_done") is True:
+                        updated = candidate
+            except (tomllib.TOMLDecodeError, TypeError):
+                pass
         default_toml = user_home() / ".codex/config.toml"
         if default_toml.resolve() != toml_file.resolve():
             start_marker = "# cage-managed-mcp-start:computer\n"
@@ -807,8 +825,9 @@ ANSI_ESCAPE_RE = re.compile(r"\x1b(?:\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07
 
 def extract_stream_login_url(raw_text):
     cleaned = ANSI_ESCAPE_RE.sub("", raw_text)
-    collapsed = re.sub(r"\r?\n[ \t]*", "", cleaned)
-    match = LOGIN_URL_RE.search(collapsed) or LOGIN_URL_RE.search(cleaned)
+    # A newline may separate the URL from status text; joining it can silently
+    # change OAuth state/code values. PTY soft wraps are not URL characters.
+    match = LOGIN_URL_RE.search(cleaned)
     return match.group(0) if match else ""
 
 

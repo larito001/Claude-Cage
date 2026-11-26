@@ -219,16 +219,20 @@ def configure(home, name, entry, relay, providers=None):
                 enabled[key] = bool(providers[key])
 
     ours_http = lambda current: isinstance(current, dict) and current.get("url") == entry["url"]
+    claude_headers = dict(entry.get("headers") or {})
+    claude_headers["X-MCP-Client"] = "claude"
+    claude_entry = dict(entry, headers=claude_headers)
     if enabled["claude"]:
         for file in profile_files(home):
-            add_server(file, name, entry, ours_http)
+            add_server(file, name, claude_entry, ours_http)
     else:
         for file in profile_files(home):
             remove_server(file, name, ours_http)
 
     program, endpoint = relay_files(home, name)
-    local = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
-    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == local["args"]
+    base_args = [str(program), str(endpoint)]
+    local_for = lambda client: {"command": "/usr/bin/python3", "args": [*base_args, client]}
+    ours_relay = lambda current: isinstance(current, dict) and isinstance(current.get("args"), list) and current.get("args")[:2] == base_args
 
     desktops = desktop_config_dirs(home)
     agy_files = antigravity_mcp_files(home)
@@ -244,22 +248,25 @@ def configure(home, name, entry, relay, providers=None):
         write_private(endpoint, json.dumps({"url": entry["url"], "headers": entry.get("headers", {})}))
 
     if enabled["claude"]:
+        claude_local = local_for("claude")
         for desktop in desktops:
-            add_server(desktop / "claude_desktop_config.json", name, local, ours_relay)
+            add_server(desktop / "claude_desktop_config.json", name, claude_local, ours_relay)
     else:
         for desktop in desktops:
             remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
 
     if enabled["antigravity"]:
+        agy_local = local_for("antigravity")
         for file in agy_files:
-            add_server(file, name, local, ours_relay)
+            add_server(file, name, agy_local, ours_relay)
     else:
         for file in agy_files:
             remove_server(file, name, ours_relay)
 
     if enabled["codex"]:
+        codex_local = local_for("codex")
         for file in codex_files:
-            add_toml_server(file, name, local)
+            add_toml_server(file, name, codex_local)
     else:
         for file in codex_files:
             remove_toml_server(file, name)
@@ -272,8 +279,8 @@ def unconfigure(home, name, entry):
     for file in profile_files(home):
         remove_server(file, name, lambda current: isinstance(current, dict) and current.get("url") == entry["url"])
     program, endpoint = relay_files(home, name)
-    args = [str(program), str(endpoint)]
-    ours_relay = lambda current: isinstance(current, dict) and current.get("args") == args
+    base_args = [str(program), str(endpoint)]
+    ours_relay = lambda current: isinstance(current, dict) and isinstance(current.get("args"), list) and current.get("args")[:2] == base_args
     for desktop in desktop_config_dirs(home):
         remove_server(desktop / "claude_desktop_config.json", name, ours_relay)
     for file in antigravity_mcp_files(home):

@@ -1,6 +1,6 @@
 # Carries MCP messages between stdin/stdout and an HTTP MCP server, for
 # clients that can only start a server as a local program.
-# Usage: relay.py <endpoint.json>, a file holding {"url": ..., "headers": {...}}.
+# Usage: relay.py <endpoint.json> [client], a file holding {"url": ..., "headers": {...}}.
 import json
 import sys
 import threading
@@ -9,9 +9,11 @@ import urllib.request
 
 
 class Relay:
-    def __init__(self, endpoint, output):
+    def __init__(self, endpoint, output, client=""):
         self.url = endpoint["url"]
         self.headers = dict(endpoint.get("headers") or {})
+        if client:
+            self.headers["X-MCP-Client"] = client
         self.output = output
         self.lock = threading.Lock()
         self.session = None
@@ -72,8 +74,8 @@ def events(response):
         yield json.loads("\n".join(data))
 
 
-def serve(endpoint, lines, output):
-    relay = Relay(endpoint, output)
+def serve(endpoint, lines, output, client=""):
+    relay = Relay(endpoint, output, client)
     workers = []
     for line in lines:
         line = line.strip()
@@ -95,5 +97,6 @@ def serve(endpoint, lines, output):
 
 
 if __name__ == "__main__":
+    client_id = sys.argv[2] if len(sys.argv) > 2 else ""
     with open(sys.argv[1], encoding="utf-8") as source:
-        serve(json.load(source), sys.stdin, sys.stdout)
+        serve(json.load(source), sys.stdin, sys.stdout, client_id)

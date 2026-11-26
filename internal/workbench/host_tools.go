@@ -74,6 +74,12 @@ func hostPluginsOff(p Preferences) []string {
 	return strings.Split(p.HostPluginsOff, ",")
 }
 
+var hostToolProviderIDs = []string{"claude", "antigravity", "codex"}
+
+func validHostToolProviderID(id string) bool {
+	return slices.Contains(hostToolProviderIDs, id)
+}
+
 func hostToolsProvidersMap(p Preferences) map[string]bool {
 	out := map[string]bool{"claude": true, "antigravity": true, "codex": true}
 	if p.HostToolsProvidersOff == "" {
@@ -90,12 +96,89 @@ func hostToolsProvidersMap(p Preferences) map[string]bool {
 
 func formatHostToolsProvidersOff(providers map[string]bool) string {
 	var off []string
-	for _, id := range []string{"claude", "antigravity", "codex"} {
+	for _, id := range hostToolProviderIDs {
 		if enabled, ok := providers[id]; ok && !enabled {
 			off = append(off, id)
 		}
 	}
 	return strings.Join(off, ",")
+}
+
+func parseHostPluginProvidersOff(raw string) map[string]map[string]bool {
+	out := map[string]map[string]bool{}
+	if raw == "" {
+		return out
+	}
+	for _, item := range strings.Split(raw, ",") {
+		plugin, provider, ok := strings.Cut(strings.TrimSpace(item), ":")
+		plugin = strings.TrimSpace(plugin)
+		provider = strings.TrimSpace(provider)
+		if !ok || plugin == "" || !validHostToolProviderID(provider) {
+			continue
+		}
+		if out[plugin] == nil {
+			out[plugin] = map[string]bool{}
+		}
+		out[plugin][provider] = true
+	}
+	return out
+}
+
+func formatHostPluginProvidersOff(off map[string]map[string]bool) string {
+	var pairs []string
+	for plugin, providers := range off {
+		if plugin == "" {
+			continue
+		}
+		for _, id := range hostToolProviderIDs {
+			if providers[id] {
+				pairs = append(pairs, plugin+":"+id)
+			}
+		}
+	}
+	sort.Strings(pairs)
+	return strings.Join(pairs, ",")
+}
+
+func hostPluginProvidersMap(p Preferences, plugin string) map[string]bool {
+	out := map[string]bool{"claude": true, "antigravity": true, "codex": true}
+	if p.HostPluginProvidersOff == "" || plugin == "" {
+		return out
+	}
+	off := parseHostPluginProvidersOff(p.HostPluginProvidersOff)[plugin]
+	for _, id := range hostToolProviderIDs {
+		if off[id] {
+			out[id] = false
+		}
+	}
+	return out
+}
+
+func (s *Server) allowPluginForClient(client, pluginName string) bool {
+	s.mu.Lock()
+	prefs := s.preferences
+	s.mu.Unlock()
+	if !prefs.HostTools || slices.Contains(hostPluginsOff(prefs), pluginName) {
+		return false
+	}
+	pluginProviders := hostPluginProvidersMap(prefs, pluginName)
+	if client == "" {
+		// Legacy clients cannot be attributed to a provider. Only expose tools
+		// that every provider is allowed to use.
+		globalProviders := hostToolsProvidersMap(prefs)
+		for _, id := range hostToolProviderIDs {
+			if !globalProviders[id] || !pluginProviders[id] {
+				return false
+			}
+		}
+		return true
+	}
+	globalProviders := hostToolsProvidersMap(prefs)
+	allowedGlobal, known := globalProviders[client]
+	if !known || !allowedGlobal {
+		return false
+	}
+	return pluginProviders[client]
 }
 
 // hostToolsConfigInterval is how often a running environment is checked for
@@ -263,6 +346,7 @@ func (s *Server) startHostTools(serving bool) error {
 		tools.close()
 		return err
 	}
+	bridge.SetFilter(s.allowPluginForClient)
 	tools.bridge = bridge
 	s.reattachClientPluginBridge(bridge)
 	forward := fmt.Sprintf("127.0.0.1:%d:%s", hostToolsPort, bridge.Addr())

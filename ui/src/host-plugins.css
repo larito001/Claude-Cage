@@ -158,8 +158,18 @@
 .plugin-row-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--strong); font-size: 0.9643rem; font-weight: 600; }
 .plugin-row-title small { flex: none; color: var(--muted); font-size: 0.7857rem; }
 .plugin-row-description { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.8571rem; line-height: 1.45; }
-.plugin-row-meta { display: flex; align-items: center; min-height: 20px; padding-right: 64px; color: var(--muted); font-size: 0.7857rem; }
+.plugin-row-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 20px; padding-right: 64px; color: var(--muted); font-size: 0.7857rem; }
 .plugin-row-meta .plugin-state { font-size: 0.7857rem; }
+.plugin-row-models {
+  padding: 0 6px;
+  border-radius: 5px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.7143rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
 .plugin-row-action {
   position: absolute;
   right: 10px;
@@ -341,6 +351,9 @@
   gap: 10px;
   padding: 0 24px 20px;
 }
+.plugin-provider-grid.compact {
+  padding: 0;
+}
 .plugin-provider-item {
   display: flex;
   align-items: center;
@@ -357,6 +370,115 @@
   background: var(--paper);
   border-color: color-mix(in srgb, var(--success) 38%, var(--line));
   opacity: 1;
+}
+.plugin-provider-item.disabled {
+  opacity: 0.5;
+}
+.plugin-model-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.plugin-model-head strong {
+  display: block;
+  color: var(--strong);
+  font-size: 0.9643rem;
+  font-weight: 600;
+}
+.plugin-model-head p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.8929rem;
+  line-height: 1.55;
+}
+.plugin-matrix {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--paper);
+}
+.plugin-matrix-head,
+.plugin-matrix-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(4, 88px);
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+}
+.plugin-matrix-head {
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8214rem;
+  font-weight: 600;
+}
+.plugin-matrix-head > span:not(:first-child) {
+  text-align: center;
+}
+.plugin-matrix-head > span.muted {
+  opacity: 0.6;
+}
+.plugin-matrix-row + .plugin-matrix-row {
+  border-top: 1px solid var(--line);
+}
+.plugin-matrix-row.off .plugin-matrix-name {
+  opacity: 0.6;
+}
+.plugin-matrix-name {
+  min-width: 0;
+}
+.plugin-panel .plugin-matrix-link {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  white-space: normal;
+}
+.plugin-panel .plugin-matrix-link:hover:not(:disabled) {
+  background: var(--hover);
+}
+.plugin-matrix-link > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.plugin-matrix-link strong {
+  color: var(--strong);
+  font-size: 0.9286rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plugin-matrix-link code {
+  color: var(--muted);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plugin-matrix-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.plugin-matrix-cell.global-off {
+  opacity: 0.55;
 }
 .plugin-provider-text {
   min-width: 0;
@@ -416,6 +538,9 @@
   .plugin-page-aside { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--line); }
   .plugin-facts { grid-template-columns: minmax(0, 1fr); }
   .plugin-provider-grid { grid-template-columns: minmax(0, 1fr); padding: 0 20px 16px; }
+  .plugin-provider-grid.compact { padding: 0; }
+  .plugin-matrix { overflow-x: auto; }
+  .plugin-matrix-head, .plugin-matrix-row { min-width: 540px; }
 }
 @container (max-width: 460px) {
   .plugin-hero { flex-direction: column; }

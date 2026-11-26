@@ -35,6 +35,10 @@ type Preferences struct {
 	// comparable.
 	HostPluginsOff        string `json:"host_plugins_off,omitempty"`
 	HostToolsProvidersOff string `json:"host_tools_providers_off,omitempty"`
+	// HostPluginProvidersOff records per-plugin provider disables as sorted
+	// "plugin:provider" pairs separated by commas; one string keeps preferences
+	// comparable.
+	HostPluginProvidersOff string `json:"host_plugin_providers_off,omitempty"`
 	MobileRelay                string `json:"mobile_relay,omitempty"`
 	Workspace                  string `json:"workspace"`
 	BrowserHomeURL             string `json:"browser_home_url"`

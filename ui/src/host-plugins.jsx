@@ -92,6 +92,42 @@ export function purposes(item) {
   if (contributes.desktop_apps?.length) list.push("桌面应用");
   return list;
 }
+
+export const HOST_TOOL_PROVIDERS = [
+  { id: "claude", name: "Claude", short: "Claude", detail: "Claude Code · Claude Desktop" },
+  { id: "antigravity", name: "Antigravity", short: "AGY", detail: "agy CLI · Antigravity Desktop" },
+  { id: "codex", name: "Codex", short: "Codex", detail: "codex CLI · Codex Desktop" },
+];
+
+export function pluginOffersModelTools(plugin) {
+  if (!plugin) return false;
+  if (plugin.built_in) return true;
+  if (!purposes(plugin).includes("AI 工具")) return false;
+  if (plugin.loaded && Array.isArray(plugin.tools) && plugin.tools.length > 0) {
+    return plugin.tools.some(tool => !tool.page_only);
+  }
+  return true;
+}
+
+function pluginProvidersMap(plugin) {
+  return {
+    claude: plugin?.providers?.claude !== false,
+    antigravity: plugin?.providers?.antigravity !== false,
+    codex: plugin?.providers?.codex !== false,
+  };
+}
+
+function globalProvidersMap(view) {
+  return {
+    claude: view?.providers?.claude !== false,
+    antigravity: view?.providers?.antigravity !== false,
+    codex: view?.providers?.codex !== false,
+  };
+}
+
+function hasNonModelContributions(plugin) {
+  return Boolean(plugin?.contributes?.views?.length || plugin?.contributes?.desktop_apps?.length);
+}
 // categoryNames are the market's sections. The app lists only those it
 // knows, in the order the market gives, so new ones can come later.
 const categoryNames = { desktop: "桌面控制", developer: "开发", system: "系统与状态", network: "网络", files: "文件", productivity: "效率", example: "示例" };
@@ -277,10 +313,14 @@ function entryInfo(entry, view) {
   const plugin = entry.plugin;
   let state = { tone: "", label: "可安装" };
   if (plugin) {
+    const pm = pluginProvidersMap(plugin);
+    const noModelsEnabled = pluginOffersModelTools(plugin) && !hasNonModelContributions(plugin)
+      && !HOST_TOOL_PROVIDERS.some(p => pm[p.id]);
     state = plugin.problem && !plugin.needs_settings ? { tone: "problem", label: "无法使用" }
       : plugin.enabled === false ? { tone: "off", label: "已停用" }
       : !plugin.supported ? { tone: "problem", label: unsupportedLabel(plugin) }
       : plugin.needs_settings ? { tone: "waiting", label: "需要配置" }
+      : noModelsEnabled ? { tone: "off", label: "未对模型启用" }
       : !view.enabled ? { tone: "", label: "未开启" }
       : plugin.loaded ? { tone: "online", label: "运行中" }
       : view.running ? { tone: "", label: "未加载" } : { tone: "waiting", label: "等待启动" };
@@ -425,6 +465,12 @@ function PluginRow({ entry, view, selected, busy, onSelect, onInstall }) {
   const info = entryInfo(entry, view);
   const action = !entry.plugin ? info.item.supported && "安装" : entry.offer && "更新";
   const installing = busy === `install:${entry.name}`;
+  const enabledModels = entry.plugin && entry.plugin.enabled !== false && pluginOffersModelTools(entry.plugin)
+    ? HOST_TOOL_PROVIDERS.filter(item => pluginProvidersMap(entry.plugin)[item.id])
+    : null;
+  const partialModels = enabledModels && enabledModels.length > 0 && enabledModels.length < HOST_TOOL_PROVIDERS.length
+    ? enabledModels.map(item => item.short).join(" · ")
+    : "";
   return (
     <div className={`plugin-row ${selected ? "selected" : ""} ${entry.plugin?.enabled === false ? "off" : ""}`}>
       <button type="button" className="plugin-row-main" aria-current={selected ? "page" : undefined} onClick={onSelect}
@@ -433,7 +479,10 @@ function PluginRow({ entry, view, selected, busy, onSelect, onInstall }) {
         <span className="plugin-row-text">
           <span className="plugin-row-title"><strong>{info.title}</strong>{info.version && <small>{info.version}</small>}</span>
           <span className="plugin-row-description">{info.text}</span>
-          <span className="plugin-row-meta">{entry.plugin || !info.item.supported ? <StateChip state={info.state} /> : <span>{translate(sources[entry.source])}</span>}</span>
+          <span className="plugin-row-meta">
+            {entry.plugin || !info.item.supported ? <StateChip state={info.state} /> : <span>{translate(sources[entry.source])}</span>}
+            {partialModels && <span className="plugin-row-models">{partialModels}</span>}
+          </span>
         </span>
       </button>
       {action && <button type="button" className="plugin-row-action" disabled={Boolean(busy)} onClick={onInstall}>
@@ -830,6 +879,8 @@ function Detail({ model, name, onConfirm, onPage }) {
   const separator = view.directory.includes("\\") ? "\\" : "/";
   const installing = busy === `install:${name}`, removing = busy === `remove:${name}`, switching = busy === `switch:${name}`;
   const on = plugin?.enabled !== false;
+  const pluginProviders = pluginProvidersMap(plugin);
+  const globalProviders = globalProvidersMap(view);
   const remove = async () => {
     const bodyText = plugin?.default
       ? "插件会停止运行并移到 plugins-removed 中保留。后续更新 Cage 不会强制重新安装它；如需恢复，可随时在插件设置中一键装回。"
@@ -901,6 +952,40 @@ function Detail({ model, name, onConfirm, onPage }) {
         <p>{plugin.missing_program ? missingProgramGuide(plugin.missing_program) : plugin.problem}</p>
       </div></div>}
       {!plugin && offer?.problem && <div className="plugin-banner problem" role="status"><TriangleAlert size={17} /><div><strong>{tr("暂时无法安装")}</strong><p>{offer.problem}</p></div></div>}
+      {plugin && pluginOffersModelTools(plugin) && (
+        <section className="plugin-model-card" aria-label={tr("按模型启用")}>
+          <div className="plugin-model-head">
+            <strong>{tr("按模型启用")}</strong>
+            <p>{tr("插件总开关开启时，可单独控制哪些 AI 模型能够使用此插件的工具。")}</p>
+          </div>
+          <div className="plugin-provider-grid compact" role="group" aria-label={tr("按模型启用")}>
+            {HOST_TOOL_PROVIDERS.map(item => {
+              const modelOn = pluginProviders[item.id];
+              const globalOn = globalProviders[item.id];
+              const active = on && Boolean(view.enabled) && globalOn && modelOn;
+              return (
+                <div key={item.id} className={`plugin-provider-item ${active ? "active" : ""} ${!on ? "disabled" : ""}`}>
+                  <div className="plugin-provider-text">
+                    <strong>{item.name}</strong>
+                    <small>{!globalOn ? tr("已在插件设置中全局关闭") : item.detail}</small>
+                  </div>
+                  <label className="plugin-switch small">
+                    <input
+                      role="switch"
+                      type="checkbox"
+                      aria-label={tr("为 {0} 启用此插件", item.name)}
+                      checked={Boolean(modelOn)}
+                      disabled={Boolean(busy) || !on}
+                      onChange={() => change({ plugin: name, providers: { [item.id]: !modelOn } }, `plugin-provider:${name}:${item.id}`)}
+                    />
+                    <span aria-hidden="true" />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
       <nav className="plugin-tabs" role="tablist" aria-label={tr("{0} 的内容", (info.title))}>
         <button type="button" role="tab" aria-selected={tab === "tools"} onClick={() => setTab("tools")}>{tr("工具")}<em>{tools.length}</em></button>
         <button type="button" role="tab" aria-selected={tab === "permissions"} onClick={() => setTab("permissions")}>{plugin ? tr("授权与权限") : tr("权限")}<em>{declared.length}</em></button>
@@ -967,23 +1052,14 @@ function Detail({ model, name, onConfirm, onPage }) {
   );
 }
 
-const HOST_TOOL_PROVIDERS = [
-  { id: "claude", name: "Claude", detail: "Claude Code · Claude Desktop" },
-  { id: "antigravity", name: "Antigravity", detail: "agy CLI · Antigravity Desktop" },
-  { id: "codex", name: "Codex", detail: "codex CLI · Codex Desktop" },
-];
-
-function SettingsPage({ model, status, onConfirm }) {
+function SettingsPage({ model, status, onConfirm, onPage }) {
   const tr = useTranslation();
   const { view, busy, change, syncStatus, bridgeStatus, triggerSync, toggleBridge } = model;
   const remote = isRemoteClient();
   const hostName = getClientContext().name || tr("远程主机");
   const waiting = view.enabled && !view.running;
-  const providers = {
-    claude: view.providers?.claude !== false,
-    antigravity: view.providers?.antigravity !== false,
-    codex: view.providers?.codex !== false,
-  };
+  const providers = globalProvidersMap(view);
+  const modelPlugins = (view.plugins || []).filter(pluginOffersModelTools);
   const toggle = async () => {
     if (!view.enabled && !await onConfirm({
       title: remote ? translate("允许远程主机「{0}」上的 AI 助手使用插件？", hostName) : "允许 AI 助手使用这台电脑？",
@@ -1058,6 +1134,70 @@ function SettingsPage({ model, status, onConfirm }) {
           </button>}
         </div>
       </section>
+      {view.available && modelPlugins.length > 0 && (
+        <section className="plugin-card" aria-label={tr("按模型管理插件")}>
+          <div>
+            <h3>{tr("按模型管理插件")}</h3>
+            <p className="plugin-card-lead">{tr("除了总开关，你可以针对每个已安装插件单独控制它在 Claude、Antigravity 与 Codex 中是否启用。")}</p>
+          </div>
+          <div className="plugin-matrix" role="table" aria-label={tr("按模型管理插件")}>
+            <div className="plugin-matrix-head" role="row">
+              <span role="columnheader">{tr("插件")}</span>
+              <span role="columnheader">{tr("总开关")}</span>
+              {HOST_TOOL_PROVIDERS.map(item => (
+                <span key={item.id} role="columnheader" className={!providers[item.id] ? "muted" : ""}>{item.name}</span>
+              ))}
+            </div>
+            {modelPlugins.map(plugin => {
+              const on = plugin.enabled !== false;
+              const pm = pluginProvidersMap(plugin);
+              const title = pluginTitle(plugin);
+              const icon = plugin.icon ? runtimeURL(`/host-tools/icon?name=${encodeURIComponent(plugin.name)}`) : "";
+              return (
+                <div key={plugin.name} className={`plugin-matrix-row ${!on ? "off" : ""}`} role="row">
+                  <div className="plugin-matrix-name" role="cell">
+                    <button type="button" className="plugin-matrix-link" onClick={() => onPage?.({ kind: "plugin", name: plugin.name })}>
+                      <PluginIcon name={plugin.name} src={icon} builtIn={Boolean(plugin.built_in)} size={28} />
+                      <span>
+                        <strong>{title}</strong>
+                        <code>{plugin.name}</code>
+                      </span>
+                    </button>
+                  </div>
+                  <div className="plugin-matrix-cell" role="cell">
+                    <label className="plugin-switch small">
+                      <input
+                        role="switch"
+                        type="checkbox"
+                        aria-label={tr("启用 {0}", title)}
+                        checked={on}
+                        disabled={Boolean(busy)}
+                        onChange={() => change({ plugin: plugin.name, on: !on }, `switch:${plugin.name}`)}
+                      />
+                      <span aria-hidden="true" />
+                    </label>
+                  </div>
+                  {HOST_TOOL_PROVIDERS.map(item => (
+                    <div key={item.id} className={`plugin-matrix-cell ${!providers[item.id] ? "global-off" : ""}`} role="cell">
+                      <label className="plugin-switch small">
+                        <input
+                          role="switch"
+                          type="checkbox"
+                          aria-label={tr("为 {0} 启用 {1}", item.name, title)}
+                          checked={Boolean(pm[item.id])}
+                          disabled={Boolean(busy) || !on}
+                          onChange={() => change({ plugin: plugin.name, providers: { [item.id]: !pm[item.id] } }, `plugin-provider:${plugin.name}:${item.id}`)}
+                        />
+                        <span aria-hidden="true" />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
       <ul className="plugin-facts">
         <li><ShieldCheck size={18} /><div><strong>{tr("每次操作都先征求同意")}</strong><p>{remote ? tr("需要确认时会在你本机弹出原生确认框并标明远程主机名称，可选择允许一次或始终允许。") : tr("系统会弹窗显示插件、工具和参数，你可以只允许一次，或在本次运行期间都允许。")}</p></div></li>
         <li><TriangleAlert size={18} /><div><strong>{tr("不受环境隔离保护")}</strong><p>{tr("插件以你的系统账户权限运行。只安装你信任的插件。")}</p></div></li>
@@ -1388,7 +1528,7 @@ export function HostPluginsPanel({ model, page, status, onConfirm, onPage }) {
       {page.kind === "plugin" ? <Detail key={page.name} model={model} name={page.name} onConfirm={onConfirm} onPage={onPage} />
         : page.kind === "market" ? <Market model={model} onConfirm={onConfirm} onPage={onPage} />
         : page.kind === "drafts" ? <DraftsPage model={model} status={status} onConfirm={onConfirm} onPage={onPage} />
-        : <SettingsPage model={model} status={status} onConfirm={onConfirm} />}
+        : <SettingsPage model={model} status={status} onConfirm={onConfirm} onPage={onPage} />}
     </div>
   );
 }

@@ -76,6 +76,11 @@ func (c Command) tool() *mcp.Tool {
 	}
 }
 
+// PluginName identifies the built-in command plugin for per-client filtering.
+func (c Command) PluginName() string {
+	return "commands"
+}
+
 // Tools reports the model tool names registered by Command.
 func (c Command) Tools() []string {
 	if c.Jobs != nil {

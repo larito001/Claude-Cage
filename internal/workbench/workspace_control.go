@@ -136,13 +136,14 @@ func (s *Server) readSavedAppearance() Appearance {
 }
 
 type workspaceExtensionSummary struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name,omitempty"`
-	Version     string `json:"version,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	Loaded      bool   `json:"loaded"`
-	ToolCount   int    `json:"tool_count"`
-	Core        bool   `json:"core,omitempty"`
+	Name        string          `json:"name"`
+	DisplayName string          `json:"display_name,omitempty"`
+	Version     string          `json:"version,omitempty"`
+	Enabled     bool            `json:"enabled"`
+	Providers   map[string]bool `json:"providers,omitempty"`
+	Loaded      bool            `json:"loaded"`
+	ToolCount   int             `json:"tool_count"`
+	Core        bool            `json:"core,omitempty"`
 }
 
 func neutralExtensionAlias(name string) string {
@@ -182,6 +183,7 @@ func (b *workspaceControlBridge) handleStatus(w http.ResponseWriter, r *http.Req
 			DisplayName: neutralCatalogText(p.DisplayName),
 			Version:     p.Version,
 			Enabled:     p.Enabled,
+			Providers:   p.Providers,
 			Loaded:      p.Loaded,
 			ToolCount:   len(p.Tools),
 			Core:        p.BuiltIn,

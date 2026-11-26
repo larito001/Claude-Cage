@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 import tempfile
 import time
+import tomllib
 import unittest
 from unittest.mock import patch
 
@@ -25,6 +26,28 @@ def make_jwt(claims):
 
 
 class ProviderAccountTests(unittest.TestCase):
+    def test_codex_existing_tui_settings_remain_valid(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            cfg = home / '.codex'
+            cfg.mkdir()
+            path = cfg / 'config.toml'
+            for header in ('[tui]', '[ "tui" ] # preferences', "['tui']"):
+                path.write_text(header + '\nnotifications = true\n[other]\nvalue = 1\n')
+                with patch.object(Path, 'home', return_value=home):
+                    helper.CodexAdapter().ensure_profile(cfg)
+                    first = path.read_text()
+                    helper.CodexAdapter().ensure_profile(cfg)
+                self.assertEqual(path.read_text(), first)
+                parsed = tomllib.loads(first)
+                self.assertEqual(parsed['tui'], {'notifications': True, 'screen_reader_detection_done': True})
+                self.assertEqual(parsed['other']['value'], 1)
+
+    def test_login_url_does_not_consume_status_lines(self):
+        url = 'https://auth.openai.com/oauth/authorize?client_id=test&state=expected'
+        for suffix in ('\nWaiting for authentication...', '\r\n\r\nWaiting for authentication...', '\nDone'):
+            self.assertEqual(helper.extract_stream_login_url('\x1b[32m' + url + '\x1b[0m' + suffix), url)
+
     def setUp(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)

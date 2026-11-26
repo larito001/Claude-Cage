@@ -45,6 +45,18 @@ type namedPromptPlugin interface {
 	Prompts() []string
 }
 
+// identifiedPlugin is an optional interface implemented by plugins that report
+// their canonical plugin identifier for per-client exposure filtering.
+type identifiedPlugin interface {
+	PluginName() string
+}
+
+// filteredPlugin is an optional interface for multi-plugin proxies that filter
+// individual tools and prompts by owning plugin name.
+type filteredPlugin interface {
+	RegisterFiltered(server *mcp.Server, allow func(pluginName string) bool)
+}
+
 // PromptInfo is a prompt's name and what it says it does.
 type PromptInfo struct {
 	Name        string `json:"name"`
@@ -59,6 +71,8 @@ type Bridge struct {
 	base        []Plugin
 	ephemeralMu sync.RWMutex
 	ephemeral   []Plugin
+	filterMu    sync.RWMutex
+	filter      func(client, pluginName string) bool
 	once        sync.Once
 }
 
@@ -82,7 +96,7 @@ func Start(token string, plugins ...Plugin) (*Bridge, error) {
 	}
 	base := append([]Plugin(nil), plugins...)
 	b := &Bridge{token: token, listener: listener, base: base}
-	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
+	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		// One server per request keeps clients from seeing each other's state.
 		server := mcp.NewServer(&mcp.Implementation{Name: "computer", Version: "1"}, &mcp.ServerOptions{
 			Capabilities: &mcp.ServerCapabilities{
@@ -90,14 +104,36 @@ func Start(token string, plugins ...Plugin) (*Bridge, error) {
 				Prompts: &mcp.PromptCapabilities{ListChanged: true},
 			},
 		})
-		for _, plugin := range b.base {
+		client := requestClient(r)
+		b.filterMu.RLock()
+		filter := b.filter
+		b.filterMu.RUnlock()
+		registerOne := func(plugin Plugin) {
+			if filter == nil {
+				plugin.Register(server)
+				return
+			}
+			if fp, ok := plugin.(filteredPlugin); ok {
+				fp.RegisterFiltered(server, func(pluginName string) bool {
+					return pluginName == "" || filter(client, pluginName)
+				})
+				return
+			}
+			if id, ok := plugin.(identifiedPlugin); ok {
+				if name := id.PluginName(); name != "" && !filter(client, name) {
+					return
+				}
+			}
 			plugin.Register(server)
+		}
+		for _, plugin := range b.base {
+			registerOne(plugin)
 		}
 		b.ephemeralMu.RLock()
 		ephemeral := append([]Plugin(nil), b.ephemeral...)
 		b.ephemeralMu.RUnlock()
 		for _, plugin := range ephemeral {
-			plugin.Register(server)
+			registerOne(plugin)
 		}
 		return server
 		// Without sessions: a client that connected before this endpoint was
@@ -141,6 +177,28 @@ func (b *Bridge) SetEphemeral(plugins ...Plugin) {
 	b.ephemeralMu.Lock()
 	b.ephemeral = append([]Plugin(nil), plugins...)
 	b.ephemeralMu.Unlock()
+}
+
+// SetFilter sets an optional predicate consulted per MCP HTTP request to decide
+// whether pluginName is exposed to client (identified via X-MCP-Client header
+// or URL path segment, or empty when unspecified).
+func (b *Bridge) SetFilter(allow func(client, pluginName string) bool) {
+	b.filterMu.Lock()
+	b.filter = allow
+	b.filterMu.Unlock()
+}
+
+func requestClient(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	if header := strings.ToLower(strings.TrimSpace(r.Header.Get("X-MCP-Client"))); header != "" {
+		return header
+	}
+	if r.URL != nil {
+		return strings.ToLower(strings.Trim(r.URL.Path, "/"))
+	}
+	return ""
 }
 
 // Addr is the loopback host:port the bridge listens on.
@@ -337,18 +395,28 @@ func buildPluginPrompt(name, title, description string, toolNames []string) (*mc
 
 // connect is shared by tests and callers that need a client for the bridge.
 func (b *Bridge) connect(ctx context.Context, token string) (*mcp.ClientSession, error) {
+	return b.connectAs(ctx, token, "")
+}
+
+func (b *Bridge) connectAs(ctx context.Context, token, clientID string) (*mcp.ClientSession, error) {
 	client := mcp.NewClient(&mcp.Implementation{Name: "client", Version: "1"}, nil)
 	return client.Connect(ctx, &mcp.StreamableClientTransport{
 		Endpoint:   "http://" + b.Addr(),
-		HTTPClient: &http.Client{Transport: bearer{token}},
+		HTTPClient: &http.Client{Transport: bearer{token: token, client: clientID}},
 		MaxRetries: -1,
 	}, nil)
 }
 
-type bearer struct{ token string }
+type bearer struct {
+	token  string
+	client string
+}
 
 func (t bearer) RoundTrip(r *http.Request) (*http.Response, error) {
 	r = r.Clone(r.Context())
 	r.Header.Set("Authorization", "Bearer "+t.token)
+	if t.client != "" {
+		r.Header.Set("X-MCP-Client", t.client)
+	}
 	return http.DefaultTransport.RoundTrip(r)
 }

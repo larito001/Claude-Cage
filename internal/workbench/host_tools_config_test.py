@@ -1,6 +1,7 @@
 """Temporary fixtures only; never inspect the actual user's home."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -40,13 +41,15 @@ class HostToolsConfigTests(unittest.TestCase):
         data = json.loads(path.read_text())
         self.assertEqual(data["theme"], "dark")
         self.assertEqual(data["mcpServers"], {"other": {"command": "x"}, "computer": ENTRY})
-        self.assertEqual(path.stat().st_mode & 0o777, 0o640)
+        if os.name != "nt":
+            self.assertEqual(path.stat().st_mode & 0o777, 0o640)
 
     def test_missing_file_is_created_private(self):
         path = self.home / ".claude.json"
         self.assertTrue(config.add_server(path, "computer", ENTRY, ours))
         self.assertEqual(json.loads(path.read_text()), {"mcpServers": {"computer": ENTRY}})
-        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        if os.name != "nt":
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
     def test_unchanged_entry_is_not_rewritten(self):
         path = self.home / ".claude.json"
@@ -86,10 +89,11 @@ class HostToolsConfigTests(unittest.TestCase):
         endpoint = self.home / ".config/mcp-relay/computer.json"
         self.assertEqual(program.read_text(), "# relay\n")
         self.assertEqual(json.loads(endpoint.read_text()), {"url": ENTRY["url"], "headers": ENTRY["headers"]})
-        self.assertEqual(endpoint.stat().st_mode & 0o777, 0o600)
+        if os.name != "nt":
+            self.assertEqual(endpoint.stat().st_mode & 0o777, 0o600)
         data = json.loads((desktop / "claude_desktop_config.json").read_text())
         self.assertEqual(data["preferences"], {"sidebarMode": "x"})
-        self.assertEqual(data["mcpServers"]["computer"], {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]})
+        self.assertEqual(data["mcpServers"]["computer"], {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "claude"]})
         self.assertNotIn("Bearer", (desktop / "claude_desktop_config.json").read_text())
 
     def test_without_the_desktop_app_nothing_is_installed_for_it(self):
@@ -134,13 +138,14 @@ class HostToolsConfigTests(unittest.TestCase):
         config.configure(self.home, "computer", ENTRY, "# relay\n")
         program = self.home / ".local/share/mcp-relay/relay.py"
         endpoint = self.home / ".config/mcp-relay/computer.json"
-        expected_relay = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
+        expected_relay = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "claude"]}
+        expected_http = dict(ENTRY, headers={**ENTRY["headers"], "X-MCP-Client": "claude"})
         self.assertEqual(json.loads((default_desktop / "claude_desktop_config.json").read_text())["mcpServers"]["computer"], expected_relay)
         first_data = json.loads((first / "claude_desktop_config.json").read_text())
         self.assertEqual(first_data["preferences"], {"sidebarMode": "chat"})
         self.assertEqual(first_data["mcpServers"]["computer"], expected_relay)
         self.assertEqual(json.loads((second / "claude_desktop_config.json").read_text())["mcpServers"]["computer"], own_desktop)
-        self.assertEqual(json.loads((first_code / ".claude.json").read_text())["mcpServers"]["computer"], ENTRY)
+        self.assertEqual(json.loads((first_code / ".claude.json").read_text())["mcpServers"]["computer"], expected_http)
 
         config.unconfigure(self.home, "computer", ENTRY)
         self.assertEqual(json.loads((first / "claude_desktop_config.json").read_text()), {"preferences": {"sidebarMode": "chat"}})
@@ -159,7 +164,7 @@ class HostToolsConfigTests(unittest.TestCase):
         self.assertTrue(endpoint.is_file())
         self.assertEqual(
             json.loads((numbered / "claude_desktop_config.json").read_text())["mcpServers"]["computer"],
-            {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]},
+            {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "claude"]},
         )
         self.assertFalse((self.home / ".config/Claude").exists())
 
@@ -178,20 +183,21 @@ class HostToolsConfigTests(unittest.TestCase):
         config.configure(self.home, "computer", ENTRY, "# relay\n")
         program = self.home / ".local/share/mcp-relay/relay.py"
         endpoint = self.home / ".config/mcp-relay/computer.json"
-        expected_relay = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
+        expected_agy_relay = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "antigravity"]}
 
         self.assertFalse((agy_desktop / "data/claude_desktop_config.json").exists())
         self.assertEqual(
             json.loads((agy_account / "config/mcp_config.json").read_text())["mcpServers"]["computer"],
-            expected_relay,
+            expected_agy_relay,
         )
         self.assertEqual(
             json.loads((agy_desktop / "home/.gemini/config/mcp_config.json").read_text())["mcpServers"]["computer"],
-            expected_relay,
+            expected_agy_relay,
         )
         codex_text = (codex_account / "config.toml").read_text()
         self.assertIn('model = "o3"', codex_text)
         self.assertIn("[mcp_servers.computer]", codex_text)
+        self.assertIn('"codex"', codex_text)
 
         config.unconfigure(self.home, "computer", ENTRY)
         self.assertEqual(json.loads((agy_account / "config/mcp_config.json").read_text()), {})
@@ -227,6 +233,19 @@ class HostToolsConfigTests(unittest.TestCase):
         self.assertIn("computer", json.loads((self.home / ".claude.json").read_text())["mcpServers"])
         self.assertEqual(json.loads((self.home / ".gemini/config/mcp_config.json").read_text()), {})
         self.assertIn("[mcp_servers.computer]", (self.home / ".codex/config.toml").read_text())
+
+    def test_legacy_two_arg_relay_entries_upgrade_cleanly_to_per_client_args(self):
+        program, endpoint = config.relay_files(self.home, "computer")
+        legacy_relay = {"command": "/usr/bin/python3", "args": [str(program), str(endpoint)]}
+        agy_cfg = self.home / ".gemini/config/mcp_config.json"
+        agy_cfg.parent.mkdir(parents=True)
+        agy_cfg.write_text(json.dumps({"mcpServers": {"computer": legacy_relay}}))
+
+        config.configure(self.home, "computer", ENTRY, "# relay\n")
+        self.assertEqual(
+            json.loads(agy_cfg.read_text())["mcpServers"]["computer"],
+            {"command": "/usr/bin/python3", "args": [str(program), str(endpoint), "antigravity"]},
+        )
 
 
 if __name__ == "__main__":
