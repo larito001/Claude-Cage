@@ -15,6 +15,7 @@ import { api, native, nativeAvailable } from "./api";
 import { AgentIcon, ProviderIcon } from "./agent-icon";
 import { BrowserUploads } from "./browser-uploads";
 import { ProjectDialog } from "./project-dialog";
+import { DesktopProjectFolder } from "./desktop-project-folder";
 import { sendFiles } from "./file-transfer";
 import { shareClipboard } from "./shared-clipboard.mjs";
 import { desktopInputChannel } from "./desktop-input-channel.mjs";
@@ -599,6 +600,9 @@ export function DesktopPane({
   onStatus,
   onFallback,
   onControl,
+  start,
+  refreshInstances,
+  folderAction,
   close,
   busy,
 }) {
@@ -609,6 +613,7 @@ export function DesktopPane({
   const clipboardRef = useRef(null);
   const clipboardReady = useRef(false);
   const screenVisible = visible && windowVisible;
+  const stopped = Boolean(start) && account.running === false;
   const clipboardState = desktopClipboardState({
     ready,
     focused,
@@ -656,7 +661,7 @@ export function DesktopPane({
     return () => onControl(account.id, null);
   }, [account.id, onControl]);
   useEffect(() => {
-    if (!screenVisible) return;
+    if (!screenVisible || stopped) return;
     const container = box.current;
     if (!container) return;
     let live = true,
@@ -782,11 +787,17 @@ export function DesktopPane({
           input.current = null;
           channel?.dispose();
           channel = undefined;
-          if (live) setMessage("画面已断开");
+          if (live) {
+            setMessage("画面已断开");
+            void refreshInstances?.(true);
+          }
         });
       })
       .catch((e) => {
-        if (live) setMessage(e.message);
+        if (live) {
+          setMessage(e.message);
+          if (e.status === 409) void refreshInstances?.(true);
+        }
       });
     return () => {
       live = false;
@@ -798,7 +809,7 @@ export function DesktopPane({
       rfb.current = null;
       client?.disconnect();
     };
-  }, [account.id, account.generation, screenVisible, attempt, instancePath]);
+  }, [account.id, account.generation, screenVisible, stopped, attempt, instancePath, refreshInstances]);
   return (
     <section
       className="account-desktop-pane"
@@ -812,18 +823,22 @@ export function DesktopPane({
         <strong className="account-desktop-title" title={title(account)}>
           {heading ?? <DesktopAccountLabel account={account} />}
         </strong>
-        <button disabled={busy} onClick={close}>
-          {tr(closeLabel)}
-        </button>
+        {!stopped && folderAction}
+        {!stopped && <button disabled={busy} onClick={close}>{tr(closeLabel)}</button>}
       </header>
       <div className="account-desktop-screen" ref={box} />
-      {sizeError && !message && (
+      {sizeError && !stopped && !message && (
         <div className="account-desktop-message" role="alert">
           {tr("画面尺寸未能同步，显示比例可能不准确。")}{" "}
           <button onClick={() => sizingRef.current?.retry()}>{tr("重试调整")}</button>
         </div>
       )}
-      {message && (
+      {stopped ? (
+        <div className="account-desktop-message" role="status">
+          {title(account)} {tr("· 未启动")}{" "}
+          <button disabled={busy || !ready} onClick={start}>{tr("打开 Desktop")}</button>
+        </div>
+      ) : message && (
         <div className="account-desktop-message" role="status">
           {localizeBackendMessage(message, tr)}{" "}
           {message !== "正在连接…" && (
@@ -940,6 +955,10 @@ export const DesktopPanes = forwardRef(function DesktopPanes(
           onFallback={onFallback}
           onControl={setControl}
           busy={Boolean(model.pending)}
+          start={() => model.act(a, "start")}
+          refreshInstances={model.refresh}
+          folderAction={(!a.provider || a.provider === "claude" || a.provider === "antigravity") &&
+            <DesktopProjectFolder status={status} desktop={a.id} onStatus={onStatus} />}
           close={() => model.act(a, "stop")}
         />
       ))}

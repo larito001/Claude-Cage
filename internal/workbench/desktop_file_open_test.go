@@ -1,6 +1,7 @@
 package workbench
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,8 +11,42 @@ import (
 	"testing"
 )
 
+func TestDesktopProjectFolderUsesExplicitLocalGrant(t *testing.T) {
+	s := testServer(t)
+	s.ready = true
+	root, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.rememberSharedProject(root); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := s.desktopProjectFolderPath(root); err != nil || got != guestPath(root) {
+		t.Fatalf("registered folder: got %q, %v", got, err)
+	}
+	const route = "/api/input/files/desktop/project-folder"
+	body, _ := json.Marshal(map[string]string{"desktop": "default", "workspace": root})
+	if w := request(s, "POST", route, s.origin, string(body), true); w.Code != http.StatusForbidden {
+		t.Fatal("browser could queue folder", w.Code)
+	}
+	for _, workspace := range []string{"", s.environmentDir(), clientMountRoot + "/other", root + "-sibling", filepath.Join(root, "..")} {
+		body, _ := json.Marshal(map[string]string{"desktop": "default", "workspace": workspace})
+		w := desktopRequestForTest(s, "POST", route, body)
+		if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "先通过打开项目") {
+			t.Fatalf("folder %q: %d %s", workspace, w.Code, w.Body.String())
+		}
+	}
+	body, _ = json.Marshal(map[string]string{"desktop": "../other", "workspace": root})
+	if w := desktopRequestForTest(s, "POST", route, body); w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "桌面实例") {
+		t.Fatal("invalid instance", w.Code, w.Body.String())
+	}
+}
+
 func TestDesktopFilePathsStayInProjectGrants(t *testing.T) {
-	project := t.TempDir()
+	project, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	file := filepath.Join(project, "中文 Word #+%.docx")
 	if err := os.WriteFile(file, []byte("document"), 0600); err != nil {
 		t.Fatal(err)
@@ -38,6 +73,9 @@ func TestDesktopFilePathsStayInProjectGrants(t *testing.T) {
 	}
 	if _, err := resolveProjectFilePath(guestPath(filepath.Join(link, "secret.txt")), []string{project}); err == nil {
 		t.Fatal("host-side symlink escaped project")
+	}
+	if _, err := resolveProjectFilePath(guestPath(link), []string{link}); err == nil {
+		t.Fatal("replaced root accepted as a directory grant")
 	}
 }
 

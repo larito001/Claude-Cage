@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/sylvinus/agent-vm/internal/host"
+	"github.com/sylvinus/agent-vm/internal/paths"
 )
 
 type desktopFileOpen struct {
@@ -40,11 +41,11 @@ func resolveProjectFilePath(guest string, projects []string) (string, error) {
 		if guest != root && !strings.HasPrefix(guest, root+"/") {
 			continue
 		}
-		hostRoot, err := filepath.EvalSymlinks(project)
-		if err != nil {
+		hostRoot, err := paths.Resolve(project)
+		if err != nil || !paths.Equal(paths.Host(hostRoot), paths.Host(filepath.Clean(project))) {
 			continue
 		}
-		target, err := filepath.EvalSymlinks(filepath.Join(hostRoot, filepath.FromSlash(strings.TrimPrefix(guest, root))))
+		target, err := paths.Resolve(filepath.Join(hostRoot, filepath.FromSlash(strings.TrimPrefix(guest, root))))
 		if err != nil {
 			return "", errors.New("文件已移动、删除或无法访问")
 		}
@@ -59,6 +60,58 @@ func resolveProjectFilePath(guest string, projects []string) (string, error) {
 		return target, nil
 	}
 	return "", errors.New("只能打开 Cage 项目目录中的文件和文件夹")
+}
+
+// Queue the same broker request as an application's file-manager action.
+// The native client still claims the request and checks the grant at open time.
+func (s *Server) desktopProjectFolder(w http.ResponseWriter, r *http.Request) {
+	if !s.hasTrustedView(r) {
+		http.Error(w, "请在 Cage 桌面应用中打开文件", http.StatusForbidden)
+		return
+	}
+	var input struct {
+		Desktop   string `json:"desktop"`
+		Workspace string `json:"workspace"`
+	}
+	if !readJSON(w, r, &input) {
+		return
+	}
+	if input.Desktop != "default" && !validClaudeID(input.Desktop) {
+		http.Error(w, "桌面实例标识无效", http.StatusBadRequest)
+		return
+	}
+	if !s.fileTargetReady("desktop", "") {
+		http.Error(w, "环境尚未就绪", http.StatusConflict)
+		return
+	}
+	folder, err := s.desktopProjectFolderPath(input.Workspace)
+	if err != nil {
+		requestError(w, err)
+		return
+	}
+	body, _ := json.Marshal(map[string]string{"path": folder})
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	_, err = s.guestFilesForDesktop(ctx, input.Desktop, "desktop", "POST", "/open", bytes.NewReader(body), "")
+	if err != nil {
+		requestError(w, err)
+		return
+	}
+	jsonReply(w, map[string]bool{"ok": true})
+}
+
+func (s *Server) desktopProjectFolderPath(workspace string) (string, error) {
+	if workspace == "" || isClientMountPath(workspace) || paths.Equal(paths.Host(workspace), paths.Host(s.environmentDir())) {
+		return "", errors.New("请先通过打开项目添加该文件夹")
+	}
+	resolved, err := s.projectWorkspace(workspace)
+	if err != nil {
+		return "", err
+	}
+	if !paths.Equal(paths.Host(resolved), paths.Host(workspace)) {
+		return "", errors.New("项目文件夹的位置已变更，请重新选择")
+	}
+	return guestPath(resolved), nil
 }
 
 func (s *Server) desktopFileOpenAction(w http.ResponseWriter, r *http.Request) {
@@ -268,9 +321,17 @@ func openHostFile(path, action string) error {
 	if action == "open" && (isExecutablePathOrBundle(path) || (info.Mode().IsRegular() && hasExecutableFileHeader(path))) {
 		action = "reveal"
 	}
+	command := hostFileCommand(runtime.GOOS, path, action, info.IsDir())
+	// Explorer hands the request to the desktop shell and can exit with status
+	// 1 on success. Start it visibly and leave the window's lifetime to Windows.
+	if runtime.GOOS == "windows" && (action == "reveal" || info.IsDir()) {
+		if err := command.Start(); err != nil {
+			return errors.New("无法启动 Windows 资源管理器")
+		}
+		return command.Process.Release()
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	command := hostFileCommand(runtime.GOOS, path, action, info.IsDir())
 	cmd := exec.CommandContext(ctx, command.Path, command.Args[1:]...)
 	host.HideCommandWindow(cmd)
 	if err = cmd.Run(); err != nil {

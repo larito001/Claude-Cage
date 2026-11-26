@@ -522,6 +522,7 @@ func (s *Server) handler() http.Handler {
 	mux.HandleFunc("POST /api/input/files/{target}/{id}", s.fileInputUpload)
 	mux.HandleFunc("GET /api/input/files/desktop/requests", s.desktopFileRequests)
 	mux.HandleFunc("POST /api/input/files/desktop/open", s.desktopFileOpenAction)
+	mux.HandleFunc("POST /api/input/files/desktop/project-folder", s.desktopProjectFolder)
 	mux.HandleFunc("POST /api/browser/files/uploads/{id}", s.browserUpload)
 	mux.HandleFunc("GET /api/browser/files/downloads/{id}", s.browserDownload)
 	mux.HandleFunc("GET /api/browser/files/downloads/{id}/{action}", s.browserDownload)

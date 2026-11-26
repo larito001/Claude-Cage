@@ -258,11 +258,41 @@ type External struct {
 	Spawn func(context.Context) (*exec.Cmd, error)
 
 	mu      sync.Mutex
-	session *mcp.ClientSession
+	session *pluginSession
 	tools   []*mcp.Tool
 	prompts []*mcp.Prompt
 	// restarting serializes Restart, which starts the program outside mu.
 	restarting sync.Mutex
+}
+
+// An MCP session can wait for pending requests before it closes stdin. A
+// Windows launcher such as uv can therefore stay alive with its stdio worker
+// even during environment shutdown. Give the session time to drain first.
+type pluginSession struct {
+	*mcp.ClientSession
+	command *exec.Cmd
+}
+
+func (s *pluginSession) Close() error {
+	if s == nil || s.ClientSession == nil {
+		return nil
+	}
+	if runtime.GOOS != "windows" {
+		return s.ClientSession.Close()
+	}
+	stopped := make(chan struct{})
+	timer := time.AfterFunc(3*time.Second, func() {
+		defer close(stopped)
+		if s.command != nil && s.command.Process != nil {
+			// Pin this process identity while the Windows tree terminator uses its PID.
+			_ = s.command.Process.WithHandle(func(uintptr) { killTree(s.command) })
+		}
+	})
+	err := s.ClientSession.Close()
+	if !timer.Stop() {
+		<-stopped
+	}
+	return err
 }
 
 // Start runs the program and reads its tools and prompts. It fails, leaving
@@ -327,7 +357,7 @@ func (e *External) Restart(ctx context.Context, projectDir func() string) error 
 
 // open runs the program for projectDir and reads its tools and prompts. It
 // fails, leaving nothing running, if a tool or prompt's wording is not acceptable.
-func (e *External) open(ctx context.Context, projectDir string) (*mcp.ClientSession, []*mcp.Tool, []*mcp.Prompt, error) {
+func (e *External) open(ctx context.Context, projectDir string) (*pluginSession, []*mcp.Tool, []*mcp.Prompt, error) {
 	if !e.Manifest.Supported() {
 		return nil, nil, nil, fmt.Errorf("plugin %s does not support %s", e.Manifest.Name, runtime.GOOS)
 	}
@@ -399,13 +429,19 @@ func (e *External) open(ctx context.Context, projectDir string) (*mcp.ClientSess
 	client := mcp.NewClient(&mcp.Implementation{Name: "computer", Version: "1"}, nil)
 	connect, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	session, err := client.Connect(connect, &mcp.CommandTransport{Command: cmd, TerminateDuration: 2 * time.Second}, nil)
+	terminationGrace := 2 * time.Second
+	if runtime.GOOS == "windows" {
+		// Keep the launcher available to terminate its tree on a stalled close.
+		terminationGrace = 10 * time.Second
+	}
+	clientSession, err := client.Connect(connect, &mcp.CommandTransport{Command: cmd, TerminateDuration: terminationGrace}, nil)
 	if err != nil {
 		if bareProgram != "" && (errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist)) {
 			return nil, nil, nil, &MissingProgramError{Plugin: e.Manifest.Name, Program: bareProgram, Err: err}
 		}
 		return nil, nil, nil, fmt.Errorf("plugin %s: %w", e.Manifest.Name, err)
 	}
+	session := &pluginSession{ClientSession: clientSession, command: cmd}
 	listed, err := session.ListTools(connect, nil)
 	if err != nil {
 		_ = session.Close()

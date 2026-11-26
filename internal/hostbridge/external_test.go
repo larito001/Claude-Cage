@@ -21,6 +21,15 @@ import (
 // serves MCP on its standard input and output instead of running tests.
 func TestMain(m *testing.M) {
 	if kind := os.Getenv("TEST_PLUGIN"); kind != "" {
+		if kind == "launcher" {
+			child := exec.Command(os.Args[0])
+			child.Env = withEnv(os.Environ(), []string{"TEST_PLUGIN=pending"})
+			child.Stdin, child.Stdout, child.Stderr = os.Stdin, os.Stdout, os.Stderr
+			if err := child.Run(); err != nil {
+				os.Exit(1)
+			}
+			return
+		}
 		servePlugin(kind)
 		return
 	}
@@ -58,6 +67,12 @@ func servePlugin(kind string) {
 	mcp.AddTool(server, tool, func(_ context.Context, _ *mcp.CallToolRequest, in input) (*mcp.CallToolResult, output, error) {
 		if kind == "dies" && in.Text == "die" {
 			os.Exit(3)
+		}
+		if kind == "pending" {
+			if err := os.WriteFile("request-started", nil, 0600); err != nil {
+				return nil, output{}, err
+			}
+			time.Sleep(30 * time.Second)
 		}
 		return nil, output{Text: in.Text + in.Text}, nil
 	})
@@ -316,6 +331,50 @@ func TestPluginsThatBreakTheRulesAreLeftOut(t *testing.T) {
 	}
 	if len(failures) != 3 {
 		t.Errorf("%d failures:\n%s", len(failures), text)
+	}
+}
+
+func TestWindowsPluginCloseWithPendingRequestBehindLauncher(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows launcher process tree")
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	plugin := &External{
+		Manifest: Manifest{Name: "pending", Contributes: &Contributes{MCPServers: []MCPServer{{Command: []string{exe}}}}}, Dir: dir,
+		Env: func(context.Context) ([]string, error) { return []string{"TEST_PLUGIN=launcher"}, nil },
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	if err := plugin.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer plugin.Close()
+	session := plugin.session
+	returned := make(chan error, 1)
+	go func() {
+		_, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "repeat_text", Arguments: map[string]any{"text": "wait"}})
+		returned <- err
+	}()
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "request-started")); err == nil {
+			break
+		}
+		if ctx.Err() != nil {
+			t.Fatal("plugin did not receive the request")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	start := time.Now()
+	plugin.Close()
+	if elapsed := time.Since(start); elapsed > 12*time.Second {
+		t.Fatalf("stopping the plugin took %v", elapsed)
+	}
+	if err := <-returned; err == nil || ctx.Err() != nil {
+		t.Fatalf("pending request was not interrupted during close: %v", err)
 	}
 }
 

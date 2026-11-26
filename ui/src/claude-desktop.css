@@ -28,6 +28,7 @@
   color: var(--muted);
   font-size: 12px;
 }
+.desktop-folder-actions:not(:empty) {display:flex;justify-content:flex-end;padding:6px 12px;border-bottom:1px solid var(--line);}
 .desktop-screen {
   position: relative;
   flex: 1;

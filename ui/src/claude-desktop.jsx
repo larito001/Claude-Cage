@@ -7,6 +7,7 @@ import {
 import { ProviderIcon } from "./agent-icon";
 import { BrowserUploads } from "./browser-uploads";
 import { ProjectDialog } from "./project-dialog";
+import { DesktopProjectFolder } from "./desktop-project-folder";
 import { api, nativeAvailable } from "./api";
 import { SafetyMessage } from "./safety-message";
 import { RemoteView } from "./views";
@@ -165,6 +166,9 @@ export function ClaudeDesktop({
           </button>
         </div>
       )}
+      {desktop?.running && <div className="desktop-folder-actions">
+        <DesktopProjectFolder status={status} desktop="default" onStatus={onStatus} />
+      </div>}
       <div className="desktop-screen">
         {desktop?.running && status.vm_running ? (
           <RemoteView

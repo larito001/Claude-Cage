@@ -157,13 +157,18 @@ elif provider == 'codex':
     app_entry = ('com.openai.ChatGPT', ['chatgpt', 'codex', 'openai'], '/usr/bin/env '+arg('CODEX_HOME='+str(base/'home'/'.codex'))+' /usr/bin/chatgpt '+arg('--user-data-dir='+str(data))+' %u')
 else:
     app_entry = ('com.anthropic.Claude', ['claude'], '/usr/bin/claude-desktop '+arg('--user-data-dir='+str(data))+' %u')
-entries = [app_entry, ('web',['http','https'],'/usr/bin/python3 -I /usr/local/lib/desktop-auth-browser.py %u')]
+name, schemes, command = app_entry
+entries = [
+    (name, ['x-scheme-handler/'+scheme for scheme in schemes], command),
+    ('web', ['x-scheme-handler/http','x-scheme-handler/https'], '/usr/bin/python3 -I /usr/local/lib/desktop-auth-browser.py %u'),
+    ('cage-project-folder', ['inode/directory'], '/usr/local/bin/cage-desktop-files --open %f'),
+]
 default_lines = ['[Default Applications]']
 for name,mimes,line in entries:
-    (apps/(name+'.desktop')).write_text('[Desktop Entry]\nType=Application\nName='+name+'\nExec='+line+'\nMimeType='+''.join('x-scheme-handler/'+m+';' for m in mimes)+'\n')
+    (apps/(name+'.desktop')).write_text('[Desktop Entry]\nType=Application\nName='+name+'\nExec='+line+'\nMimeType='+';'.join(mimes)+';\n')
     for mime in mimes:
-        cache['MIME Cache']['x-scheme-handler/'+mime]=name+'.desktop;'
-        default_lines.append('x-scheme-handler/'+mime+'='+name+'.desktop;')
+        cache['MIME Cache'][mime]=name+'.desktop;'
+        default_lines.append(mime+'='+name+'.desktop;')
 with (apps/'mimeinfo.cache').open('w') as output:
     cache.write(output,space_around_delimiters=False)
 (Path.home()/'.config/mimeapps.list').write_text('\n'.join(default_lines)+'\n')

@@ -3371,5 +3371,10 @@
   "在主机执行命令；项目目录只是启动位置，不是文件访问边界": "Amar ku fuli martigeliyaha; tusaha mashruucu waa goobta bilowga oo keliya, ma aha xadka gelitaanka faylasha",
   "查询主机后台命令的状态和输出，或停止该命令": "Hubi xaaladda iyo soo-saarka amarka gadaal ka socda ee martigeliyaha, ama jooji amarkaas",
   "始终允许从这个项目启动主机命令？": "Had iyo jeer ma loo oggolaadaa in amarrada martigeliyaha laga bilaabo mashruucan?",
-  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Fadlan marka hore kaydi shaqadaada gudaha abka. Abka waxaa laga soo dejin doonaa oo laga cusbooneysiin doonaa isha rasmiga ah, xogta gelitaanka ee nuqul kasta oo madax-bannaanna waa la sii hayn doonaa."
+  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Fadlan marka hore kaydi shaqadaada gudaha abka. Abka waxaa laga soo dejin doonaa oo laga cusbooneysiin doonaa isha rasmiga ah, xogta gelitaanka ee nuqul kasta oo madax-bannaanna waa la sii hayn doonaa.",
+  "默认值：{0}": "Qiimaha caadiga ah: {0}",
+  "当前设置": "Dejinta hadda",
+  "保存连接设置后即可刷新选项。": "Kaydi dejinta xiriirka si aad u cusbooneysiiso xulashooyinka.",
+  "正在获取选项…": "Waxaa la soo qaadayaa xulashooyinka…",
+  "暂无可选项。": "Ma jiraan wax xulasho ah."
 }

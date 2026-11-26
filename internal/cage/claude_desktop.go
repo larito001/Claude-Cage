@@ -79,6 +79,9 @@ func DesktopInstallScriptFor(provider string) (string, bool) {
 // syncs the shared host transfer workspace for both default and account Desktops.
 func DesktopFileSupportScript() string {
 	return fileInputScript() + `
+sudo install -d -m 0755 /usr/local/share/applications
+printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=Project Folder' 'NoDisplay=true' 'Exec=/usr/local/bin/cage-desktop-files --open %f' 'MimeType=inode/directory;' | sudo tee /usr/local/share/applications/workbench-project-folder.desktop >/dev/null
+sudo -H -u cage xdg-mime default workbench-project-folder.desktop inode/directory
 sudo install -d -m 0755 /etc/claude-cage
 sudo python3 - <<'CAGE_DESKTOP_DOWNLOAD_CONFIG'
 import json, os

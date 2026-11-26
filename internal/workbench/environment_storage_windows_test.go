@@ -25,6 +25,11 @@ func TestWindowsJunctionCannotExposePrivateDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, dir := range []string{alias, filepath.Join(alias, "stored-data")} {
+		for _, grant := range []string{parent, alias} {
+			if _, err := resolveProjectFilePath(guestPath(dir), []string{grant}); err == nil {
+				t.Fatal("desktop folder opened through private junction", dir, grant)
+			}
+		}
 		if _, err := validateWorkspace(dir, s.profile); err == nil {
 			t.Fatal("private alias accepted as a workbench project", dir)
 		}

@@ -3371,5 +3371,10 @@
   "在主机执行命令；项目目录只是启动位置，不是文件访问边界": "Ejecuta un comando en el host; el directorio del proyecto es solo la ubicación inicial, no un límite de acceso a archivos",
   "查询主机后台命令的状态和输出，或停止该命令": "Consulta el estado y la salida de un comando en segundo plano en el host, o lo detiene",
   "始终允许从这个项目启动主机命令？": "¿Permitir siempre iniciar comandos en el host desde este proyecto?",
-  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Guarda primero tu trabajo en la aplicación. Se descargará y actualizará desde la fuente oficial, conservando los datos de inicio de sesión de cada instancia independiente."
+  "请先保存应用内的工作。将从官方软件源下载并更新应用，各独立实例的登录资料继续保留。": "Guarda primero tu trabajo en la aplicación. Se descargará y actualizará desde la fuente oficial, conservando los datos de inicio de sesión de cada instancia independiente.",
+  "默认值：{0}": "Valor predeterminado: {0}",
+  "当前设置": "Configuración actual",
+  "保存连接设置后即可刷新选项。": "Guarda la configuración de conexión para actualizar las opciones.",
+  "正在获取选项…": "Obteniendo opciones…",
+  "暂无可选项。": "No hay opciones disponibles."
 }
