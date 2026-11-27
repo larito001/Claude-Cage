@@ -102,7 +102,8 @@ User=cage-browser
 Environment=DISPLAY=:77
 ExecStart=/usr/local/bin/cage-log-run /usr/bin/openbox --config-file /etc/claude-cage/openbox.xml
 LogNamespace=cage
-Restart=on-failure
+Restart=always
+RestartSec=1
 UNIT
 sudo tee /etc/systemd/system/cage-browser.service >/dev/null <<'UNIT'
 [Unit]

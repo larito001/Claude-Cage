@@ -145,8 +145,9 @@ export class BrowserSpaces {
     });
     entry.targets.add(targetId);
     this.targets.set(targetId, entry);
+    let sessionId;
     try {
-      const sessionId = await activate({
+      sessionId = await activate({
         targetId,
         browserContextId: entry.browserContextId,
         space: entry.space,
@@ -155,13 +156,15 @@ export class BrowserSpaces {
         url: "about:blank",
         title: "",
       });
-      await this.cdp("Page.navigate", { url: address }, sessionId);
-      return { id: targetId, space: entry.space, incognito: false };
     } catch (error) {
       await this.targetClosed(targetId).catch(() => {});
       await this.cdp("Target.closeTarget", { targetId }).catch(() => {});
       throw error;
     }
+    // Kick off navigation without blocking the global mutation queue or
+    // destroying the newly created space tab when a remote site is slow.
+    void this.cdp("Page.navigate", { url: address }, sessionId, 15000).catch(() => {});
+    return { id: targetId, space: entry.space, incognito: false };
   }
 
   async setRoute(space, route = "") {

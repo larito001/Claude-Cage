@@ -561,11 +561,10 @@ async function activate(id, focus = false) {
   try {
     await visibility.activate(id);
   } catch (error) {
-    if (!focus) throw error;
-    // A newly focused tab (such as a login page opened while the browser view
-    // is hidden) must still open and navigate even if Openbox lags on window
-    // state sync; the subsequent /visibility call re-syncs fullscreen state.
-    console.error("Browser visibility sync deferred during focus:", formatCDPDiagnostic(error));
+    // Openbox may lag or restart while transitioning fullscreen state across
+    // multiple space windows. Never abort tab activation on a window-state sync
+    // hiccup; fall back to direct CDP activation so the user can always switch.
+    console.error("Browser visibility sync deferred during activate:", formatCDPDiagnostic(error));
     await cdp("Target.activateTarget", { targetId: id }).catch(() => {});
   }
   await session(id);
@@ -602,7 +601,10 @@ async function newTab(url = homeURL, incognito = false, space = "", route = "") 
         targets.set(tab.targetId, tab);
         await activate(tab.targetId, true);
       });
-      await cdp("Page.navigate", { url: address }, await session(result.id), 12000);
+      const sid = await session(result.id);
+      void cdp("Page.navigate", { url: address }, sid, 15000).catch(error => {
+        console.error("Incognito navigation deferred:", formatCDPDiagnostic(error));
+      });
       return result;
     }
     const { targetId } = await cdp("Target.createTarget", {
@@ -613,7 +615,10 @@ async function newTab(url = homeURL, incognito = false, space = "", route = "") 
     if (!targets.has(targetId))
       targets.set(targetId, { targetId, type: "page", url: "about:blank", title: "" });
     await activate(targetId, true);
-    await cdp("Page.navigate", { url: address }, await session(targetId), 12000);
+    const sid = await session(targetId);
+    void cdp("Page.navigate", { url: address }, sid, 15000).catch(error => {
+      console.error("Tab navigation deferred:", formatCDPDiagnostic(error));
+    });
     return { id: targetId };
   } finally {
     openingTargets--;
@@ -1129,16 +1134,21 @@ const server = http.createServer(async (req, res) => {
           } finally { clearTimeout(timer); clearInterval(retry); closingTargets.delete(id); }
           break;
         }
-        case "/navigate":
-          await cdp(
-            "Page.navigate",
-            { url: checkedURL(input.url) },
-            await session(id),
-          );
+        case "/navigate": {
+          const url = checkedURL(input.url);
+          const sid = await session(id);
+          void cdp("Page.navigate", { url }, sid, 15000).catch(error => {
+            console.error("Browser navigate deferred:", formatCDPDiagnostic(error));
+          });
           break;
-        case "/reload":
-          await cdp("Page.reload", {}, await session(id));
+        }
+        case "/reload": {
+          const sid = await session(id);
+          void cdp("Page.reload", {}, sid, 15000).catch(error => {
+            console.error("Browser reload deferred:", formatCDPDiagnostic(error));
+          });
           break;
+        }
         case "/back":
         case "/forward": {
           const sid = await session(id),

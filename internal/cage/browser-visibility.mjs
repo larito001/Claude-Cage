@@ -44,7 +44,11 @@ export class BrowserVisibility {
       await this.cdp("Target.activateTarget", { targetId });
       if (this.visible || !await this.canHide()) {
         const { windowId, bounds } = await this.cdp("Browser.getWindowForTarget", { targetId });
-        await this.ensureFullscreen(windowId, bounds);
+        const changed = await this.ensureFullscreen(windowId, bounds);
+        if (changed) {
+          // Re-raise the newly fullscreened window above other space windows on X11/Openbox.
+          await this.cdp("Target.activateTarget", { targetId }).catch(() => {});
+        }
       } else {
         await this.apply();
       }
@@ -67,7 +71,7 @@ export class BrowserVisibility {
     // The CDP reply can precede the window manager's state transition.
     // Fullscreen/minimized changes must observe the intermediate state, which
     // Openbox may report as maximized instead of normal.
-    for (let attempt = 0; attempt < 80; attempt++) {
+    for (let attempt = 0; attempt < 40; attempt++) {
       const current = await this.cdp("Browser.getWindowBounds", { windowId });
       const state = current.bounds.windowState;
       if (state === bounds.windowState || (allowMaximized && state === "maximized")) return;

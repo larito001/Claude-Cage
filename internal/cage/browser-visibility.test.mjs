@@ -171,3 +171,13 @@ test("a newer browser viewer restores a hide that is already running", async () 
   await Promise.all([hidden, activated, shown]);
   assert.equal(state, "fullscreen");
 });
+
+test("activating a secondary non-fullscreen space window re-raises it after fullscreen transition", async () => {
+  const f = fixture("maximized");
+  f.windows.set(2, { windowState: "maximized", left: 0, top: 0, width: 1200, height: 800 });
+  f.targets.set("space-tab", 2);
+  await f.visibility.activate("space-tab");
+  assert.equal(f.windows.get(2).windowState, "fullscreen");
+  const activations = f.calls.filter(call => call.method === "Target.activateTarget" && call.targetId === "space-tab");
+  assert.equal(activations.length, 2);
+});

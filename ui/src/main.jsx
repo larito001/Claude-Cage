@@ -654,30 +654,36 @@ function App() {
   const newPage = () => openBrowserPage();
   const openBrowserSpace = (space = "", defaultURL) => {
     const targetSpace = space || "";
-    if (targetSpace) {
-      const existing =
-        tabs.find(
-          (t) =>
-            t.id === lastBrowserTab.current &&
-            t.kind !== "terminal" &&
-            !t.incognito &&
-            t.space === targetSpace,
-        ) ||
-        tabs.find(
-          (t) =>
-            t.id === browser.active &&
-            t.kind !== "terminal" &&
-            !t.incognito &&
-            t.space === targetSpace,
-        ) ||
-        tabs.find((t) => t.kind !== "terminal" && !t.incognito && t.space === targetSpace);
-      if (existing) return select(existing.id);
+    const existing =
+      tabs.find(
+        (t) =>
+          t.id === lastBrowserTab.current &&
+          t.kind !== "terminal" &&
+          !t.incognito &&
+          (t.space || "") === targetSpace,
+      ) ||
+      tabs.find(
+        (t) =>
+          t.id === browser.active &&
+          t.kind !== "terminal" &&
+          !t.incognito &&
+          (t.space || "") === targetSpace,
+      ) ||
+      tabs.find(
+        (t) =>
+          t.kind !== "terminal" &&
+          !t.incognito &&
+          (t.space || "") === targetSpace,
+      );
+    if (existing) return select(existing.id);
+    const destination =
+      defaultURL || providerSpec(targetSpace)?.homeURL || settings?.browser_home_url || "https://www.bing.com/";
+    if (network.mode !== "open" && !isGuestLocalURL(destination)) {
+      setSafetyOpen(true);
+      notify("请先完成关键检查，再访问外部网站。");
+      return null;
     }
-    return openBrowserPage(
-      defaultURL || providerSpec(targetSpace)?.homeURL || settings?.browser_home_url || "https://www.bing.com/",
-      false,
-      targetSpace,
-    );
+    return openBrowserPage(destination, false, targetSpace);
   };
   const showBrowserResult = result => {
     if (!result?.id) return;

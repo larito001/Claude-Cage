@@ -29,7 +29,7 @@ type browserClient struct {
 func newBrowserClient(parent context.Context) *browserClient {
 	ctx, cancel := context.WithCancel(parent)
 	return &browserClient{ctx: ctx, cancel: cancel, http: &http.Client{
-		Transport:     &http.Transport{Proxy: nil, IdleConnTimeout: 30 * time.Second, MaxIdleConnsPerHost: 4, DialContext: (&net.Dialer{Timeout: 3 * time.Second}).DialContext},
+		Transport:     &http.Transport{Proxy: nil, IdleConnTimeout: 90 * time.Second, MaxIdleConnsPerHost: 8, DialContext: (&net.Dialer{Timeout: 5 * time.Second}).DialContext},
 		CheckRedirect: func(*http.Request, []*http.Request) error { return errors.New("redirect refused") },
 	}}
 }
@@ -85,6 +85,8 @@ func (b *browserResponseBody) Close() error {
 func (c *browserClient) request(ctx context.Context, token, method, path string, body []byte) ([]byte, error) {
 	timeout := 5 * time.Second
 	switch path {
+	case "/activate", "/visibility", "/navigate", "/reload", "/close", "/vault", "/ime":
+		timeout = 10 * time.Second
 	case "/new", "/login-open":
 		timeout = 25 * time.Second
 	case "/audit", "/paste-image", "/tailnet":

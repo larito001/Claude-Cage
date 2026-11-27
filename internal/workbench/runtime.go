@@ -259,6 +259,7 @@ func (s *Server) monitor(ctx context.Context) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	skipped := 0
+	consecutiveHealthFailures := 0
 	for ctx.Err() == nil {
 		timing := s.startMonitorTiming()
 		if s.op.TryLock() {
@@ -269,16 +270,22 @@ func (s *Server) monitor(ctx context.Context) {
 				token := s.credentials.Token
 				s.mu.Unlock()
 				if !ready {
+					consecutiveHealthFailures = 0
 					_ = s.attach()
 				} else {
 					ctx, cancel := s.controlContext()
 					_, err := s.guestAPI(ctx, token, "GET", "/health", nil)
 					cancel()
 					if err != nil {
-						s.mu.Lock()
-						s.ready = false
-						s.mu.Unlock()
+						consecutiveHealthFailures++
+						if consecutiveHealthFailures >= 3 {
+							s.mu.Lock()
+							s.ready = false
+							s.mu.Unlock()
+							consecutiveHealthFailures = 0
+						}
 					} else {
+						consecutiveHealthFailures = 0
 						s.ensureHostTools()
 					}
 				}

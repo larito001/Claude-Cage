@@ -22,10 +22,12 @@ func (s *Server) vnc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "环境尚未就绪", 409)
 		return
 	}
-	release, err := s.browserViews.acquire(s.changeBrowserVisibility)
+	release, err := s.browserViews.acquireBestEffort(s.changeBrowserVisibility)
 	if err != nil {
-		requestError(w, err)
-		return
+		diagnostics.Log("warn", "vnc", "浏览器画面可见性同步暂时失败，继续建立画面连接："+err.Error())
+		go func() {
+			_ = s.browserViews.apply(s.changeBrowserVisibility)
+		}()
 	}
 	defer release()
 	address := "127.0.0.1:15900"

@@ -112,3 +112,34 @@ test("claude, antigravity, and codex browser spaces isolate contexts, cookies, a
   }
   await second.spaces.shutdown();
 });
+
+test("slow or failed Page.navigate does not block or destroy newly created space tab", async t => {
+  const root = await mkdtemp(join(tmpdir(), "browser-spaces-slow-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  let closed = false;
+  let disposed = false;
+  let navigated = false;
+  const cdp = async (method) => {
+    if (method === "Target.createBrowserContext") return { browserContextId: "ctx-1" };
+    if (method === "Browser.setDownloadBehavior") return {};
+    if (method === "Target.createTarget") return { targetId: "tab-1" };
+    if (method === "Page.navigate") {
+      navigated = true;
+      throw new Error("Browser command timed out: Page.navigate");
+    }
+    if (method === "Target.closeTarget") { closed = true; return {}; }
+    if (method === "Target.disposeBrowserContext") { disposed = true; return {}; }
+    if (method === "Storage.getCookies") return { cookies: [] };
+    throw new Error("Unexpected CDP method: " + method);
+  };
+  const spaces = new BrowserSpaces(cdp, new SpaceCookies(root), "/tmp/downloads");
+  const opened = await spaces.open("claude", "https://claude.ai/", async () => "sid-1");
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.equal(opened.id, "tab-1");
+  assert.equal(opened.space, "claude");
+  assert.equal(navigated, true);
+  assert.equal(closed, false);
+  assert.equal(disposed, false);
+  assert.equal(spaces.spaces.has("claude"), true);
+  await spaces.shutdown();
+});

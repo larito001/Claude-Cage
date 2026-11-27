@@ -53,6 +53,18 @@ func (d *displayViewDemand) background(update func(bool) error) {
 }
 
 func (d *displayViewDemand) acquire(update func(bool) error) (func(), error) {
+	release, err := d.acquireBestEffort(update)
+	if err != nil {
+		release()
+		return nil, err
+	}
+	return release, nil
+}
+
+// acquireBestEffort registers the viewer even if the initial guest visibility
+// sync fails transiently, so a VNC viewer can still connect while a background
+// retry brings the window state back in sync.
+func (d *displayViewDemand) acquireBestEffort(update func(bool) error) (func(), error) {
 	d.mu.Lock()
 	d.viewers++
 	if d.idle != nil {
@@ -62,11 +74,8 @@ func (d *displayViewDemand) acquire(update func(bool) error) (func(), error) {
 	d.mu.Unlock()
 	var once sync.Once
 	release := func() { once.Do(func() { d.mu.Lock(); d.viewers--; d.mu.Unlock(); d.background(update) }) }
-	if err := d.apply(update); err != nil {
-		release()
-		return nil, err
-	}
-	return release, nil
+	err := d.apply(update)
+	return release, err
 }
 
 func (d *displayViewDemand) reset() {
