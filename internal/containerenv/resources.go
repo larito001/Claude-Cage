@@ -33,7 +33,7 @@ func (r *Runtime) verifyResources(ctx context.Context, containerID string) (reso
 // once, while the parent slice is re-applied from the configuration on every
 // start. Without this update an existing container keeps its create-time
 // values, and the lowest limit on the path applies. A failed update refuses
-// the start instead of running with limits Cage did not verify.
+// the start instead of running with limits SuperCage did not verify.
 func (r *Runtime) updateResources(ctx context.Context, containerID string) error {
 	container, err := r.inspectContainer(ctx)
 	if err != nil {
@@ -81,7 +81,7 @@ func parseResourceEvidence(slice cgroupLimits, scope *cgroupLimits, mountinfo st
 	}
 	if scope != nil {
 		if _, err := parseLimits(*scope, configuration); err != nil {
-			return resourceEvidence{}, errors.New("容器自身的 CPU、内存或进程数限额与配置不一致；请停止环境后重新启动，Cage 会更新已有容器")
+			return resourceEvidence{}, errors.New("容器自身的 CPU、内存或进程数限额与配置不一致；请停止环境后重新启动，SuperCage 会更新已有容器")
 		}
 	}
 	cgroup2 := false

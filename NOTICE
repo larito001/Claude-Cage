@@ -1,8 +1,8 @@
-Claude Cage
-Copyright (c) 2026 Claude Cage contributors (MIT, see LICENSE)
+SuperCage
+Copyright (c) 2026 SuperCage contributors (MIT, see LICENSE)
 Based on agent-vm.
 
-The Cage desktop bundle additionally includes React, xterm.js, Lucide,
+The SuperCage desktop bundle additionally includes React, xterm.js, Lucide,
 noVNC (MPL-2.0, including the modifications in internal/cage/novnc-patch.py),
 and the separately executed Mihomo core (GPL-3.0).
 Their license texts and source notices are distributed in Contents/Resources/licenses.
@@ -25,7 +25,7 @@ projects. Their licenses and notices are in THIRD_PARTY_LICENSES, and
 
 The third_party/ folder contains the dependency source compiled into Cage.
 Files in the bundled Lima, sshocker, gvisor-tap-vsock and pkg/sftp components
-include modifications by agent-vm and Cage contributors. Their original
+include modifications by agent-vm and SuperCage contributors. Their original
 license headers and notices are retained. The patch files carry the code
 changes used for the bundled components.
 

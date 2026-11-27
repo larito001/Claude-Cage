@@ -74,18 +74,18 @@ func runDirectory(ctx context.Context, profile, hostDir string, client runShareC
 	}
 	state, err := client.projects(ctx)
 	if err != nil {
-		return "", runDirectoryError("无法确认当前目录是否已共享（Cage 未打开或控制服务不可用："+firstLine(err)+"）", false,
-			"无法确认当前目录是否已共享：%v\n请先打开 Cage 并等待环境就绪，或用 --workdir 指定环境中的目录。", err)
+		return "", runDirectoryError("无法确认当前目录是否已共享（SuperCage 未打开或控制服务不可用："+firstLine(err)+"）", false,
+			"无法确认当前目录是否已共享：%v\n请先打开 SuperCage 并等待环境就绪，或用 --workdir 指定环境中的目录。", err)
 	}
 	if !state.Ready {
-		return "", runDirectoryError("Cage 环境尚未就绪，无法确认当前目录是否已共享", false, "Cage 环境尚未就绪，命令没有运行。请在 Cage 中完成启动后重试。")
+		return "", runDirectoryError("SuperCage 环境尚未就绪，无法确认当前目录是否已共享", false, "SuperCage 环境尚未就绪，命令没有运行。请在 SuperCage 中完成启动后重试。")
 	}
 	root, workspace := sharedRoot(state, dir)
 	if root == "" {
 		// Not shared: ask, or say how to share.
-		instructions := "在 Cage 的“项目”中添加该文件夹，或在终端中运行 cage run --here 并确认共享；也可以用 --workdir 指定环境中的目录。"
+		instructions := "在 SuperCage 的“项目”中添加该文件夹，或在终端中运行 cage run --here 并确认共享；也可以用 --workdir 指定环境中的目录。"
 		if confirm == nil {
-			return "", runDirectoryError("当前目录未共享给 Cage", true, "当前目录尚未共享给 Cage，命令没有运行：%s\n%s", dir, instructions)
+			return "", runDirectoryError("当前目录未共享给 SuperCage", true, "当前目录尚未共享给 SuperCage，命令没有运行：%s\n%s", dir, instructions)
 		}
 		yes, err := confirm(dir)
 		if err != nil {

@@ -55,7 +55,7 @@ func joinStrings(items []string, sep string) string {
 
 func (s *Server) listDesktopApps(w http.ResponseWriter, r *http.Request) {
 	if !s.vmRunning() {
-		http.Error(w, "请先启动 Cage 环境", http.StatusConflict)
+		http.Error(w, "请先启动 SuperCage 环境", http.StatusConflict)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
@@ -107,7 +107,7 @@ func (s *Server) desktopAppAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.vmRunning() {
-		http.Error(w, "请先启动 Cage 环境", http.StatusConflict)
+		http.Error(w, "请先启动 SuperCage 环境", http.StatusConflict)
 		return
 	}
 	s.launchRequest(w, r, "desktop-app-install-"+provider, func() error {

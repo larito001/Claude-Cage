@@ -74,7 +74,7 @@ func TestVMStartErrorPreservesWindowsLoaderFailure(t *testing.T) {
 	t.Cleanup(func() { diagnostics.SetDefault(previous) })
 	dir := t.TempDir()
 	// The executable was blocked before it could write any QEMU stderr.
-	log := `{"msg":"qemu[loader]: Windows 应用程序控制或签名校验阻止加载 QEMU。请使用有可信签名的 Cage 安装包"}`
+	log := `{"msg":"qemu[loader]: Windows 应用程序控制或签名校验阻止加载 QEMU。请使用有可信签名的 SuperCage 安装包"}`
 	if err := os.WriteFile(filepath.Join(dir, "ha.stderr.log"), []byte(log), 0600); err != nil {
 		t.Fatal(err)
 	}

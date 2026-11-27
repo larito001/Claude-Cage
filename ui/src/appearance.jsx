@@ -112,7 +112,7 @@ export function AppearanceProvider({ children }) {
         danger: variables["--danger"],
         translucent: !theme.opaqueWindows,
       }).catch(() =>
-        setError("外观已应用到工作台，原生窗口未能同步，请重新打开 Cage。"),
+        setError("外观已应用到工作台，原生窗口未能同步，请重新打开 SuperCage。"),
       );
   }, [appearance, variant, systemReduced]);
   useEffect(() => {

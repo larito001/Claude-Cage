@@ -144,7 +144,7 @@ func TestGuestMarketCatalogIsNeutralAndFolderIsSanitized(t *testing.T) {
 			Name:        "excel-workbooks",
 			DisplayName: "Excel Workbooks",
 			Version:     "1.0.0",
-			Description: "Read and write spreadsheets in Cage guest VM.",
+			Description: "Read and write spreadsheets in SuperCage guest VM.",
 			Kind:        hostbridge.KindGuest,
 			Permissions: []string{},
 			Categories:  []string{"files"},

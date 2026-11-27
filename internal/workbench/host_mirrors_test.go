@@ -134,12 +134,12 @@ func TestHostDebianMirrorsSkipsMeasurementWhenDecided(t *testing.T) {
 	if !got.Decided || got.Preference != "ustc" || len(got.Samples) != 0 || contacted {
 		t.Fatalf("saved choice measured again: %+v contacted=%v", got, contacted)
 	}
-	// Without a saved choice the measurement needs the applied Cage proxy.
+	// Without a saved choice the measurement needs the applied SuperCage proxy.
 	s.preferences.DebianMirror = ""
 	recorder = httptest.NewRecorder()
 	s.hostDebianMirrors(recorder, httptest.NewRequest(http.MethodGet, "/api/host/debian-mirrors", nil))
 	if recorder.Code == http.StatusOK || contacted {
-		t.Fatalf("measured without the Cage proxy: %d %s", recorder.Code, recorder.Body)
+		t.Fatalf("measured without the SuperCage proxy: %d %s", recorder.Code, recorder.Body)
 	}
 }
 

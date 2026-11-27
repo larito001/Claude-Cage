@@ -57,14 +57,14 @@ export function BrowserSettingsPage({ tab, tabs, currentHome, layout, onLayoutCh
             <div className="browser-setting-actions"><button className="primary" disabled={saving || loading || home === savedHome}>{saving ? tr("正在保存…") : tr("保存地址")}</button>{saved && <span role="status">{tr("已保存")}</span>}</div>
             {error && <p className="browser-settings-error" role="alert">{localizeBackendMessage(error, tr)}</p>}
           </form></>}
-          {item.id === 'appearance' && <><p>{tr("调整网页与文件编辑器的标签栏。")}</p><div className="browser-setting-row"><div><h3>{tr("标签栏布局")}</h3><p>{tr("立即生效，保存在本机。")}</p></div><InlineSelect aria-label={tr("标签栏布局")} value={layout} onValueChange={onLayoutChange}><option value="horizontal">{tr("横排（顶部）")}</option><option value="vertical">{tr("竖排（左侧）")}</option></InlineSelect></div><p>{tr("浏览器设置页跟随 Cage 当前的字体与配色。")}</p></>}
+          {item.id === 'appearance' && <><p>{tr("调整网页与文件编辑器的标签栏。")}</p><div className="browser-setting-row"><div><h3>{tr("标签栏布局")}</h3><p>{tr("立即生效，保存在本机。")}</p></div><InlineSelect aria-label={tr("标签栏布局")} value={layout} onValueChange={onLayoutChange}><option value="horizontal">{tr("横排（顶部）")}</option><option value="vertical">{tr("竖排（左侧）")}</option></InlineSelect></div><p>{tr("浏览器设置页跟随 SuperCage 当前的字体与配色。")}</p></>}
           {item.id === 'privacy' && <><p>{tr("管理网站保存在当前浏览会话中的数据和访问权限。")}</p>
             <div className="browser-setting-row"><div><h3>{tr("Cookie 与登录状态")}</h3><p>{tr("普通会话与无痕会话分别管理。")}</p></div><InlineSelect aria-label={tr("Cookie 浏览会话")} value={cookieSession} onValueChange={setCookieSession}><option value="normal">{tr("普通会话")}</option><option value="private" disabled={!privateTab}>{tr("无痕会话")}</option></InlineSelect></div>
             <BrowserCookies key={cookieTab.id} tab={cookieTab} onClose={() => changeSection('general')} />
             <div className="browser-settings-links"><button onClick={() => onInternal('permissions')}><ExternalLink size={15} />{tr("网站权限")}</button><button onClick={() => onInternal('clear')}><ExternalLink size={15} />{tr("清除普通会话浏览数据")}</button></div>
           </>}
-          {item.id === 'extensions' && <><p>{tr("添加与管理 Cage 浏览器使用的扩展。")}</p><BrowserExtensions onInternal={onInternal} onOpenPage={onOpenPage} onConfirm={onConfirm} /></>}
-          {item.id === 'about' && <><p>{tr("Cage 浏览器由环境内的 Chromium 承载。网页、扩展和网站数据随当前 Cage 环境保存。")}</p><div className="browser-setting-row"><div><h3>{tr("浏览器引擎")}</h3><p>{info?.product || (info?.error ? tr("版本信息暂时不可用") : tr("正在读取版本…"))}</p></div></div><p>{tr("下载文件通过 Cage 保存到下载暂存目录，可从下载面板另存为。")}</p></>}
+          {item.id === 'extensions' && <><p>{tr("添加与管理 SuperCage 浏览器使用的扩展。")}</p><BrowserExtensions onInternal={onInternal} onOpenPage={onOpenPage} onConfirm={onConfirm} /></>}
+          {item.id === 'about' && <><p>{tr("SuperCage 浏览器由环境内的 Chromium 承载。网页、扩展和网站数据随当前 SuperCage 环境保存。")}</p><div className="browser-setting-row"><div><h3>{tr("浏览器引擎")}</h3><p>{info?.product || (info?.error ? tr("版本信息暂时不可用") : tr("正在读取版本…"))}</p></div></div><p>{tr("下载文件通过 SuperCage 保存到下载暂存目录，可从下载面板另存为。")}</p></>}
 
         </section>)}
       </div>

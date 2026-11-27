@@ -136,7 +136,7 @@ globalThis.setCageSplit = async function (left, right) {
   const affected = new Set(pair.map(tab => tab.splitViewId));
   if (managedSplit != null) affected.add(managedSplit);
   if (!pair.length && managedSplit == null) {
-    // Chromium can restore the foreground split before Cage reconnects.
+    // Chromium can restore the foreground split before SuperCage reconnects.
     const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (active) affected.add(active.splitViewId);
   }

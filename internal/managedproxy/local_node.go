@@ -13,7 +13,7 @@ import (
 
 // ErrLocalProxyNode distinguishes a saved route that needs migration from
 // an unconfigured or temporarily unavailable upstream.
-var ErrLocalProxyNode = errors.New("本机代理端口不能用作节点。请导入原客户端的具体节点，在 Cage 中按中转到最终出口的顺序重新配置并应用")
+var ErrLocalProxyNode = errors.New("本机代理端口不能用作节点。请导入原客户端的具体节点，在 SuperCage 中按中转到最终出口的顺序重新配置并应用")
 
 type localServers struct {
 	hostname  string

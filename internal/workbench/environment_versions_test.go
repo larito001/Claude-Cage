@@ -126,7 +126,7 @@ func TestGuestConnectionSnapshotDetectsInterruptedStart(t *testing.T) {
 	for _, state := range []string{"current", "missing", "outdated", "interrupted", "interrupted-during-read"} {
 		t.Run(state, func(t *testing.T) {
 			dir := filepath.ToSlash(t.TempDir())
-			if err := os.MkdirAll(filepath.Join(dir, ".config", "claude-cage"), 0700); err != nil {
+			if err := os.MkdirAll(filepath.Join(dir, ".config", "super-cage"), 0700); err != nil {
 				t.Fatal(err)
 			}
 			manifest := cage.RequiredGuestManifest()

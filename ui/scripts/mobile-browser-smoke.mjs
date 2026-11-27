@@ -24,7 +24,7 @@ try {
   browser = await playwright[engine].launch();
   const context = await browser.newContext({viewport:{width:390, height:844}, hasTouch:true, isMobile:true, deviceScaleFactor:1, userAgent:"CageMobile/1"});
   await context.addInitScript(() => {
-    window.__cageDevices = {current:"a", devices:[{id:"a",name:"Cage 工作电脑"},{id:"b",name:"另一台电脑"}]};
+    window.__cageDevices = {current:"a", devices:[{id:"a",name:"SuperCage 工作电脑"},{id:"b",name:"另一台电脑"}]};
     window.deviceCommands = [];
     window.CageDevices = {postMessage(raw) {
       const message = JSON.parse(raw); window.deviceCommands.push(message);
@@ -75,8 +75,8 @@ try {
     const req = route.request();
     const path = new URL(req.url()).pathname, body = req.postDataJSON();
     const reply = (value) => route.fulfill({json: value});
-    if (path === "/api/mobile/cli/projects") return reply({host:"Cage 工作电脑", ready:true,
-      projects:[{path:"/work/cage",name:"Cage"},{path:"/work/web",name:"个人网站"}]});
+    if (path === "/api/mobile/cli/projects") return reply({host:"SuperCage 工作电脑", ready:true,
+      projects:[{path:"/work/cage",name:"SuperCage"},{path:"/work/web",name:"个人网站"}]});
     if (path === "/api/mobile/cli/sessions" && body) {
       const session = {id:body.id, workspace:body.workspace, title:"测试会话", generation:"qa", revision:1, turns:[], updated_at:new Date().toISOString()};
       sessionList.push(session);
@@ -189,7 +189,7 @@ try {
   assert.equal(await drawer.getByRole("button",{name:"Claude Code",exact:true}).count(),0);
   assert.equal(await drawer.getByRole("combobox").count(),0);
   const menu = page.getByRole("button",{name:"展开侧栏",exact:true});
-  const firstFolder = drawer.getByRole("button",{name:"项目 Cage",exact:true});
+  const firstFolder = drawer.getByRole("button",{name:"项目 SuperCage",exact:true});
   const secondFolder = drawer.getByRole("button",{name:"项目 个人网站",exact:true});
   const exit = drawer.getByRole("link",{name:"退出",exact:true});
   await drawer.getByRole("button",{name:"移动端导航",exact:true}).waitFor();
@@ -210,7 +210,7 @@ try {
   await page.touchscreen.tap(380, 400);
   await drawer.waitFor({state:"hidden"});
   assert.equal(await page.locator(".topbar button").count(),1);
-  assert.ok(await menu.getByRole("img",{name:"Cage"}).count());
+  assert.ok(await menu.getByRole("img",{name:"SuperCage"}).count());
   await page.getByRole("img",{name:"Claude Code",exact:true}).waitFor();
   await menu.click();
   await page.waitForFunction(() => document.querySelector(".workspace-drawer")?.getAnimations().some(animation => animation.transitionProperty === "transform"));
@@ -519,7 +519,7 @@ try {
   const bookmarks = page.getByRole("button",{name:"收藏夹",exact:true});
   const panel = page.getByRole("region",{name:"电脑收藏夹",exact:true});
   await bookmarks.click();
-  await panel.getByText("这台电脑尚不支持共享收藏夹，请更新电脑端 Cage。").waitFor();
+  await panel.getByText("这台电脑尚不支持共享收藏夹，请更新电脑端 SuperCage。").waitFor();
   favoritesAvailable = true;
   await panel.getByRole("button",{name:"刷新收藏夹"}).click();
   const folder = panel.getByRole("button",{name:"参考资料",exact:true});

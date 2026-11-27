@@ -27,10 +27,10 @@ async function releaseNames() {
   }
   return {
     version,
-    mac: `Cage-${version}-macos-arm64.dmg`,
-    macIntel: `Cage-${version}-macos-amd64.dmg`,
-    windows: `Cage-${version}-windows-amd64-setup.exe`,
-    linux: `Cage-${version}-linux-amd64.deb`,
+    mac: `SuperCage-${version}-macos-arm64.dmg`,
+    macIntel: `SuperCage-${version}-macos-amd64.dmg`,
+    windows: `SuperCage-${version}-windows-amd64-setup.exe`,
+    linux: `SuperCage-${version}-linux-amd64.deb`,
     linuxSource: linuxDependencies.mihomoSource.file,
     macSource: `mihomo-${macCore}-source.tar.gz`,
     windowsSource: `mihomo-${dependencies.mihomo.version}-source.tar.gz`,
@@ -114,7 +114,7 @@ export async function prepareReleaseAssets({ inputs, output }) {
     const info = await lstat(directory);
     if (!info.isDirectory() || info.isSymbolicLink()) throw new Error(`Expected a platform release directory: ${directory}`);
     const files = await readdir(directory);
-    if (files.some(name => /^Cage-.*-windows-.*-unsigned\.exe$/i.test(name) || name === 'DEVELOPMENT-BUILD.txt')) {
+    if (files.some(name => /^SuperCage-.*-windows-.*-unsigned\.exe$/i.test(name) || name === 'DEVELOPMENT-BUILD.txt')) {
       throw new Error(`Unsigned Windows development build cannot be prepared for release: ${directory}`);
     }
     const entries = await readManifest(directory);
@@ -188,7 +188,7 @@ async function main() {
     return;
   }
   const result = await prepareReleaseAssets({ inputs: positionals, output: values.output });
-  console.log(`Prepared Cage ${result.version}: ${result.assets.length} verified assets and one SHA256SUMS in ${result.directory}`);
+  console.log(`Prepared SuperCage ${result.version}: ${result.assets.length} verified assets and one SHA256SUMS in ${result.directory}`);
 }
 
 if (isMainModule(import.meta.url)) {

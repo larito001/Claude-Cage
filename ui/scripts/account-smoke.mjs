@@ -36,7 +36,7 @@ try {
   Object.assign(state.account, {exists:false,unlocked:false,username:''});
   const previousAcks = launchAcks;
   await page.reload();
-  await page.getByRole('heading',{name:'注册 Cage 账户'}).waitFor();
+  await page.getByRole('heading',{name:'注册 SuperCage 账户'}).waitFor();
   await page.waitForFunction(async (previous) => await window.fixtureLaunchAcks() > previous, previousAcks);
   await page.screenshot({path:output+'create.png'});
   await page.getByLabel('用户名',{exact:true}).fill('林间工作室');
@@ -113,16 +113,16 @@ try {
   const ids=state.terminals.map(x=>x.id);
   await accountMenu().click();
   await page.getByRole('menuitem',{name:/锁定 Cage/}).click();
-  await page.getByRole('region',{name:'解锁 Cage',exact:true}).waitFor();
+  await page.getByRole('region',{name:'解锁 SuperCage',exact:true}).waitFor();
   assert.equal(state.status.vm_running,true);
   assert.deepEqual(state.terminals.map(x=>x.id),ids);
   await page.getByText('后台环境仍在运行，任务没有停止',{exact:true}).waitFor();
   await page.screenshot({path:output+'locked.png'});
   await page.getByLabel('账户密码',{exact:true}).fill('fixture-password');
-  await page.getByRole('button',{name:'解锁 Cage',exact:true}).click();
+  await page.getByRole('button',{name:'解锁 SuperCage',exact:true}).click();
   await page.getByRole('alert').filter({hasText:'密码不正确'}).waitFor();
   await page.getByLabel('账户密码',{exact:true}).fill('changed-fixture-password');
-  await page.getByRole('button',{name:'解锁 Cage',exact:true}).click();
+  await page.getByRole('button',{name:'解锁 SuperCage',exact:true}).click();
   await accountMenu().waitFor();
   assert.deepEqual(state.terminals.map(x=>x.id),ids);
   await page.reload();
@@ -138,7 +138,7 @@ try {
   await accountMenu().click();
   await page.getByRole('menuitem',{name:'退出账户',exact:true}).click();
   await page.getByRole('dialog').getByRole('button',{name:'停止环境并退出账户',exact:true}).click();
-  await page.getByRole('region',{name:'解锁 Cage',exact:true}).waitFor();
+  await page.getByRole('region',{name:'解锁 SuperCage',exact:true}).waitFor();
   assert.equal(state.status.vm_running,false);
   assert.equal(state.terminals.length,0);
   assert.deepEqual(errors,[]);

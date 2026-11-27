@@ -10,8 +10,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-const Repository = "larito001/Claude-Cage"
-const SourceBranch = "allcage"
+const Repository = "larito001/Super-Cage"
+const SourceBranch = "supercage"
 const ReleasesURL = "https://api.github.com/repos/" + Repository + "/releases?per_page=100"
 
 // Releases must stay below the limit of every published App that still updates
@@ -40,18 +40,18 @@ type Candidate struct {
 func archiveName(version, goos, goarch string) (string, error) {
 	switch {
 	case goos == "darwin" && goarch == "arm64":
-		return "Cage-" + version + "-macos-arm64.dmg", nil
+		return "SuperCage-" + version + "-macos-arm64.dmg", nil
 	case goos == "darwin" && goarch == "amd64":
-		return "Cage-" + version + "-macos-amd64.dmg", nil
+		return "SuperCage-" + version + "-macos-amd64.dmg", nil
 	case goos == "windows" && goarch == "amd64":
-		return "Cage-" + version + "-windows-amd64-setup.exe", nil
+		return "SuperCage-" + version + "-windows-amd64-setup.exe", nil
 	// Linux only learns that a newer package exists; the system installs it.
 	case goos == "linux" && goarch == "amd64":
-		return "Cage-" + version + "-linux-amd64.deb", nil
+		return "SuperCage-" + version + "-linux-amd64.deb", nil
 	case goos == "android" && goarch == "arm64":
-		return "Cage-" + version + "-android-arm64.apk", nil
+		return "SuperCage-" + version + "-android-arm64.apk", nil
 	default:
-		return "", errors.New("此平台尚无 Cage 应用内更新发行包")
+		return "", errors.New("此平台尚无 SuperCage 应用内更新发行包")
 	}
 }
 

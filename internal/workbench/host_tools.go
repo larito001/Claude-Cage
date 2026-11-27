@@ -59,7 +59,7 @@ type hostTools struct {
 	// inside the environment still run, for their own pages, but there is
 	// no server, no forward and nothing on this computer is started.
 	serving bool
-	// awaitingUnlock says a plugin was stopped, or not started, because Cage
+	// awaitingUnlock says a plugin was stopped, or not started, because SuperCage
 	// is locked and the plugin receives secrets; unlocking starts them again.
 	awaitingUnlock bool
 }
@@ -413,8 +413,8 @@ func (s *Server) releaseHostToolsPort(ctx context.Context) {
 	}
 }
 
-// stopSecretPluginsOnLock stops, when Cage locks, the plugins whose programs
-// received secrets, as a secret is readable only while Cage is unlocked.
+// stopSecretPluginsOnLock stops, when SuperCage locks, the plugins whose programs
+// received secrets, as a secret is readable only while SuperCage is unlocked.
 // Unlocking again starts them; see restartPluginsAfterUnlock.
 func (s *Server) stopSecretPluginsOnLock(tools *hostTools) {
 	epoch, unlocked := s.account.access()
@@ -441,7 +441,7 @@ func (s *Server) stopSecretPluginsOnLock(tools *hostTools) {
 }
 
 // restartPluginsAfterUnlock starts again, in the background, the plugins
-// that stopped or could not start because Cage was locked.
+// that stopped or could not start because SuperCage was locked.
 func (s *Server) restartPluginsAfterUnlock() {
 	s.mu.Lock()
 	tools := s.hostTools

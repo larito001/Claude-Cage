@@ -170,21 +170,21 @@ func agentResponseError(code int, recovery string) *AgentError {
 	e := agentHTTPError(code)
 	if code == http.StatusLocked && recovery == accountMissingRecovery {
 		e.Code = "account_missing"
-		e.Message = "Create the Cage account before configuring the environment."
+		e.Message = "Create the SuperCage account before configuring the environment."
 		e.NextAction = "account.create"
 	}
 	return e
 }
 
 func agentHTTPError(code int) *AgentError {
-	e := &AgentError{Code: "request_rejected", Message: "Cage rejected the operation. Check the input and run doctor.", NextAction: "doctor", HTTPStatus: code}
+	e := &AgentError{Code: "request_rejected", Message: "SuperCage rejected the operation. Check the input and run doctor.", NextAction: "doctor", HTTPStatus: code}
 	switch code {
 	case 401:
 		e.Code = "authentication_failed"
 		e.NextAction = "service.start"
 	case 423:
 		e.Code = "account_locked"
-		e.Message = "Unlock Cage before configuring the environment."
+		e.Message = "Unlock SuperCage before configuring the environment."
 		e.NextAction = "account.unlock"
 	case 403:
 		e.Code = "user_action_required"
@@ -223,7 +223,7 @@ func AgentStartService(ctx context.Context, configPath string) error {
 		return &AgentError{Code: "service_unavailable", Message: "The controller cannot be authenticated. Preserve its data and inspect diagnostics.", NextAction: "doctor"}
 	}
 	if err := startController(configPath); err != nil {
-		return &AgentError{Code: "service_start_failed", Message: "Cage could not start its controller.", NextAction: "doctor"}
+		return &AgentError{Code: "service_start_failed", Message: "SuperCage could not start its controller.", NextAction: "doctor"}
 	}
 	timer := time.NewTicker(100 * time.Millisecond)
 	defer timer.Stop()
@@ -255,7 +255,7 @@ func agentCheckController(c *controllerClient, configPath string) error {
 func agentConnect(ctx context.Context, configPath string) (*controllerClient, error) {
 	c, err := connectController(filepath.Dir(configPath))
 	if err != nil {
-		return nil, &AgentError{Code: "service_unavailable", Message: "The local Cage controller is unavailable. Run service.start or doctor.", NextAction: "service.start"}
+		return nil, &AgentError{Code: "service_unavailable", Message: "The local SuperCage controller is unavailable. Run service.start or doctor.", NextAction: "service.start"}
 	}
 	fail := func(err error) (*controllerClient, error) { c.close(); return nil, err }
 	if err := agentCheckController(c, configPath); err != nil {

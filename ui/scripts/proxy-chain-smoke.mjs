@@ -1,5 +1,5 @@
 // Real authenticated workbench, bundled Mihomo and local HTTP CONNECT servers.
-// Uses a new private profile. Never touches the user's Cage, VM or subscriptions.
+// Uses a new private profile. Never touches the user's SuperCage, VM or subscriptions.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -16,7 +16,7 @@ const executable=process.env.CAGE_CHAIN_QA_EXECUTABLE || path.join(root,'_output
 const output=path.join(root,'docs/test-reports/2026-11-05-proxy-chain');
 await fs.mkdir(output,{recursive:true});
 const profile=await fs.mkdtemp('/private/tmp/cage-chain-qa-');
-const env={...process.env,CLAUDE_CAGE_CONFIG:path.join(profile,'config.json')};
+const env={...process.env,SUPER_CAGE_CONFIG:path.join(profile,'config.json')};
 await run(executable,['init'],{env});
 const sockets=new Set();
 const listen=server=>new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));

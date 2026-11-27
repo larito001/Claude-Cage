@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   verify:
-    if: github.repository == 'Lee-xeo/Claude-Cage' && github.ref == 'refs/heads/main'
+    if: github.repository == 'larito001/Super-Cage' && github.ref == 'refs/heads/main'
     runs-on: windows-2025
     environment: cage-release
     timeout-minutes: 20

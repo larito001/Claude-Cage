@@ -195,7 +195,7 @@ func (s *Server) tailnet(w http.ResponseWriter, r *http.Request) {
 			jsonReply(w, map[string]any{"installed": s.tailnetPluginInstalled(), "enabled": false, "backend": "Stopped", "control_url": hostCfg.ControlURL, "ips": []string{}, "peers": []string{}, "keys": []string{}})
 			return
 		}
-		http.Error(w, "请先启动 Cage 环境，并等待当前操作完成", 409)
+		http.Error(w, "请先启动 SuperCage 环境，并等待当前操作完成", 409)
 		return
 	}
 	// Not installed: the panel offers to install it.

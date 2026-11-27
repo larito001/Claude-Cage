@@ -24,7 +24,7 @@ h = h.replace('src="cage-clipboard.js"', 'src="cage-clipboard.js?cage=3"')
 def replace_once(old, new):
     global source
     if source.count(old) != 1:
-        raise SystemExit('Unsupported noVNC version: Cage input/clipboard patch did not apply')
+        raise SystemExit('Unsupported noVNC version: SuperCage input/clipboard patch did not apply')
     source = source.replace(old, new)
 
 replace_once(
@@ -79,7 +79,7 @@ replace_once('''    focus(options) {
         (this._cageKeyboardTarget || this._canvas).blur();
     }''')
 
-replace_once('    clipboardPasteFrom(text) {', '''    // Cage: serialize the clipboard notification, data transfer and paste.
+replace_once('    clipboardPasteFrom(text) {', '''    // SuperCage: serialize the clipboard notification, data transfer and paste.
     // A server fence confirms it has processed the provided clipboard data.
     _cageQueueInput(action) {
         const result = (this._cageInputChain || Promise.resolve()).then(action);

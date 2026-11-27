@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { needsEnvironmentRestart, needsProxySetup } from "./onboarding-state.mjs";
 
-test("only an applied Cage node completes setup", () => {
+test("only an applied SuperCage node completes setup", () => {
   assert.equal(needsProxySetup({}, {}, {}), true);
   assert.equal(
     needsProxySetup({}, {}, { active: false, selected: "node" }),

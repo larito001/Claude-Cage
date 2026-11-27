@@ -11,8 +11,8 @@ const version = (await readFile(new URL('../VERSION', import.meta.url), 'utf8'))
 const dependencies = JSON.parse(await readFile(new URL('../packaging/windows/dependencies.json', import.meta.url), 'utf8'));
 const macCore = (await readFile(new URL('./fetch-proxy-core.sh', import.meta.url), 'utf8')).match(/^version=(v[\d.]+)$/m)[1];
 const names = {
-  mac: `Cage-${version}-macos-arm64.dmg`,
-  windows: `Cage-${version}-windows-amd64-setup.exe`,
+  mac: `SuperCage-${version}-macos-arm64.dmg`,
+  windows: `SuperCage-${version}-windows-amd64-setup.exe`,
   macSource: `mihomo-${macCore}-source.tar.gz`,
   windowsSource: `mihomo-${dependencies.mihomo.version}-source.tar.gz`,
   qemu: `qemu-${dependencies.qemu.version}-windows-full-source.zip`,
@@ -38,7 +38,7 @@ test('includes Linux deb only with its verified corresponding source and merges 
   const f = await fixture(t);
   const linux = join(f.root, 'linux');
   const dependencies = JSON.parse(await readFile(new URL('../packaging/linux/dependencies.json', import.meta.url), 'utf8'));
-  const deb = `Cage-${version}-linux-amd64.deb`;
+  const deb = `SuperCage-${version}-linux-amd64.deb`;
   await platform(linux, { [deb]: 'Linux package fixture' });
   await assert.rejects(prepareReleaseAssets({ inputs: [linux], output: f.output }), /Missing Linux Mihomo source/);
   await platform(linux, { [deb]: 'Linux package fixture', [dependencies.mihomoSource.file]: 'Mihomo source fixture' });
@@ -52,7 +52,7 @@ test('includes Linux deb only with its verified corresponding source and merges 
 test('Intel Mac DMG shares the Apple Silicon Mihomo source', async t => {
   const f = await fixture(t);
   const intel = join(f.root, 'macos-intel');
-  const dmg = `Cage-${version}-macos-amd64.dmg`;
+  const dmg = `SuperCage-${version}-macos-amd64.dmg`;
   await platform(intel, { [dmg]: 'Intel Mac package fixture' });
   // Without the Apple Silicon output, the Intel package has no source beside it.
   await assert.rejects(prepareReleaseAssets({ inputs: [intel], output: f.output }), /Intel macOS release requires/);
@@ -69,7 +69,7 @@ test('combines both platforms, deduplicates identical sources and keeps website 
   const packagedSources = {
     [extraSource]: 'QEMU repository source fixture',
     [`qemu-keycodemapdb-${dependencies.qemuKeycodemap.version}-source.tar.gz`]: 'keymap source fixture',
-    [`qemu-${dependencies.qemu.version}-cage-changes-source.tar.gz`]: 'Cage QEMU patch fixture',
+    [`qemu-${dependencies.qemu.version}-cage-changes-source.tar.gz`]: 'SuperCage QEMU patch fixture',
   };
   await platform(f.mac, macAssets());
   await platform(f.windows, { ...windowsAssets(), ...packagedSources });
@@ -147,7 +147,7 @@ test('rejects the source archive of the removed macOS guest', async t => {
 
 test('rejects wrong versions and manifest paths outside the release directory', async t => {
   const f = await fixture(t);
-  await platform(f.mac, { ...macAssets(), 'Cage-99.0.0-macos-arm64.dmg': 'wrong version' });
+  await platform(f.mac, { ...macAssets(), 'SuperCage-99.0.0-macos-arm64.dmg': 'wrong version' });
   await assert.rejects(prepareReleaseAssets({ inputs: [f.mac], output: f.output }), /Unsupported asset or version/);
   await writeFile(join(f.mac, 'SHA256SUMS'), `${digest('outside')}  ../escape.dmg\n`);
   await assert.rejects(prepareReleaseAssets({ inputs: [f.mac], output: f.output }), /Invalid or duplicate/);

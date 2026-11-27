@@ -160,7 +160,7 @@ const KNOWN_ZH_SUMMARIES: Record<string, string> = {
   'local-preview': '打开本机回环地址（localhost）上的开发预览页面，并读回标签页标题与当前地址。',
   'powerpoint-slides': '创建、读取和编辑 PowerPoint 演示文稿（.pptx），支持幻灯片、表格、图表、图片与模板，无需安装 Office。',
   sqlite: '查询与管理本地 SQLite 数据库：执行读写 SQL、建表、检查表结构并记录分析笔记。',
-  'system-status': '同时提供侧栏可视化页面与 MCP 工具，实时查看 Cage 环境的 CPU 负载、内存与磁盘占用。',
+  'system-status': '同时提供侧栏可视化页面与 MCP 工具，实时查看 SuperCage 环境的 CPU 负载、内存与磁盘占用。',
   'web-fetch': '抓取网页并将 HTML 转换为整洁的 Markdown 供 Claude 阅读，支持分页与 robots.txt。',
   'word-documents': '创建、读取和编辑 Word 文档（.docx），支持正文、标题、表格、图片、样式与批注，无需安装 Office。',
 };

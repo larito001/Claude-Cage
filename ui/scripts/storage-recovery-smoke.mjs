@@ -34,11 +34,11 @@ try {
   });
   await page.route("**/api/diagnostics", route => route.fulfill({ json: { bytes: 2048, files: 2 } }));
   await page.reload();
-  await page.getByRole("region", { name: "解锁 Cage", exact: true }).waitFor();
+  await page.getByRole("region", { name: "解锁 SuperCage", exact: true }).waitFor();
   await page.getByLabel("账户密码", { exact: true }).fill("fixture-password");
-  await page.getByRole("button", { name: "解锁 Cage", exact: true }).click();
+  await page.getByRole("button", { name: "解锁 SuperCage", exact: true }).click();
   await page.getByRole("heading", { name: "环境存储需要恢复", exact: true }).waitFor();
-  assert.equal(await page.getByRole("button", { name: "启动 Cage 环境", exact: true }).count(), 0);
+  assert.equal(await page.getByRole("button", { name: "启动 SuperCage 环境", exact: true }).count(), 0);
   await page.getByRole("button", { name: "恢复环境存储", exact: true }).click();
   const panel = page.getByRole("region", { name: "本机环境存储", exact: true });
   const retry = panel.getByRole("button", { name: "重试恢复", exact: true });
@@ -82,15 +82,15 @@ try {
   }
   assert.equal(state.requests.filter(request => request.path === "/start").length, 0);
 
-  location = { directory: "D:\\Cage 环境", has_environment: true, custom: true, backup: "C:\\Users\\demo\\.claude-cage\\state" };
+  location = { directory: "D:\\SuperCage 环境", has_environment: true, custom: true, backup: "C:\\Users\\demo\\.super-cage\\state" };
   state.status.storage_recovery = { required: false, repair_allowed: false };
   state.status.job = { ...state.status.job, running: false, error: "", message: "环境存储已恢复，可以启动环境" };
   await panel.getByText(location.directory, { exact: true }).waitFor();
   await page.waitForFunction(() => !document.querySelector(".environment-storage input")?.disabled);
   assert.equal(await retry.count(), 0);
   await page.getByRole("button", { name: "返回工作台", exact: true }).first().click();
-  await page.getByRole("button", { name: "启动 Cage 环境", exact: true }).click();
-  await page.waitForFunction(() => document.querySelector(".welcome h1")?.textContent === "Cage 环境已就绪");
+  await page.getByRole("button", { name: "启动 SuperCage 环境", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector(".welcome h1")?.textContent === "SuperCage 环境已就绪");
   assert.equal(state.requests.filter(request => request.path === "/start").length, 1);
   assert.deepEqual(errors, []);
   console.log(`Storage recovery login, settings, failure cause, duplicate rejection, diagnostics, repair, preparation and normal start passed (${page.viewportSize().width}px)`);

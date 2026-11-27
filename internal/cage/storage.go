@@ -62,7 +62,7 @@ func readStorageRecord(profile string) (storageRecord, error) {
 		return r, err
 	}
 	if err = json.Unmarshal(b, &r); err != nil || !filepath.IsAbs(r.Directory) || !validStorageID(r.ID) {
-		return storageRecord{}, errors.New("Cage 环境存储配置损坏，请先恢复配置")
+		return storageRecord{}, errors.New("SuperCage 环境存储配置损坏，请先恢复配置")
 	}
 	return r, nil
 }
@@ -203,7 +203,7 @@ func getStorageLocation(profile string) (StorageLocation, error) {
 		if err != nil || te != nil || me != nil || string(marker) != r.ID || !sameStoragePath(real, target) {
 			if storageDeleted(anchor, r.Directory) {
 				loc.Missing = true
-				return loc, fmt.Errorf("%w：%s。如果它位于外接磁盘，请连接磁盘后重新打开设置；否则请选择新的存储位置，Cage 会在那里重新创建环境，原环境数据无法恢复。", ErrStorageMissing, r.Directory)
+				return loc, fmt.Errorf("%w：%s。如果它位于外接磁盘，请连接磁盘后重新打开设置；否则请选择新的存储位置，SuperCage 会在那里重新创建环境，原环境数据无法恢复。", ErrStorageMissing, r.Directory)
 			}
 			return loc, fmt.Errorf("环境存储不可用，请重新连接原磁盘：%s", r.Directory)
 		}
@@ -277,7 +277,7 @@ func GetStorageLocation(profile string) (StorageLocation, error) {
 	return getStorageLocation(profile)
 }
 
-// AcquireStorageUse holds the same shared lease for the entire Cage command,
+// AcquireStorageUse holds the same shared lease for the entire SuperCage command,
 // including detached hostagents. A migration cannot run in the launch window.
 func AcquireStorageUse(profile string) (*os.File, StorageLocation, error) {
 	lock, err := openStorageLock(profile, false)
@@ -349,7 +349,7 @@ func validateStorageTarget(profile, directory, app, platform string) error {
 			return err
 		}
 		if r.Directory == "" {
-			return errors.New("当前环境使用手动配置的目录链接。请先恢复原目录，再使用 Cage 迁移")
+			return errors.New("当前环境使用手动配置的目录链接。请先恢复原目录，再使用 SuperCage 迁移")
 		}
 	}
 	if !filepath.IsAbs(directory) || filepath.Clean(directory) == filepath.VolumeName(directory)+string(os.PathSeparator) {

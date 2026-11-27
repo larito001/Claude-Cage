@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"HOME":
     turn(False)
     turn(True)
     binding = json.loads((home / ".local/share/cage/mobile-cli-identities" / sid).read_text())
-    assert binding[1], "standard Cage settings must support continuation"
+    assert binding[1], "standard SuperCage settings must support continuation"
     (managed / "managed-settings.json").write_text(json.dumps({**policy, "channelsEnabled": False}))
     turn(True)
     (managed / "managed-settings.json").write_text(json.dumps({**policy, "tui": "alternate"}))
@@ -228,7 +228,7 @@ fi
 			runner := cliconversation.Runner{Command: func(ctx context.Context, workspace string, args []string) (*exec.Cmd, error) {
 				cmdline := mobileIdentityCommand(prefix, args)
 				if official {
-					// The fixture runs the same helper source that Cage installs inside its VM.
+					// The fixture runs the same helper source that SuperCage installs inside its VM.
 					helper, err := filepath.Abs("../cage/claude-account.py")
 					if err != nil {
 						return nil, err

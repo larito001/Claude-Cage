@@ -114,7 +114,7 @@ func (s *Server) clientRequest(w http.ResponseWriter, r *http.Request) {
 			path == "plugins/sync" || path == "plugins/bridge") {
 		if _, access := s.account.accessStateFor(s.hasTrustedView(r), s.pairedPhoneRoom(r) != nil); access != accountAccessGranted {
 			s.account.markMissingAccount(w)
-			http.Error(w, "Cage 已锁定，请先登录", http.StatusLocked)
+			http.Error(w, "SuperCage 已锁定，请先登录", http.StatusLocked)
 			return
 		}
 	}
@@ -299,7 +299,7 @@ func (s *Server) routeRemote(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	if remote && r.Method == http.MethodPost && (r.URL.Path == "/api/host-tools" || r.URL.Path == "/api/host-tools/sync" || r.URL.Path == "/api/host-tools/drafts/install" || r.URL.Path == "/api/host-tools/drafts/discard") && !s.hasTrustedView(r) {
-		http.Error(w, "请在本机 Cage 窗口管理远程插件", http.StatusForbidden)
+		http.Error(w, "请在本机 SuperCage 窗口管理远程插件", http.StatusForbidden)
 		return true
 	}
 	if remote && (r.URL.Path == "/api/environment/storage" || r.URL.Path == "/api/environment/storage/recover") {
@@ -321,7 +321,7 @@ func (s *Server) routeRemote(w http.ResponseWriter, r *http.Request) bool {
 		defer s.diagnosticMu.Unlock()
 	}
 	if remote && strings.HasPrefix(r.URL.Path, "/api/mobile/") {
-		http.Error(w, "手机只连接当前电脑的 Cage 环境", http.StatusForbidden)
+		http.Error(w, "手机只连接当前电脑的 SuperCage 环境", http.StatusForbidden)
 		return true
 	}
 	if remote && (r.URL.Path == "/api/mobile-pair" || strings.HasPrefix(r.URL.Path, "/api/mobile-pair/")) {

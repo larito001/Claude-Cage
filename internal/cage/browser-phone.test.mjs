@@ -208,20 +208,20 @@ test("real phone Chromium routes, resizes, types, and keeps paired profiles sepa
     assert.ok(page.focus && page.image);
     assert.notEqual(page.frame_tag, initialTag);
     const old = { document: page.document, focus: page.focus };
-    assert.deepEqual(await action("text", { ...old, text: "你好 Cage" }), { id });
-    page = await read(([, , value]) => value === "你好 Cage");
+    assert.deepEqual(await action("text", { ...old, text: "你好 SuperCage" }), { id });
+    page = await read(([, , value]) => value === "你好 SuperCage");
     const capture = browser.frame;
     browser.frame = async () => { throw new Error("frame changed after text input"); };
     try {
       assert.deepEqual(await action("text", { ...old, text: "!", return_frame: true }), { id });
     } finally { browser.frame = capture; }
-    await read(([, , value]) => value === "你好 Cage!");
+    await read(([, , value]) => value === "你好 SuperCage!");
     await action("resize", { width: 390, height: 400 });
     page = await read(([, h]) => h === 400);
     assert.equal(page.focus, old.focus);
     assert.notEqual(page.document, old.document);
     await action("text", { focus: old.focus, document: page.document, text: "✓" });
-    page = await read(([, , value]) => value === "你好 Cage!✓");
+    page = await read(([, , value]) => value === "你好 SuperCage!✓");
     await action("tap", { x: 60, y: 75, document: page.document });
     await read((_, frame) => frame.password && frame.focus !== old.focus);
     await assert.rejects(action("text", { document: page.document, focus: old.focus, text: "stale" }), /输入框已改变/);

@@ -10,7 +10,7 @@ const sessions = [
   { id:"order-active", title:"正在执行的会话", active:true, updated_at:"2026-11-07T09:00:00Z" },
   { id:"order-saved", title:"保存的会话", updated_at:"2026-11-07T08:00:00Z" },
 ];
-const firstProject = ".claude-cage-workspace";
+const firstProject = ".super-cage-workspace";
 const secondProject = "产品文档";
 const thirdProject = "设计稿";
 const projectPath = "/Users/shihao/Projects";
@@ -97,7 +97,7 @@ try {
   await phone.route("**/api/**", async route => {
     const pathname = new URL(route.request().url()).pathname;
     return route.fulfill({json:pathname.endsWith("/projects")
-      ? {host:"隔离测试",ready:true,shared_sessions:true,projects:[{path:state.settings.workspace,name:".claude-cage-workspace"}]}
+      ? {host:"隔离测试",ready:true,shared_sessions:true,projects:[{path:state.settings.workspace,name:".super-cage-workspace"}]}
       : {sessions}});
   });
   await phone.goto((process.env.CAGE_UI_URL || "http://127.0.0.1:5217")+"/mobile.html");

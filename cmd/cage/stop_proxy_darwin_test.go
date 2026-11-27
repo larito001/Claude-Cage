@@ -39,7 +39,7 @@ func TestStopProxyLifecycle(t *testing.T) {
 			files := map[string]string{
 				filepath.Join(instance, "lima.yaml"):          "vmType: qemu\narch: aarch64\nimages:\n- location: https://example.com/unused.img\n",
 				filepath.Join(proxy, "managed-service.plist"): "isolated test service",
-				filepath.Join(bin, "launchctl"):               "#!/bin/sh\nif [ \"$1\" = bootout ]; then touch \"$CLAUDE_CAGE_CONFIG.proxy-stopped\"; fi\nexit 0\n",
+				filepath.Join(bin, "launchctl"):               "#!/bin/sh\nif [ \"$1\" = bootout ]; then touch \"$SUPER_CAGE_CONFIG.proxy-stopped\"; fi\nexit 0\n",
 			}
 			for path, data := range files {
 				if err := os.WriteFile(path, []byte(data), 0700); err != nil {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 if systemctl is-active --quiet cage-claude-desktop.service; then
-  test -f /run/cage-desktop/keyring-ready || { echo '请先保存并关闭现有 Claude Desktop，再使用 Cage 账户重新打开。' >&2; exit 1; }
+  test -f /run/cage-desktop/keyring-ready || { echo '请先保存并关闭现有 Claude Desktop，再使用 SuperCage 账户重新打开。' >&2; exit 1; }
   exit 0
 fi
 if systemctl is-failed --quiet cage-claude-desktop.service; then

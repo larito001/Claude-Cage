@@ -172,7 +172,7 @@ export function TailscalePanel({ status, onOpenLogin, onOpenBrowser, onInstall, 
       {ready && state?.health?.length > 0 && <div className="tailscale-health" role="status"><strong>{tr(tailnetText.networkWarning)}</strong>{state.health.map((message, i) => <p key={i}>{tr(message)}</p>)}</div>}
       {connected && <section className="tailscale-self" aria-label={tr(tailnetText.currentDevice)}>
         <DeviceIcon os={state.os} />
-        <div><strong>{state.hostname || state.name?.split(".")[0] || "Cage"} <span className="tailscale-badge">{tr(tailnetText.currentEnvironment)}</span></strong><span className="tailscale-address">{address || tr(tailnetText.allocatingAddress)}{state.os ? ` · ${state.os}` : ""}</span></div>
+        <div><strong>{state.hostname || state.name?.split(".")[0] || "SuperCage"} <span className="tailscale-badge">{tr(tailnetText.currentEnvironment)}</span></strong><span className="tailscale-address">{address || tr(tailnetText.allocatingAddress)}{state.os ? ` · ${state.os}` : ""}</span></div>
         {address && <button className="quiet-button" onClick={() => copy(address, tailnetText.copiedOwnAddress)}><Copy size={14} />{tr(tailnetText.copyAddress)}</button>}
       </section>}
       <section className="tailscale-section tailscale-devices" aria-labelledby="tailscale-devices-title">

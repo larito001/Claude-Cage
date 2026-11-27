@@ -102,7 +102,7 @@ func loadIndex(archive, rev string) (*index, error) {
 			if strings.HasPrefix(lines[a], "## ") {
 				title = strings.TrimPrefix(lines[a], "## ")
 			}
-			url := fmt.Sprintf("https://github.com/Lee-xeo/Claude-Cage/blob/%s/%s#L%d-L%d", rev, p, a+1, b)
+			url := fmt.Sprintf("https://github.com/larito001/Super-Cage/blob/%s/%s#L%d-L%d", rev, p, a+1, b)
 			if strings.HasPrefix(p, "docs/guide/") {
 				slug := strings.TrimSuffix(path.Base(p), ".md")
 				url = "https://claude-cage.com/docs/"

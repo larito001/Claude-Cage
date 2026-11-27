@@ -20,7 +20,7 @@ func cliStartupText(data []byte) string {
 	}, cliStartupEscape.ReplaceAllString(string(data), ""))
 }
 
-// Cage already owns this locally generated channel and the user has granted
+// SuperCage already owns this locally generated channel and the user has granted
 // access to this project. Only their two startup dialogs can be completed here.
 // Tool approvals, external MCP servers and login dialogs remain untouched.
 func cliStartupDialog(text, workspace, channel string) string {

@@ -62,7 +62,7 @@ func TestWebSocketAliasesSurviveImportStoreAndRuntime(t *testing.T) {
 						t.Fatalf("WebSocket transport changed across import, store or runtime: %#v", opts)
 					}
 					if config["udp"] != false || config["network"] != "ws" {
-						t.Fatal("conversion changed Cage UDP policy or transport")
+						t.Fatal("conversion changed SuperCage UDP policy or transport")
 					}
 				}
 				if tc.name == "variants" && generated.Proxies[0]["ws-opts"].(map[string]any)["max-early-data"] != 64 {

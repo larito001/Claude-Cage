@@ -15,7 +15,7 @@ done | awk -F '\t' 'NF == 3 && !seen[$1]++' | LC_ALL=C sort > "$list"
   cat <<'NOTICE'
 Cage mobile third-party notices
 
-Cage mobile source and build scripts: https://github.com/Lee-xeo/claude-cage
+Cage mobile source and build scripts: https://github.com/larito001/Super-Cage
 The licenses of the linked Go modules are included below.
 
 NOTICE

@@ -218,7 +218,7 @@ func (s *Server) restoreDefaultPlugin(name string, replace bool) error {
 		return errors.New("这个插件不支持此系统")
 	}
 	if bundled.Manifest.Unavailable(version.Version, true) != "" {
-		return errors.New("需要更新 Cage 才能安装这个插件")
+		return errors.New("需要更新 SuperCage 才能安装这个插件")
 	}
 
 	dir := s.hostPluginDir()

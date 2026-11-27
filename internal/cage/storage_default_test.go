@@ -12,22 +12,22 @@ func writePackagedWindowsApp(t *testing.T, app string) string {
 	t.Helper()
 	backend := filepath.Join(app, "resources", "cage.exe")
 	writeStorageFixture(t, backend, []byte("backend"))
-	writeStorageFixture(t, filepath.Join(app, "Cage.exe"), []byte("launcher"))
-	writeStorageFixture(t, filepath.Join(app, "Cage.install-id"), []byte("io.github.lee-xeo.claude-cage"))
+	writeStorageFixture(t, filepath.Join(app, "SuperCage.exe"), []byte("launcher"))
+	writeStorageFixture(t, filepath.Join(app, "Cage.install-id"), []byte("io.github.lee-xeo.super-cage"))
 	return backend
 }
 
 func TestWindowsInitialDataDirectoryAndApplicationBoundary(t *testing.T) {
 	profile, root := newStorageFixture(t)
-	app := filepath.Join(root, "Cage")
+	app := filepath.Join(root, "SuperCage")
 	backend := filepath.Join(app, "resources", "cage.exe")
 	writeStorageFixture(t, backend, []byte("backend"))
-	writeStorageFixture(t, filepath.Join(app, "Cage.exe"), []byte("launcher"))
+	writeStorageFixture(t, filepath.Join(app, "SuperCage.exe"), []byte("launcher"))
 	excluded := windowsTargetStorageExcludedRoots()
 	if got := initialStorageDirectory(backend, "windows", excluded); got != "" {
 		t.Fatalf("unmarked build default=%s", got)
 	}
-	writeStorageFixture(t, filepath.Join(app, "Cage.install-id"), []byte("io.github.lee-xeo.claude-cage"))
+	writeStorageFixture(t, filepath.Join(app, "Cage.install-id"), []byte("io.github.lee-xeo.super-cage"))
 	data := filepath.Join(app, "CageData")
 	if got := initialStorageDirectory(backend, "windows", excluded); got != data {
 		t.Fatalf("default=%s want=%s", got, data)
@@ -65,9 +65,9 @@ func TestWindowsInitialDataDirectorySkipsAppDataTempAndJunctions(t *testing.T) {
 
 	// 1. Direct install inside LocalAppData, Roaming AppData, and Temp must not suggest CageData.
 	for _, parent := range []string{
-		filepath.Join(localAppData, "Programs", "Cage"),
-		filepath.Join(roamingAppData, "Cage"),
-		filepath.Join(tempDir, "Cage"),
+		filepath.Join(localAppData, "Programs", "SuperCage"),
+		filepath.Join(roamingAppData, "SuperCage"),
+		filepath.Join(tempDir, "SuperCage"),
 	} {
 		backend := writePackagedWindowsApp(t, parent)
 		if got := initialStorageDirectory(backend, "windows", excluded); got != "" {
@@ -75,10 +75,10 @@ func TestWindowsInitialDataDirectorySkipsAppDataTempAndJunctions(t *testing.T) {
 		}
 	}
 
-	// 2. Sibling prefix ("AppDataX") or outside path ("Outside/Cage") still recommends CageData.
+	// 2. Sibling prefix ("AppDataX") or outside path ("Outside/SuperCage") still recommends CageData.
 	for _, parent := range []string{
-		filepath.Join(root, "AppDataX", "Cage"),
-		filepath.Join(root, "Outside", "Cage"),
+		filepath.Join(root, "AppDataX", "SuperCage"),
+		filepath.Join(root, "Outside", "SuperCage"),
 	} {
 		backend := writePackagedWindowsApp(t, parent)
 		want := filepath.Join(parent, "CageData")
@@ -117,23 +117,23 @@ func TestWindowsInitialDataDirectorySkipsAppDataTempAndJunctions(t *testing.T) {
 
 	// 5. Explicit user target selection rejects AppData and junctions into AppData on Windows,
 	// while still allowing safe directories outside AppData (and macOS/Linux).
-	appDataChoice := filepath.Join(localAppData, "Programs", "Cage", "CageData")
-	if err := validateStorageTarget(profile, appDataChoice, filepath.Join(localAppData, "Programs", "Cage"), "windows"); err == nil {
+	appDataChoice := filepath.Join(localAppData, "Programs", "SuperCage", "CageData")
+	if err := validateStorageTarget(profile, appDataChoice, filepath.Join(localAppData, "Programs", "SuperCage"), "windows"); err == nil {
 		t.Fatal("validateStorageTarget accepted Windows target inside LOCALAPPDATA")
 	}
 	roamingChoice := filepath.Join(roamingAppData, "CageStorage")
-	if err := validateStorageTarget(profile, roamingChoice, filepath.Join(root, "Outside", "Cage"), "windows"); err == nil {
+	if err := validateStorageTarget(profile, roamingChoice, filepath.Join(root, "Outside", "SuperCage"), "windows"); err == nil {
 		t.Fatal("validateStorageTarget accepted Windows target inside APPDATA")
 	}
 	junctionChoice := filepath.Join(appAlias, "NewData")
-	if err := validateStorageTarget(profile, junctionChoice, filepath.Join(root, "Outside", "Cage"), "windows"); err == nil {
+	if err := validateStorageTarget(profile, junctionChoice, filepath.Join(root, "Outside", "SuperCage"), "windows"); err == nil {
 		t.Fatal("validateStorageTarget accepted Windows target resolving through link into LOCALAPPDATA")
 	}
 	safeChoice := filepath.Join(root, "SafeStorage")
-	if err := validateStorageTarget(profile, safeChoice, filepath.Join(root, "Outside", "Cage"), "windows"); err != nil {
+	if err := validateStorageTarget(profile, safeChoice, filepath.Join(root, "Outside", "SuperCage"), "windows"); err != nil {
 		t.Fatalf("validateStorageTarget rejected safe Windows target %s: %v", safeChoice, err)
 	}
-	if err := validateStorageTarget(profile, roamingChoice, filepath.Join(root, "Outside", "Cage"), "linux"); err != nil {
+	if err := validateStorageTarget(profile, roamingChoice, filepath.Join(root, "Outside", "SuperCage"), "linux"); err != nil {
 		t.Fatalf("non-Windows platform unexpectedly rejected AppData-like path: %v", err)
 	}
 }
@@ -141,7 +141,7 @@ func TestWindowsInitialDataDirectorySkipsAppDataTempAndJunctions(t *testing.T) {
 func TestWindowsExistingAppDataStorageCanStillMigrateOut(t *testing.T) {
 	profile, root := newStorageFixture(t)
 	localAppData := filepath.Join(root, "AppData", "Local")
-	legacyDir := filepath.Join(localAppData, "Programs", "Cage", "CageData")
+	legacyDir := filepath.Join(localAppData, "Programs", "SuperCage", "CageData")
 	legacyState := filepath.Join(legacyDir, "state")
 	disk := filepath.Join(legacyState, "lima", "guest", "disk")
 	writeStorageFixture(t, disk, []byte("existing-vm-disk"))
@@ -173,7 +173,7 @@ func TestWindowsExistingAppDataStorageCanStillMigrateOut(t *testing.T) {
 	assertStorageFile(t, filepath.Join(safeDest, "state", "lima", "guest", "disk"), []byte("existing-vm-disk"))
 	if runtime.GOOS == "windows" {
 		// On Windows, InitialStorageDirectory on an AppData-located executable returns "".
-		backend := writePackagedWindowsApp(t, filepath.Join(localAppData, "Programs", "Cage"))
+		backend := writePackagedWindowsApp(t, filepath.Join(localAppData, "Programs", "SuperCage"))
 		if got := InitialStorageDirectory(backend); got != "" {
 			t.Fatalf("InitialStorageDirectory on Windows AppData install = %q, want empty", got)
 		}

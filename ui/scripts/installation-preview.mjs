@@ -1,5 +1,5 @@
 // Local copy preview of the production workbench. API requests stay in this
-// process; none are forwarded to Cage or used to install a guest.
+// process; none are forwarded to SuperCage or used to install a guest.
 import http from "node:http";
 import { defaultAppearance } from "../src/appearance-state.mjs";
 
@@ -39,7 +39,7 @@ http.createServer(async (req, res) => {
       }
       value=session;
     }
-    else if (url.pathname === "/api/environment/storage") value={directory: host.platform === "windows" ? "D:\\Cage\\CageData" : "/preview/cage-state",has_environment:false};
+    else if (url.pathname === "/api/environment/storage") value={directory: host.platform === "windows" ? "D:\\SuperCage\\CageData" : "/preview/cage-state",has_environment:false};
     else if (url.pathname === "/api/settings") value = { workspace: "/preview/workspace", browser_home_url: "https://www.bing.com/", timezone: "Asia/Shanghai", locale: "zh_CN.UTF-8", keyboard: status.keyboard };
     else if (url.pathname === "/api/appearance") value = { ...defaultAppearance, mode: "light" };
     else if (url.pathname === "/api/proxy") value = { active: true, selected: "preview-node", port: 17896, core_available: true, state: "prepared", sources: [{ id: "preview", name: "预览代理", nodes: [{ id: "preview-node", name: "预览节点", type: "http" }] }] };
@@ -69,6 +69,6 @@ http.createServer(async (req, res) => {
       res.writeHead(response.statusCode, headers); res.end(body);
     });
   });
-  request.on("error", () => { res.writeHead(502); res.end("Start the Cage frontend preview server first."); });
+  request.on("error", () => { res.writeHead(502); res.end("Start the SuperCage frontend preview server first."); });
   req.pipe(request);
 }).listen(port, "127.0.0.1", () => console.log(`Installation copy preview: http://127.0.0.1:${port}/?host=macos`));

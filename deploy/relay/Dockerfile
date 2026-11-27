@@ -1,5 +1,5 @@
 # Build only the relay. The fixed vendored modules preserve go.mod replacements;
-# this target does not embed or download Cage virtual-machine images.
+# this target does not embed or download SuperCage virtual-machine images.
 FROM golang:1.26.10-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./

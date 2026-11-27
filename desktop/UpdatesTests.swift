@@ -23,23 +23,23 @@ enum UpdatesTests {
         try CageUpdateFiles.privateDirectory(root)
         defer { try? FileManager.default.removeItem(at: root) }
         do {
-            let saved = ProcessInfo.processInfo.environment["CLAUDE_CAGE_CONFIG"]
+            let saved = ProcessInfo.processInfo.environment["SUPER_CAGE_CONFIG"]
             let directory = FileManager.default.currentDirectoryPath
             defer {
                 _ = FileManager.default.changeCurrentDirectoryPath(directory)
-                if let saved { setenv("CLAUDE_CAGE_CONFIG", saved, 1) } else { unsetenv("CLAUDE_CAGE_CONFIG") }
+                if let saved { setenv("SUPER_CAGE_CONFIG", saved, 1) } else { unsetenv("SUPER_CAGE_CONFIG") }
             }
-            setenv("CLAUDE_CAGE_CONFIG", "", 1)
-            try expect(CageProfile.configURL() == FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude-cage/config.json"), "empty profile agrees with backend default")
+            setenv("SUPER_CAGE_CONFIG", "", 1)
+            try expect(CageProfile.configURL() == FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".super-cage/config.json"), "empty profile agrees with backend default")
             try expect(FileManager.default.changeCurrentDirectoryPath(root.path), "enter isolated launch directory")
             let launchDirectory = FileManager.default.currentDirectoryPath
-            setenv("CLAUDE_CAGE_CONFIG", "selected profile/config.json", 1)
+            setenv("SUPER_CAGE_CONFIG", "selected profile/config.json", 1)
             CageProfile.pinEnvironment()
             let pinned = CageProfile.configURL()
             try expect(pinned.path == launchDirectory + "/selected profile/config.json", "relative profile pinned at launch")
             try expect(FileManager.default.changeCurrentDirectoryPath(directory), "simulate helper working directory")
             try expect(CageProfile.configURL() == pinned, "helper keeps original profile after cwd changes")
-            let inherited = try CageUpdateFiles.run("/bin/sh", ["-c", "printf '%s' \"$CLAUDE_CAGE_CONFIG\""])
+            let inherited = try CageUpdateFiles.run("/bin/sh", ["-c", "printf '%s' \"$SUPER_CAGE_CONFIG\""])
             try expect(String(data: inherited, encoding: .utf8) == pinned.path, "actual child process inherits absolute profile")
         }
         let personalFiles = [
@@ -77,7 +77,7 @@ enum UpdatesTests {
         try FileManager.default.createSymbolicLink(at: escaped.appendingPathComponent("outside"), withDestinationURL: hashFile)
         try rejects("app symlink escape") { try CageUpdateFiles.validateTree(escaped) }
 
-        let old = root.appendingPathComponent("Cage.app"), next = root.appendingPathComponent("next.app"), backup = root.appendingPathComponent("backup.app")
+        let old = root.appendingPathComponent("SuperCage.app"), next = root.appendingPathComponent("next.app"), backup = root.appendingPathComponent("backup.app")
         for location in [old, next, backup] { try CageUpdateFiles.privateDirectory(location) }
         try Data("old".utf8).write(to: old.appendingPathComponent("marker"))
         try Data("old".utf8).write(to: backup.appendingPathComponent("marker"))
@@ -185,9 +185,9 @@ enum UpdatesTests {
         let savedEnvironment = ProcessInfo.processInfo.environment
         let confirmation = UUID().uuidString
         setenv("CAGE_UPDATE_CONFIRMATION", confirmation, 1)
-        setenv("CLAUDE_CAGE_CONFIG", root.appendingPathComponent("profile/config.json").path, 1)
+        setenv("SUPER_CAGE_CONFIG", root.appendingPathComponent("profile/config.json").path, 1)
         defer {
-            for key in ["CAGE_UPDATE_CONFIRMATION", "CLAUDE_CAGE_CONFIG"] {
+            for key in ["CAGE_UPDATE_CONFIRMATION", "SUPER_CAGE_CONFIG"] {
                 if let value = savedEnvironment[key] { setenv(key, value, 1) } else { unsetenv(key) }
             }
         }
@@ -239,19 +239,19 @@ enum UpdatesTests {
         // can upgrade in-place to the pinned official signed release; all other unsigned
         // builds stay on manual update without downloading. Signed bundles keep strict same-team updates.
         do {
-            let homeApps = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/Cage.app")
-            try expect(CageUpdateFiles.isInstalledApplicationsPath(URL(fileURLWithPath: "/Applications/Cage.app")), "/Applications/Cage.app must be recognized")
-            try expect(CageUpdateFiles.isInstalledApplicationsPath(homeApps), "~/Applications/Cage.app must be recognized")
-            try expect(!CageUpdateFiles.isInstalledApplicationsPath(root.appendingPathComponent("_output/Cage.app")), "local _output build must not be treated as installed")
-            try expect(!CageUpdateFiles.isInstalledApplicationsPath(URL(fileURLWithPath: "/Volumes/Cage/Cage.app")), "DMG volume path must not be treated as installed")
-            try expect(!CageUpdateFiles.isInstalledApplicationsPath(URL(fileURLWithPath: "/Applications/Nested/Cage.app")), "nested directory under /Applications must not be treated as installed")
+            let homeApps = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications/SuperCage.app")
+            try expect(CageUpdateFiles.isInstalledApplicationsPath(URL(fileURLWithPath: "/Applications/SuperCage.app")), "/Applications/SuperCage.app must be recognized")
+            try expect(CageUpdateFiles.isInstalledApplicationsPath(homeApps), "~/Applications/SuperCage.app must be recognized")
+            try expect(!CageUpdateFiles.isInstalledApplicationsPath(root.appendingPathComponent("_output/SuperCage.app")), "local _output build must not be treated as installed")
+            try expect(!CageUpdateFiles.isInstalledApplicationsPath(URL(fileURLWithPath: "/Volumes/SuperCage/SuperCage.app")), "DMG volume path must not be treated as installed")
+            try expect(!CageUpdateFiles.isInstalledApplicationsPath(URL(fileURLWithPath: "/Applications/Nested/SuperCage.app")), "nested directory under /Applications must not be treated as installed")
 
             let legacyPlanJSON = Data("""
-            {"version":"0.2.1","team":"WBR2J2NFHN","target":"/Applications/Cage.app","candidate":"/tmp/Cage.app","backup":"/tmp/previous.app","parentPID":1,"resultPath":"/tmp/last-result.json"}
+            {"version":"0.2.1","team":"WBR2J2NFHN","target":"/Applications/SuperCage.app","candidate":"/tmp/SuperCage.app","backup":"/tmp/previous.app","parentPID":1,"resultPath":"/tmp/last-result.json"}
             """.utf8)
             let legacyPlan = try JSONDecoder().decode(CageUpdatePlan.self, from: legacyPlanJSON)
             try expect(!legacyPlan.unsignedSource, "legacy update plan without unsignedSource must default to false")
-            let upgradePlan = CageUpdatePlan(version: "0.2.1", team: cageOfficialAppleTeamID, target: "/Applications/Cage.app", candidate: "/tmp/Cage.app", backup: "/tmp/previous.app", parentPID: 1, resultPath: "/tmp/last-result.json", unsignedSource: true)
+            let upgradePlan = CageUpdatePlan(version: "0.2.1", team: cageOfficialAppleTeamID, target: "/Applications/SuperCage.app", candidate: "/tmp/SuperCage.app", backup: "/tmp/previous.app", parentPID: 1, resultPath: "/tmp/last-result.json", unsignedSource: true)
             let roundTripped = try JSONDecoder().decode(CageUpdatePlan.self, from: try JSONEncoder().encode(upgradePlan))
             try expect(roundTripped.unsignedSource, "unsignedSource flag must round-trip through CageUpdatePlan")
 
@@ -260,7 +260,7 @@ enum UpdatesTests {
             try CageUpdateFiles.privateDirectory(validUnsignedResources)
             let validInfo: [String: Any] = [
                 "CFBundleIdentifier": cageUpdateBundleID,
-                "CFBundleExecutable": "Cage",
+                "CFBundleExecutable": "SuperCage",
                 "CageVersion": "0.2.0",
             ]
             try PropertyListSerialization.data(fromPropertyList: validInfo, format: .xml, options: 0).write(to: validUnsigned.appendingPathComponent("Contents/Info.plist"))
@@ -273,7 +273,7 @@ enum UpdatesTests {
             }
             let wrongIDInfo: [String: Any] = [
                 "CFBundleIdentifier": "com.example.fork",
-                "CFBundleExecutable": "Cage",
+                "CFBundleExecutable": "SuperCage",
                 "CageVersion": "0.2.0",
             ]
             try PropertyListSerialization.data(fromPropertyList: wrongIDInfo, format: .xml, options: 0).write(to: validUnsigned.appendingPathComponent("Contents/Info.plist"))

@@ -9,9 +9,9 @@ import (
 func TestWindowsSocketDirProblem(t *testing.T) {
 	excluded := []string{`C:\Users\dev\AppData\Local`, `C:\Users\dev\AppData\Roaming`, `C:\Users\dev\AppData\Local\Temp`}
 	for dir, ok := range map[string]bool{
-		`C:\Users\dev\.claude-cage\run`:         true,
+		`C:\Users\dev\.super-cage\run`:         true,
 		`d:\cage\run`:                           true,
-		`C:\Users\鲸落\.claude-cage\run`:          false,
+		`C:\Users\鲸落\.super-cage\run`:          false,
 		`\\server\share\run`:                    false,
 		`run`:                                   false,
 		`C:\Users\dev\AppData\Local\Temp\x`:     false,
@@ -56,9 +56,9 @@ func (f *fakeSocketFS) fs() windowsSocketFS {
 
 func TestChooseWindowsSocketDir(t *testing.T) {
 	excluded := []string{`C:\Users\鲸落\AppData\Local`}
-	f := &fakeSocketFS{existing: map[string]bool{}, short: map[string]string{`C:\Users\鲸落\.claude-cage\run`: `C:\Users\9B9E~1\.CLAUD~1\run`}}
-	candidates := WindowsSocketDirCandidates(`C:\Users\鲸落\.claude-cage`, `C:\Users\鲸落`, "abc")
-	if candidates[0] != `C:\Users\鲸落\.claude-cage\run` || candidates[1] != `C:\Users\鲸落\.cage-run\abc` {
+	f := &fakeSocketFS{existing: map[string]bool{}, short: map[string]string{`C:\Users\鲸落\.super-cage\run`: `C:\Users\9B9E~1\.SUPER~1\run`}}
+	candidates := WindowsSocketDirCandidates(`C:\Users\鲸落\.super-cage`, `C:\Users\鲸落`, "abc")
+	if candidates[0] != `C:\Users\鲸落\.super-cage\run` || candidates[1] != `C:\Users\鲸落\.cage-run\abc` {
 		t.Fatalf("candidates: %q", candidates)
 	}
 	// A lookup before the core made the directory does not settle on
@@ -66,10 +66,10 @@ func TestChooseWindowsSocketDir(t *testing.T) {
 	if _, err := chooseWindowsSocketDir(candidates, 48, excluded, f.fs(), false); !errors.Is(err, errSocketDirNotCreated) {
 		t.Fatalf("lookup before creation: %v", err)
 	}
-	if got, err := chooseWindowsSocketDir(candidates, 48, excluded, f.fs(), true); err != nil || got != `C:\Users\9B9E~1\.CLAUD~1\run` {
+	if got, err := chooseWindowsSocketDir(candidates, 48, excluded, f.fs(), true); err != nil || got != `C:\Users\9B9E~1\.SUPER~1\run` {
 		t.Fatalf("non-ASCII profile: %q, %v", got, err)
 	}
-	if got, err := chooseWindowsSocketDir(candidates, 48, excluded, f.fs(), false); err != nil || got != `C:\Users\9B9E~1\.CLAUD~1\run` {
+	if got, err := chooseWindowsSocketDir(candidates, 48, excluded, f.fs(), false); err != nil || got != `C:\Users\9B9E~1\.SUPER~1\run` {
 		t.Fatalf("lookup after creation: %q, %v", got, err)
 	}
 	// A profile in AppData is never used, not even through an alias.
@@ -80,12 +80,12 @@ func TestChooseWindowsSocketDir(t *testing.T) {
 		t.Fatalf("AppData profile: %q, %v", got, err)
 	}
 	delete(f.short, `C:\Users\鲸落\.cage-run\abc`)
-	delete(f.short, `C:\Users\鲸落\.claude-cage\run`)
+	delete(f.short, `C:\Users\鲸落\.super-cage\run`)
 	if _, err := chooseWindowsSocketDir(candidates, 48, excluded, f.fs(), true); !errors.Is(err, errSocketDirUnusable) {
 		t.Fatalf("no ASCII spelling must fail clearly: %v", err)
 	}
 	f.made = nil
-	if got, err := chooseWindowsSocketDir([]string{`C:\Users\dev\.claude-cage\run`}, 48, excluded, f.fs(), true); err != nil || got != `C:\Users\dev\.claude-cage\run` || len(f.made) != 0 {
+	if got, err := chooseWindowsSocketDir([]string{`C:\Users\dev\.super-cage\run`}, 48, excluded, f.fs(), true); err != nil || got != `C:\Users\dev\.super-cage\run` || len(f.made) != 0 {
 		t.Fatalf("ASCII profile: %q, %v, made %q", got, err, f.made)
 	}
 }

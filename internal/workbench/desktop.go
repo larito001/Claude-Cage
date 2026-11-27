@@ -246,7 +246,7 @@ func desktopLaunch(profile string, gateway bool, options DesktopOptions, start f
 	if err == nil {
 		defer current.close()
 		if current.launch.DesktopGateway != gateway {
-			return DesktopResult{}, errors.New("此目录已被另一种 Cage 服务使用，请核对配置路径")
+			return DesktopResult{}, errors.New("此目录已被另一种 SuperCage 服务使用，请核对配置路径")
 		}
 		if options.CompleteUpdate {
 			if current.launch.DesktopGateway {
@@ -387,7 +387,7 @@ func (c *controllerClient) stopAndHandoff() error {
 			return err
 		}
 	} else if c.launch.Controller.Protocol != controlProtocol {
-		return errors.New("当前后台协议不受此版本支持，已保留运行环境。请使用匹配的 Cage 版本停止环境。")
+		return errors.New("当前后台协议不受此版本支持，已保留运行环境。请使用匹配的 SuperCage 版本停止环境。")
 	}
 	u, _ := url.Parse(c.launch.URL)
 	status, err := c.call("POST", "/api/session", map[string]string{"token": u.Fragment}, nil)
@@ -526,7 +526,7 @@ func (c *controllerClient) exitTimeout() error {
 	}
 	if next, err := openController(c.profile); err == nil && next.record.PID != c.record.PID {
 		next.close()
-		return fmt.Errorf("%s退出期间又启动了新的%s（进程 %d，原进程 %d），通常是 Cage 窗口正在重新连接。未强制结束进程，请关闭 Cage 窗口后重试更新。", service, service, next.record.PID, c.record.PID)
+		return fmt.Errorf("%s退出期间又启动了新的%s（进程 %d，原进程 %d），通常是 SuperCage 窗口正在重新连接。未强制结束进程，请关闭 SuperCage 窗口后重试更新。", service, service, next.record.PID, c.record.PID)
 	}
 	return fmt.Errorf("%s（进程 %d）尚未退出，未强制结束进程。请稍后重试更新。", service, c.record.PID)
 }

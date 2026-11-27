@@ -354,7 +354,7 @@ func TestLegacyPasswordlessWorkspaceReturnsActionableMobileState(t *testing.T) {
 	// Truly locked account reports normal locked state without recovery header.
 	a.lock()
 	got = phoneRequestForTest(t, s, "GET", "/api/mobile/cli/projects", "", proof)
-	if got.Code != http.StatusLocked || got.Header().Get("X-Cage-Recovery") != "" || !strings.Contains(got.Body.String(), "Cage 已锁定") {
+	if got.Code != http.StatusLocked || got.Header().Get("X-Cage-Recovery") != "" || !strings.Contains(got.Body.String(), "SuperCage 已锁定") {
 		t.Fatalf("expected normal locked response, got %d header=%q body=%q", got.Code, got.Header().Get("X-Cage-Recovery"), got.Body.String())
 	}
 }

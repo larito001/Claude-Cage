@@ -10,8 +10,8 @@ import (
 )
 
 func TestWindowsQEMUIdentityHandlesSpacesAndRequiresInstance(t *testing.T) {
-	dir := `C:\Users\测试 User\.claude-cage\state\lima\test`
-	args := []string{`C:\Program Files\Cage\resources\runtime\qemu\qemu-system-x86_64.exe`, "-name", "lima-test", "-pidfile", dir + `\qemu.pid`}
+	dir := `C:\Users\测试 User\.super-cage\state\lima\test`
+	args := []string{`C:\Program Files\SuperCage\resources\runtime\qemu\qemu-system-x86_64.exe`, "-name", "lima-test", "-pidfile", dir + `\qemu.pid`}
 	if !windowsQEMUCommandMatches(windows.ComposeCommandLine(args), dir, "test") {
 		t.Fatal("quoted Unicode QEMU identity not recognized")
 	}

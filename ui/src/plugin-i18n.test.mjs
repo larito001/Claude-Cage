@@ -23,8 +23,8 @@ test("localizedPluginText falls back to listing i18n when installed plugin lacks
 
 test("formatMarketAuthor shows official label, raw GitHub login, or fallback", () => {
   const tr = s => `[${s}]`;
-  assert.equal(formatMarketAuthor({ name: "Lee-xeo", official: true }, tr), "[Cage 官方]");
-  assert.equal(formatMarketAuthor({ official: true }, tr), "[Cage 官方]");
+  assert.equal(formatMarketAuthor({ name: "Lee-xeo", official: true }, tr), "[SuperCage 官方]");
+  assert.equal(formatMarketAuthor({ official: true }, tr), "[SuperCage 官方]");
   assert.equal(formatMarketAuthor({ name: "SLEEPYBQ" }, tr), "SLEEPYBQ");
   assert.equal(formatMarketAuthor({ name: " caihao373-star " }, tr), "caihao373-star");
   assert.equal(formatMarketAuthor(null, tr), "[作者未注明]");

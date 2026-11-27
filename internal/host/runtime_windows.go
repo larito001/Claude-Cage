@@ -33,11 +33,11 @@ func ConfigureWindowsRuntime() error {
 	}
 	version := windows.RtlGetVersion()
 	if runtime.GOARCH != "amd64" || version.MajorVersion < 10 || version.BuildNumber < 19045 {
-		return fmt.Errorf("Cage 需要 64 位 Windows 10 22H2（19045）或 Windows 11")
+		return fmt.Errorf("SuperCage 需要 64 位 Windows 10 22H2（19045）或 Windows 11")
 	}
 	var processMachine, nativeMachine uint16
 	if err := windows.IsWow64Process2(windows.CurrentProcess(), &processMachine, &nativeMachine); err != nil || nativeMachine != 0x8664 {
-		return fmt.Errorf("Cage Windows 版本需要 Intel 或 AMD 的 x64 处理器，暂不支持 Windows on ARM")
+		return fmt.Errorf("SuperCage Windows 版本需要 Intel 或 AMD 的 x64 处理器，暂不支持 Windows on ARM")
 	}
 	if err := os.Setenv("PATHEXT", normalizePathExt(os.Getenv("PATHEXT"))); err != nil {
 		return err

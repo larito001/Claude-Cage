@@ -15,7 +15,7 @@ assert.ok(executable, "Set CAGE_SUBSCRIPTION_QA_EXECUTABLE to the newly built ca
 const output = path.resolve(process.env.CAGE_SUBSCRIPTION_QA_OUTPUT || "/tmp/cage-subscription-ui");
 await fs.mkdir(output, { recursive: true });
 const profile = await fs.mkdtemp("/private/tmp/cage-subscription-qa-");
-const env = { ...process.env, CLAUDE_CAGE_CONFIG: path.join(profile, "config.json") };
+const env = { ...process.env, SUPER_CAGE_CONFIG: path.join(profile, "config.json") };
 await run(executable, ["init"], { env });
 const log = await fs.open(path.join(profile, "server.log"), "w", 0o600);
 const service = spawn(executable, ["serve"], { env, stdio: ["ignore", log.fd, log.fd] });

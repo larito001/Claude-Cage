@@ -119,7 +119,7 @@ sudo tee /etc/claude-cage/desktop-openbox.xml >/dev/null <<'CAGE_CLAUDE_WINDOWS'
 CAGE_CLAUDE_WINDOWS
 sudo tee /etc/systemd/system/cage-claude-desktop.service >/dev/null <<'CAGE_CLAUDE_UNIT'
 [Unit]
-Description=Claude Desktop in Cage
+Description=Claude Desktop in SuperCage
 [Service]
 Type=notify
 NotifyAccess=all

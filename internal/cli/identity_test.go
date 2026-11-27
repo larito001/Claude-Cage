@@ -7,11 +7,11 @@ import (
 )
 
 // A program that embeds the shared commands names itself and says how it
-// updates: Cage must not send its users to agent-vm's installer.
+// updates: SuperCage must not send its users to agent-vm's installer.
 func TestEmbeddingProgramIdentity(t *testing.T) {
 	savedCommand, savedHint := Command, UpdateHint
 	t.Cleanup(func() { Command, UpdateHint = savedCommand, savedHint })
-	Command, UpdateHint = "claude-cage", "update Cage with its installer"
+	Command, UpdateHint = "super-cage", "update SuperCage with its installer"
 
 	var stdout, stderr bytes.Buffer
 	io := IO{Stdout: &stdout, Stderr: &stderr}
@@ -19,7 +19,7 @@ func TestEmbeddingProgramIdentity(t *testing.T) {
 		t.Fatalf("an unmet minimum returned %d", code)
 	}
 	got := stderr.String()
-	for _, want := range []string{"Error: claude-cage ", "Update it:  update Cage with its installer"} {
+	for _, want := range []string{"Error: super-cage ", "Update it:  update SuperCage with its installer"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the version error lacks %q: %q", want, got)
 		}
@@ -29,7 +29,7 @@ func TestEmbeddingProgramIdentity(t *testing.T) {
 	}
 
 	stderr.Reset()
-	if code := licensesCmd([]string{"x"}, io); code != 2 || !strings.Contains(stderr.String(), "Usage: claude-cage licenses") {
+	if code := licensesCmd([]string{"x"}, io); code != 2 || !strings.Contains(stderr.String(), "Usage: super-cage licenses") {
 		t.Errorf("licenses usage: %d %q", code, stderr.String())
 	}
 }

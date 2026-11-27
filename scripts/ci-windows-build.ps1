@@ -130,7 +130,7 @@ try {
     $version = Get-CageVersion $repository
     $suffix = if ($Release) { '' } else { '-unsigned' }
     Enter-CiPhase 'Install, update and uninstall with isolated data'
-    & (Join-Path $PSScriptRoot 'test-windows-install.ps1') -Installer "$repository/_output/releases/$version/windows/Cage-$version-windows-amd64-setup$suffix.exe" -RequireSignedQemu:$Release
+    & (Join-Path $PSScriptRoot 'test-windows-install.ps1') -Installer "$repository/_output/releases/$version/windows/SuperCage-$version-windows-amd64-setup$suffix.exe" -RequireSignedQemu:$Release
     if ($Release) {
         Enter-CiPhase 'Signed automatic update and rollback transactions'
         & (Join-Path $PSScriptRoot 'test-windows-update-flow.ps1')

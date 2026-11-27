@@ -44,7 +44,7 @@ func (s *Server) audioInput(w http.ResponseWriter, r *http.Request) {
 	available := !s.closing && !s.guestUpdateRequired
 	s.mu.Unlock()
 	if !available || !s.vmRunning() {
-		http.Error(w, "请先启动并更新 Cage 环境", http.StatusConflict)
+		http.Error(w, "请先启动并更新 SuperCage 环境", http.StatusConflict)
 		return
 	}
 	// The plain request answers whether a connection would be accepted, so a

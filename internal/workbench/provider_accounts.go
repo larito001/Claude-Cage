@@ -772,7 +772,7 @@ func (s *Server) mutateProviderAccounts(w http.ResponseWriter, r *http.Request) 
 			break
 		}
 		if !s.vmRunning() {
-			err = errors.New("请先启动 Cage 环境")
+			err = errors.New("请先启动 SuperCage 环境")
 			break
 		}
 		targetID := randomToken()[:24]

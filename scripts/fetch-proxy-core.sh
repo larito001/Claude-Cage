@@ -5,7 +5,7 @@ version=v1.19.33
 case "${CAGE_CORE_ARCH:-$(uname -m)}" in
   arm64) asset="mihomo-darwin-arm64-$version.gz"; checksum=060b64b0f2c9a310831db0fe4adb2878de67bfa606c311813c1f13966aa504b6 ;;
   x86_64|amd64) asset="mihomo-darwin-amd64-compatible-$version.gz"; checksum=eefe967b74312f70b64efa0dfa54929d00c7af8e94416e1b12df09863a40f35b ;;
-  *) echo 'Unsupported Cage proxy-core architecture' >&2; exit 1 ;;
+  *) echo 'Unsupported SuperCage proxy-core architecture' >&2; exit 1 ;;
 esac
 directory=_output/proxy-core
 mkdir -p "$directory"

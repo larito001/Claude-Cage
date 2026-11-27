@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate:
-    if: github.repository == 'Lee-xeo/Claude-Cage' && github.ref == 'refs/heads/main'
+    if: github.repository == 'larito001/Super-Cage' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - name: Require an immutable build source
@@ -30,7 +30,7 @@ jobs:
       - run: node scripts/check-version.mjs
   windows:
     needs: validate
-    if: github.repository == 'Lee-xeo/Claude-Cage' && github.ref == 'refs/heads/main'
+    if: github.repository == 'larito001/Super-Cage' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/windows-build.yml
     secrets: inherit
     with:
@@ -39,7 +39,7 @@ jobs:
       artifact_name: release-windows
   linux:
     needs: validate
-    if: github.repository == 'Lee-xeo/Claude-Cage' && github.ref == 'refs/heads/main'
+    if: github.repository == 'larito001/Super-Cage' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/linux-build.yml
     with:
       ref: ${{ inputs.ref }}

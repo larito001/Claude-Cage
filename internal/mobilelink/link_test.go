@@ -310,7 +310,7 @@ func TestLocalBrowserSessionAndHostHeaders(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = client.Close() })
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "mobile.html"), []byte("Cage mobile test"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "mobile.html"), []byte("SuperCage mobile test"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	web := httptest.NewUnstartedServer(nil)

@@ -57,10 +57,10 @@ func TestRunFallsBackToTheEnvironmentDirectory(t *testing.T) {
 		notice  string
 		hint    bool
 	}{
-		{name: "unshared script", err: &workbench.RunDirectoryError{Reason: "当前目录未共享给 Cage", Unshared: true}, notice: "未共享"},
-		{name: "unshared terminal", err: &workbench.RunDirectoryError{Reason: "当前目录未共享给 Cage", Unshared: true}, confirm: asked, notice: "未共享", hint: true},
+		{name: "unshared script", err: &workbench.RunDirectoryError{Reason: "当前目录未共享给 SuperCage", Unshared: true}, notice: "未共享"},
+		{name: "unshared terminal", err: &workbench.RunDirectoryError{Reason: "当前目录未共享给 SuperCage", Unshared: true}, confirm: asked, notice: "未共享", hint: true},
 		{name: "control service down", err: &workbench.RunDirectoryError{Reason: "无法确认当前目录是否已共享"}, confirm: asked, notice: "无法确认"},
-		{name: "not ready", err: &workbench.RunDirectoryError{Reason: "Cage 环境尚未就绪"}, notice: "尚未就绪"},
+		{name: "not ready", err: &workbench.RunDirectoryError{Reason: "SuperCage 环境尚未就绪"}, notice: "尚未就绪"},
 		{name: "project busy (409)", err: &workbench.RunDirectoryError{Reason: "无法连接当前目录所在的项目：busy"}, notice: "busy"},
 		{name: "unexpected error", err: errors.New("context deadline exceeded\nmore"), notice: "deadline exceeded"},
 		{name: "cwd unreadable", hostErr: errors.New("getwd: no such file"), notice: "无法读取当前目录"},
@@ -108,7 +108,7 @@ func TestRunHereIsStrict(t *testing.T) {
 		t.Fatalf("--here run = %q, %v", got, err)
 	}
 	runDirectory = func(context.Context, string, string, workbench.RunDirectoryConfirm) (string, error) {
-		return "", &workbench.RunDirectoryError{Reason: "当前目录未共享给 Cage", Unshared: true}
+		return "", &workbench.RunDirectoryError{Reason: "当前目录未共享给 SuperCage", Unshared: true}
 	}
 	if got, err := followRunDirectory("/p/config.json", []string{"run", "--here", "pwd"}, "/host/x", nil, &stderr, nil); err == nil || got != nil {
 		t.Fatalf("--here unshared = %q, %v", got, err)

@@ -109,7 +109,7 @@ func Prepare(ctx context.Context, cache string, plan Plan, output io.Writer, tra
 		return Plan{}, err
 	}
 	if abandonedSystem(plan.Host.System) {
-		return Plan{}, errors.New("Cage 已不再支持安装此系统的客机，原有安装材料未被改动")
+		return Plan{}, errors.New("SuperCage 已不再支持安装此系统的客机，原有安装材料未被改动")
 	}
 	if output == nil {
 		output = io.Discard

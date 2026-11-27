@@ -42,13 +42,13 @@ SectionEnd
             }
         } finally { $process.Dispose() }
     }
-    Check-InstallerOptions '/S /UPDATE /DESKTOPSHORTCUT=0 /STARTMENUSHORTCUT=1 /DIAGNOSTICS="D:\Test Folder\report.json" /D=D:\Cage Builds\Cage' 0 '^D:\\Cage Builds\\Cage\|0\|1\|1\|D:\\Test Folder\\report\.json\|$'
+    Check-InstallerOptions '/S /UPDATE /DESKTOPSHORTCUT=0 /STARTMENUSHORTCUT=1 /DIAGNOSTICS="D:\Test Folder\report.json" /D=D:\SuperCage Builds\SuperCage' 0 '^D:\\SuperCage Builds\\SuperCage\|0\|1\|1\|D:\\Test Folder\\report\.json\|$'
     Check-InstallerOptions '/S /STARTMENUSHORTCUT=0 /DESKTOPSHORTCUT=1' 0 '^\|1\|0\|0\|\|$'
-    Check-InstallerOptions '/S /UPDATE /D=D:\Cage /DESKTOPSHORTCUT=0 /STARTMENUSHORTCUT=0' 2 '/D= must be the last option'
-    Check-InstallerOptions '/S /D=D:\Cage /D=D:\Other' 2 '/D= must be the last option'
-    Check-InstallerOptions '/S /D="D:\Cage Builds\Cage"' 2 '/D= must be the last option'
-    Check-InstallerOptions '/S "/D=D:\Cage Builds\Cage"' 2 '/D= must be the last option'
-    Check-InstallerOptions '/S /D=Cage' 2 '/D= must be the last option'
-    Check-InstallerOptions '/S /DESKTOPSHORTCUT=00 /D=D:\Cage' 2 'DESKTOPSHORTCUT must be 0 or 1'
+    Check-InstallerOptions '/S /UPDATE /D=D:\SuperCage /DESKTOPSHORTCUT=0 /STARTMENUSHORTCUT=0' 2 '/D= must be the last option'
+    Check-InstallerOptions '/S /D=D:\SuperCage /D=D:\Other' 2 '/D= must be the last option'
+    Check-InstallerOptions '/S /D="D:\SuperCage Builds\SuperCage"' 2 '/D= must be the last option'
+    Check-InstallerOptions '/S "/D=D:\SuperCage Builds\SuperCage"' 2 '/D= must be the last option'
+    Check-InstallerOptions '/S /D=SuperCage' 2 '/D= must be the last option'
+    Check-InstallerOptions '/S /DESKTOPSHORTCUT=00 /D=D:\SuperCage' 2 'DESKTOPSHORTCUT must be 0 or 1'
     Write-Host 'Windows installer argument tests passed.'
 } finally { Remove-Item -LiteralPath $root -Recurse -Force }

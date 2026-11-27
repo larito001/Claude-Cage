@@ -168,14 +168,14 @@ func TestDesktopFileErrorsReachNativeCaller(t *testing.T) {
 		if r.Header.Get("Origin") != origin || r.Header.Get(connectionHeader) != "connection-one" {
 			t.Error("missing file operation origin or connection binding")
 		}
-		http.Error(w, "只能打开 Cage 项目目录中的文件和文件夹", 400)
+		http.Error(w, "只能打开 SuperCage 项目目录中的文件和文件夹", 400)
 	}))
 	defer server.Close()
 	origin = server.URL
 	client := &controllerClient{origin: server.URL, client: server.Client()}
 	client.client.Transport = connectionTransport{base: http.DefaultTransport, id: "connection-one"}
 	err := desktopOpenCall(client, map[string]string{"id": testBrowserFileID, "stage": "claim"}, nil)
-	if err == nil || err.Error() != "只能打开 Cage 项目目录中的文件和文件夹" {
+	if err == nil || err.Error() != "只能打开 SuperCage 项目目录中的文件和文件夹" {
 		t.Fatal("native caller lost useful error", err)
 	}
 }
@@ -185,7 +185,7 @@ func TestDesktopFileNativeReveal(t *testing.T) {
 		t.Skip("explicit desktop integration test")
 	}
 	project := t.TempDir()
-	file := filepath.Join(project, "Cage 生成的 Word 测试.docx")
+	file := filepath.Join(project, "SuperCage 生成的 Word 测试.docx")
 	if fixture := os.Getenv("CAGE_TEST_NATIVE_REVEAL_PATH"); fixture != "" {
 		file, project = fixture, filepath.Dir(fixture)
 	} else {

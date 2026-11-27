@@ -85,7 +85,7 @@ func TestTransferMountMigrationRequiresRestartAtEveryEntry(t *testing.T) {
 func TestStartRefusesTransferDirectoryLimaCannotShare(t *testing.T) {
 	for _, name := range []string{"Jae Young", "JaeYoung"} {
 		s := testServer(t)
-		transfer := filepath.Join(t.TempDir(), name, ".claude-cage-downloads")
+		transfer := filepath.Join(t.TempDir(), name, ".super-cage-downloads")
 		if err := os.MkdirAll(transfer, 0700); err != nil {
 			t.Fatal(err)
 		}

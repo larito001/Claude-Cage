@@ -25,7 +25,7 @@ func (sourceNodeDNSError) Is(target error) bool { return target == ErrSourceNode
 // credentialed, or fragmented Clash/Mihomo resolvers (such as plain IPs,
 // system, dhcp://, udp://, tcp://, tls://, quic://, h3://, http://, or DoH
 // URLs carrying #skip-cert-verify=true, #DIRECT, #h3=true, etc.) are ignored
-// rather than blocking node import or subscription refresh, so Cage falls back
+// rather than blocking node import or subscription refresh, so SuperCage falls back
 // to its own verified node DNS when none can be safely adopted.
 func subscriptionNodeDNS(data []byte) ([]string, error) {
 	var input struct {

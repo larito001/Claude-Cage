@@ -26,7 +26,7 @@ import (
 )
 
 // Build ./cmd/cage and pass its absolute path in CAGE_MOBILE_E2E_BINARY.
-// This uses the actual desktop control gates, CLAUDE_CAGE_CONFIG isolation and
+// This uses the actual desktop control gates, SUPER_CAGE_CONFIG isolation and
 // server-entry command. An isolated profile suffices; no VM or model is used.
 func TestIsolatedWorkbench(t *testing.T) {
 	cage := os.Getenv("CAGE_MOBILE_E2E_BINARY")
@@ -42,7 +42,7 @@ func TestIsolatedWorkbench(t *testing.T) {
 	}
 	config := filepath.Join(profile, "config.json")
 	service := exec.CommandContext(ctx, cage, "serve")
-	service.Env = append(os.Environ(), "CLAUDE_CAGE_CONFIG="+config)
+	service.Env = append(os.Environ(), "SUPER_CAGE_CONFIG="+config)
 	if err := service.Start(); err != nil {
 		t.Fatal(err)
 	}

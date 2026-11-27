@@ -10,7 +10,7 @@ import (
 	"github.com/sylvinus/agent-vm/internal/mobilelink"
 )
 
-// desktopRequestForTest sends a JSON request as the trusted local Cage window.
+// desktopRequestForTest sends a JSON request as the trusted local SuperCage window.
 func desktopRequestForTest(s *Server, method, path string, body []byte) *httptest.ResponseRecorder {
 	r := httptest.NewRequest(method, s.origin+path, bytes.NewReader(body))
 	r.Header.Set("Origin", s.origin)

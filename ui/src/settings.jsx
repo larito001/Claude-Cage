@@ -433,7 +433,7 @@ export function SettingsPanel({
               <>
                 <div className="section-title">
                   <h3>{tr("时区与语言")}</h3>
-                  <p>{tr("这些设置作用于 Cage 内的系统、CLI 和浏览器。")}</p>
+                  <p>{tr("这些设置作用于 SuperCage 内的系统、CLI 和浏览器。")}</p>
                 </div>
                 <div className="settings-card">
                   <label className="settings-row settings-switch-row">
@@ -781,7 +781,7 @@ export function SettingsPanel({
               <>
                 <div className="section-title">
                   <h3>{tr("环境与恢复")}</h3>
-                  <p>{isRemoteClient() ? tr("项目位于云端，Cage 中的改动会直接保存到云端文件。") : tr("所有项目共用一个 Cage 环境")}</p>
+                  <p>{isRemoteClient() ? tr("项目位于云端，SuperCage 中的改动会直接保存到云端文件。") : tr("所有项目共用一个 SuperCage 环境")}</p>
                 </div>
                 <div className="settings-card">
                   <div className="settings-row">

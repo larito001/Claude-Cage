@@ -189,7 +189,7 @@ export function HostForm({ initial, platform, onSaved, onClose }) {
             <summary>{tr("云端安装路径")}</summary>
             <div className="remote-advanced">
               <label>
-                {tr("Cage 程序路径")}
+                {tr("SuperCage 程序路径")}
                 <input
                   value={form.executable || ""}
                   onChange={(event) => update("executable", event.target.value)}
@@ -199,13 +199,13 @@ export function HostForm({ initial, platform, onSaved, onClose }) {
                 <small>{tr("默认使用 cage，也可填写云端程序的绝对路径。")}</small>
               </label>
               <label>
-                {tr("Cage 配置文件")}
+                {tr("SuperCage 配置文件")}
                 <input
                   value={form.config_path || ""}
                   onChange={(event) =>
                     update("config_path", event.target.value)
                   }
-                  placeholder={form.platform === "windows" ? tr("例如 C:\\ProgramData\\Cage Remote\\config.json") : tr("默认使用云端账户的 ~/.claude-cage/config.json")}
+                  placeholder={form.platform === "windows" ? tr("例如 C:\\ProgramData\\SuperCage Remote\\config.json") : tr("默认使用云端账户的 ~/.super-cage/config.json")}
                   spellCheck="false"
                 />
                 <small>{tr("自定义时填写云端绝对路径。")}</small>

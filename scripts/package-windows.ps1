@@ -23,7 +23,7 @@ $makeNSIS = Get-BuildCommand @('makensis.exe', 'makensis') -Optional
 if (-not $makeNSIS) { throw 'NSIS (makensis) is missing from PATH. See scripts/install-nsis.ps1 and docs/windows.md#windows-源码构建.' }
 $sevenZip = Get-BuildCommand @('7z.exe', '7zz', '7z')
 if (-not $SkipBuild) { & (Join-Path $PSScriptRoot 'build-windows.ps1') -Release:$Release -Sign:$Sign -OutputDirectory $AppDirectory -DependencyCache $DependencyCache }
-if ((Get-Content -LiteralPath (Join-Path $AppDirectory 'Cage.install-id') -Raw) -ne 'io.github.lee-xeo.claude-cage') { throw 'Invalid Cage app directory.' }
+if ((Get-Content -LiteralPath (Join-Path $AppDirectory 'Cage.install-id') -Raw) -ne 'io.github.lee-xeo.super-cage') { throw 'Invalid SuperCage app directory.' }
 if ((Get-Content -LiteralPath (Join-Path $AppDirectory 'version.txt') -Raw).Trim() -ne $version) { throw 'App version differs from VERSION; rebuild before packaging.' }
 $signTool = $null
 $qemuRuntime = Join-Path $AppDirectory 'resources/runtime/qemu'
@@ -36,7 +36,7 @@ if ($signed) {
     }
     if ($Release) { Invoke-BuildTool $sevenZip @('t', '-bso0', '-bsp0', $QemuSourceArchive) }
     $signTool = Get-SigningTool
-    foreach ($file in @('Cage.exe', 'resources/cage.exe', 'resources/mihomo.exe')) {
+    foreach ($file in @('SuperCage.exe', 'resources/cage.exe', 'resources/mihomo.exe')) {
         Assert-CageReleaseSignature (Join-Path $AppDirectory $file)
     }
     $identity = Get-Content -LiteralPath (Join-Path $qemuRuntime 'cage-build.json') -Raw | ConvertFrom-Json
@@ -54,7 +54,7 @@ if ($signed) {
     if ($webview.Status -ne 'Valid' -or $webview.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') { throw 'WebView2 installer must have a valid Microsoft signature.' }
 }
 if ($IsWindows) {
-    if ([Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $AppDirectory 'Cage.exe')).ProductVersion -ne $version) { throw 'Cage.exe version differs from VERSION; rebuild before packaging.' }
+    if ([Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $AppDirectory 'SuperCage.exe')).ProductVersion -ne $version) { throw 'SuperCage.exe version differs from VERSION; rebuild before packaging.' }
     Invoke-BuildTool (Join-Path $AppDirectory 'resources/cage.exe') @('verify-vm-assets')
     Invoke-BuildTool (Join-Path $AppDirectory 'resources/cage.exe') @('verify-web-assets')
     if ($SkipBuild) {
@@ -62,15 +62,15 @@ if ($IsWindows) {
         Assert-WindowsWorkbench $AppDirectory
     }
 } else {
-    $metadata = & $sevenZip 'l' '-tPE' (Join-Path $AppDirectory 'Cage.exe')
-    if ($LASTEXITCODE -ne 0 -or -not ($metadata -match ('^ProductVersion: ' + [regex]::Escape($version) + '$'))) { throw 'Cage.exe version differs from VERSION; rebuild before packaging.' }
+    $metadata = & $sevenZip 'l' '-tPE' (Join-Path $AppDirectory 'SuperCage.exe')
+    if ($LASTEXITCODE -ne 0 -or -not ($metadata -match ('^ProductVersion: ' + [regex]::Escape($version) + '$'))) { throw 'SuperCage.exe version differs from VERSION; rebuild before packaging.' }
 }
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 # Verify source material before the expensive installer compression.
 $dependencies = Get-Content -LiteralPath (Join-Path $repository 'packaging/windows/dependencies.json') -Raw | ConvertFrom-Json
 $qemuTar = Get-VerifiedGitArchive $dependencies.qemuSource $DependencyCache
 $suffix = if ($Release) { '' } elseif ($Sign) { '-test-signed' } else { '-unsigned' }
-$artifact = Join-Path $OutputDirectory "Cage-$version-windows-amd64-setup$suffix.exe"
+$artifact = Join-Path $OutputDirectory "SuperCage-$version-windows-amd64-setup$suffix.exe"
 $manifest = Join-Path $AppDirectory 'Cage.install-files.json'
 $files = @(Get-ChildItem -LiteralPath $AppDirectory -File -Recurse -Force | Where-Object FullName -ne $manifest)
 $ownership = [Collections.Generic.List[object]]::new()

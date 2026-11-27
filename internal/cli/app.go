@@ -180,7 +180,7 @@ func newApp(io IO) (*app, error) {
 	// name): cut in their folder part, not refused.
 	e.names = vmname.Limit(vm.MaxName(LimaHome(st)))
 	e.migrate = func() { e.migrateOld(context.Background(), oldLimaHome(), LimaHome(st)) }
-	// Cage owns a separate profile; it never imports another tool's VMs.
+	// SuperCage owns a separate profile; it never imports another tool's VMs.
 	if config := os.Getenv(cage.ConfigEnv); config != "" {
 		e.migrate = nil
 		e.cageProfile = filepath.Dir(config)

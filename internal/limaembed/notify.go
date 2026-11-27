@@ -29,7 +29,7 @@ type eventWatch struct {
 }
 
 func hostagentEventOutput(w io.Writer, vm string) io.Writer {
-	// Cage starts several local services together. Keep their forwarding
+	// SuperCage starts several local services together. Keep their forwarding
 	// events in the hostagent log without posting a desktop alert for each.
 	if os.Getenv(cage.ConfigEnv) != "" || os.Getenv("AGENT_VM_NOTIFY") == "0" {
 		return w

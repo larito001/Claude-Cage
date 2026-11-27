@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Sign an already built Cage.app with the Developer ID identity, notarize it and
-# place it at _output/Cage.app for `scripts/package-macos.sh --from-notarized-app`.
+# Sign an already built SuperCage.app with the Developer ID identity, notarize it and
+# place it at _output/SuperCage.app for `scripts/package-macos.sh --from-notarized-app`.
 #
 # The Intel App is built natively on an Intel Mac because it carries its QEMU
 # runtime. When the release identity lives on another Mac, that build is signed
@@ -8,7 +8,7 @@
 # compiled, and every executable keeps the entitlements its build gave it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-if [[ "$(uname -s)" != Darwin ]]; then echo 'Signing a Cage.app requires macOS.' >&2; exit 1; fi
+if [[ "$(uname -s)" != Darwin ]]; then echo 'Signing a SuperCage.app requires macOS.' >&2; exit 1; fi
 if [[ $# != 1 || ! -d "$1" || "$1" != *.app ]]; then echo 'Usage: scripts/resign-macos-app.sh BUILT_CAGE_APP' >&2; exit 2; fi
 : "${CAGE_SIGNING_IDENTITY:?Set CAGE_SIGNING_IDENTITY to your Developer ID Application identity.}"
 : "${CAGE_NOTARY_PROFILE:?Set CAGE_NOTARY_PROFILE to a notarytool keychain profile.}"
@@ -20,12 +20,12 @@ if [[ -n "${CAGE_NOTARY_KEYCHAIN:-}" ]]; then notary_credentials+=(--keychain "$
 
 source_app="$(cd "$1" && pwd -P)"
 version="$(tr -d '\n\r' < VERSION)"
-destination="$PWD/_output/Cage.app"
+destination="$PWD/_output/SuperCage.app"
 if [[ -e "$destination" ]]; then echo "$destination already exists. Move it away before signing another build." >&2; exit 1; fi
 plist="$source_app/Contents/Info.plist"
-if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")" != io.github.lee-xeo.claude-cage ||
+if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")" != io.github.lee-xeo.super-cage ||
       "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")" != Cage ]]; then
-  echo 'The source is not a Cage application.' >&2; exit 1
+  echo 'The source is not a SuperCage application.' >&2; exit 1
 fi
 if [[ "$(/usr/libexec/PlistBuddy -c 'Print :CageVersion' "$plist")" != "$version" ]]; then
   echo 'App version differs from VERSION; sign the build of this exact source.' >&2; exit 1
@@ -37,7 +37,7 @@ if [[ -n "$(find "$source_app" -type l -print -quit)" ]]; then echo 'The App con
 mkdir -p _output
 stage="$(mktemp -d "$PWD/_output/resign.XXXXXX")"
 trap 'rm -rf "$stage"' EXIT
-bundle="$stage/Cage.app"
+bundle="$stage/SuperCage.app"
 ditto "$source_app" "$bundle"
 chmod -R u+w "$bundle"
 xattr -cr "$bundle"
@@ -53,7 +53,7 @@ entitlement_keys() {
     /^    [^ ]+ = true$/ { print $1; next }
     { exit 1 }' | sort
 }
-main="$bundle/Contents/MacOS/Cage"
+main="$bundle/Contents/MacOS/SuperCage"
 architecture="$(lipo -archs "$main")"
 case "$architecture" in arm64|x86_64) ;; *) echo 'The App must be built for one architecture.' >&2; exit 1 ;; esac
 sign=(codesign --force --sign "$identity" --timestamp --options runtime)
@@ -100,8 +100,8 @@ while IFS=$'\t' read -r file entitlements keys; do
   printf '%s\t%s\n' "${file#"$bundle"/}" "${keys:--}"
 done < "$stage/executables"
 
-ditto -c -k --keepParent "$bundle" "$stage/Cage-notarization.zip"
-xcrun notarytool submit "$stage/Cage-notarization.zip" "${notary_credentials[@]}" \
+ditto -c -k --keepParent "$bundle" "$stage/SuperCage-notarization.zip"
+xcrun notarytool submit "$stage/SuperCage-notarization.zip" "${notary_credentials[@]}" \
   --wait --timeout 20m --output-format json > "$stage/app-notarization.json"
 status="$(/usr/bin/plutil -extract status raw -o - "$stage/app-notarization.json")"
 if [[ "$status" != Accepted ]]; then

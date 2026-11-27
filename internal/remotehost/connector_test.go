@@ -362,7 +362,7 @@ func TestServerEntryCommandQuotesPaths(t *testing.T) {
 	}
 	dir := t.TempDir()
 	executable := filepath.Join(dir, "cage ' literal")
-	if err := os.WriteFile(executable, []byte("#!/bin/sh\nprintf '%s\\n%s\\n%s\\n' \"$CLAUDE_CAGE_CONFIG\" \"$1\" \"$2\"\n"), 0700); err != nil {
+	if err := os.WriteFile(executable, []byte("#!/bin/sh\nprintf '%s\\n%s\\n%s\\n' \"$SUPER_CAGE_CONFIG\" \"$1\" \"$2\"\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
 	p := HostProfile{Name: "test", Host: "localhost", User: "user", Auth: AuthConfig{Kind: "agent"}, Executable: executable, ConfigPath: filepath.Join(dir, "a'$(touch injected).json")}
@@ -607,7 +607,7 @@ func TestWindowsEntryTreatsConfigPathAsLiteral(t *testing.T) {
 	}
 	// Simulate the installed server entry and execute the actual script using PowerShell's parser.
 	cmd := exec.Command(shell, "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", `
-function cage { [Console]::WriteLine($env:CLAUDE_CAGE_CONFIG); [Console]::WriteLine($args -join ' ') }
+function cage { [Console]::WriteLine($env:SUPER_CAGE_CONFIG); [Console]::WriteLine($args -join ' ') }
 & ([ScriptBlock]::Create([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($env:ENTRY_SCRIPT))))`)
 	cmd.Env = append(os.Environ(), "ENTRY_SCRIPT="+encoded)
 	output, err := cmd.CombinedOutput()

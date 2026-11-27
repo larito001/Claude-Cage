@@ -21,7 +21,7 @@ func TestHostUpdateUsesProxyWithoutCageProfile(t *testing.T) {
 	var connects atomic.Int32
 	commit := strings.Repeat("a", 40)
 	origin := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.UserAgent(), "Cage") {
+		if strings.Contains(r.UserAgent(), "SuperCage") {
 			t.Error("product identity in request")
 		}
 		if strings.HasSuffix(r.URL.Path, "/commits/"+sourceBranch) {
@@ -174,5 +174,5 @@ func TestLiveAboutWithStoppedCageProxy(t *testing.T) {
 	if got.Source.Status == "failed" || !validCommit(got.Source.Commit) || got.Release.Status == "failed" || got.Release.Version == "" {
 		t.Fatalf("host-only check: %+v", got)
 	}
-	t.Logf("Host-only update check succeeded with no Cage profile: source=%s release=%s prerelease=%t", got.Source.Status, got.Release.Version, got.Release.Prerelease)
+	t.Logf("Host-only update check succeeded with no SuperCage profile: source=%s release=%s prerelease=%t", got.Source.Status, got.Release.Version, got.Release.Prerelease)
 }

@@ -11,7 +11,7 @@ export function classifyMicrophoneError(error) {
   if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
     return {
       state: "denied",
-      message: "麦克风权限未授予，请在系统设置中允许 Cage 使用麦克风后点击重试",
+      message: "麦克风权限未授予，请在系统设置中允许 SuperCage 使用麦克风后点击重试",
     };
   }
   if (name === "NotFoundError" || name === "DevicesNotFoundError") {

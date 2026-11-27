@@ -11,10 +11,10 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const cage = process.argv[2];
-assert.ok(path.isAbsolute(cage || ""), "Supply an absolute Cage helper path");
+assert.ok(path.isAbsolute(cage || ""), "Supply an absolute SuperCage helper path");
 const run = promisify(execFile);
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "cage-remember-live-"));
-const env = { ...process.env, HOME: root, LOCALAPPDATA: root, CLAUDE_CAGE_CONFIG: path.join(root, "profile", "config.json") };
+const env = { ...process.env, HOME: root, LOCALAPPDATA: root, SUPER_CAGE_CONFIG: path.join(root, "profile", "config.json") };
 const output = new URL("../../docs/test-reports/2026-11-08-remember-device/", import.meta.url);
 await fs.mkdir(output, { recursive: true });
 const require = createRequire(import.meta.url);
@@ -44,13 +44,13 @@ const unlock = async (enabled) => {
   await remember().setChecked(enabled);
   await page.getByLabel("账户密码", { exact: true }).fill(password);
   const response = page.waitForResponse(r => r.url().endsWith("/api/client/trusted-login"));
-  await page.getByRole("button", { name: "解锁 Cage", exact: true }).click();
+  await page.getByRole("button", { name: "解锁 SuperCage", exact: true }).click();
   assert.equal((await response).status(), 200);
   await menu().waitFor();
 };
 try {
   await restart();
-  await page.getByRole("heading", { name: "注册 Cage 账户", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "注册 SuperCage 账户", exact: true }).waitFor();
   await remember().waitFor();
   assert.equal(await remember().isChecked(), true);
   await remember().uncheck();
@@ -77,7 +77,7 @@ try {
   assert.equal((await account()).unlocked, true);
   await menu().click();
   await page.getByRole("menuitem", { name: /锁定 Cage/ }).click();
-  await page.getByRole("region", { name: "解锁 Cage", exact: true }).waitFor();
+  await page.getByRole("region", { name: "解锁 SuperCage", exact: true }).waitFor();
   await restart();
   await remember().waitFor();
   assert.equal((await account()).unlocked, false);
@@ -93,7 +93,7 @@ try {
   await menu().click();
   await page.getByRole("menuitem", { name: "退出账户", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "停止环境并退出账户", exact: true }).click();
-  await page.getByRole("region", { name: "解锁 Cage", exact: true }).waitFor();
+  await page.getByRole("region", { name: "解锁 SuperCage", exact: true }).waitFor();
   assert.equal(Boolean((await account()).trusted_login), false);
   const final = JSON.parse(await fs.readFile(path.join(root, "profile", "account.json"), "utf8"));
   assert.equal(final.sealed_key, record.sealed_key, "workspace password-wrapped key changed");

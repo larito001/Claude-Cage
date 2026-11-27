@@ -101,14 +101,14 @@ func stopLinuxProcess(record linuxCoreRecord, core string) error {
 		return err
 	}
 	if resolved != record.Executable {
-		return errors.New("Cage 代理进程不属于当前安装目录")
+		return errors.New("SuperCage 代理进程不属于当前安装目录")
 	}
 	fd, err := unix.PidfdOpen(record.PID, 0)
 	if errors.Is(err, unix.ESRCH) {
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("无法安全打开 Cage 代理进程（需要 Linux 5.3 或更新内核）: %w", err)
+		return fmt.Errorf("无法安全打开 SuperCage 代理进程（需要 Linux 5.3 或更新内核）: %w", err)
 	}
 	defer unix.Close(fd)
 	// Check start time before exe: a reused PID may belong to another user,
@@ -150,7 +150,7 @@ func stopLinuxProcess(record linuxCoreRecord, core string) error {
 			}
 		}
 	}
-	return errors.New("Cage 代理进程未能及时停止")
+	return errors.New("SuperCage 代理进程未能及时停止")
 }
 
 func stopLinuxCore(profile string) error {
@@ -166,7 +166,7 @@ func stopLinuxCore(profile string) error {
 	}
 	var record linuxCoreRecord
 	if len(b) > 4096 || json.Unmarshal(b, &record) != nil || record.PID <= 1 || record.Started == 0 || record.BootID == "" {
-		return errors.New("Cage 代理进程记录无效")
+		return errors.New("SuperCage 代理进程记录无效")
 	}
 	core, err := CorePath()
 	if err != nil {
@@ -196,7 +196,7 @@ func startLinuxCore(ctx context.Context, profile string, s Store) error {
 	}
 	l, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", s.Port))
 	if err != nil {
-		return errors.New("Cage 代理端口已被占用，请更换独立端口")
+		return errors.New("SuperCage 代理端口已被占用，请更换独立端口")
 	}
 	l.Close()
 	core, err := CorePath()

@@ -25,7 +25,7 @@ const JOB_NAMES = new Set([
 
 export const backendMessageKeys = [
   // Issue #749: local proxy node validation & migration
-  "本机代理端口不能用作节点。请导入原客户端的具体节点，在 Cage 中按中转到最终出口的顺序重新配置并应用",
+  "本机代理端口不能用作节点。请导入原客户端的具体节点，在 SuperCage 中按中转到最终出口的顺序重新配置并应用",
   "原代理链包含本机代理端口。请导入各跳的具体节点后重建代理链",
   "节点 {0} 需要迁移：{1}",
   "节点 {0}：{1}",
@@ -45,8 +45,8 @@ export const backendMessageKeys = [
   "节点名称为空或过长",
   "节点名称重复，无法确定代理链引用",
   "节点协议暂不支持",
-  "Clash Verge Ninja 专用的 ninja 协议，Cage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
-  "Clash Neo 专用的 nexo 协议，Cage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
+  "Clash Verge Ninja 专用的 ninja 协议，SuperCage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
+  "Clash Neo 专用的 nexo 协议，SuperCage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
   "节点服务器缺失或过长",
   "SSH 节点的 private-key 必须直接填写私钥内容，不能引用本机文件",
   "节点不能引用本机文件、网络接口或额外路由",
@@ -109,7 +109,7 @@ export const backendMessageKeys = [
   "订阅下载失败，请检查下载路径和服务地址",
   "订阅服务器返回 HTTP {0}",
   "订阅下载中断或超过 8 MiB",
-  "Cage 代理配置无效，请恢复私有配置备份",
+  "SuperCage 代理配置无效，请恢复私有配置备份",
   "代理来源配置总大小超过 32 MiB，请减少来源或节点；原配置已保留",
   "请填写 1–100 字节的来源名称",
   "更新间隔应为 0–168 小时，0 表示手动更新",
@@ -138,11 +138,11 @@ export const backendMessageKeys = [
   "正在验证节点配置…",
   "正在应用内置代理节点…",
   "节点已应用，正在重新检查环境出口…",
-  "节点已应用；启动 Cage 环境后完成联网检查",
+  "节点已应用；启动 SuperCage 环境后完成联网检查",
   "代理节点已保存，外网尚未恢复；请重新检查联网条件：{0}",
   "随附的 Mihomo 核心未通过配置校验，请核对节点协议和参数；可在设置的“日志与诊断”中导出诊断包查看校验记录；原配置已保留",
-  "Cage 代理端口已被占用，请更换独立端口",
-  "无法启动 Cage 自带代理核心",
+  "SuperCage 代理端口已被占用，请更换独立端口",
+  "无法启动 SuperCage 自带代理核心",
   "代理核心启动失败，请查看私有代理日志",
   "代理核心启动超时，请查看私有代理日志",
   "节点未载入核心；请先应用节点以载入当前列表",
@@ -154,27 +154,27 @@ export const backendMessageKeys = [
   "一次最多测速 {0} 个节点",
   "测速列表包含重复节点",
   "测速已取消",
-  "Cage 代理核心操作失败（{0}）",
-  "未找到可用的物理 IPv4 网卡；Cage 外网保持关闭，请连接网络后重试",
-  "未找到带 IPv4 默认路由的物理或云主机网卡；Cage 外网保持关闭，请连接网络后重试",
-  "未找到可用的物理 IPv4 网卡。请连接以太网或 Wi-Fi；仅有虚拟网卡的 Windows 虚拟机和云主机暂不可用。Cage 外网保持关闭",
+  "SuperCage 代理核心操作失败（{0}）",
+  "未找到可用的物理 IPv4 网卡；SuperCage 外网保持关闭，请连接网络后重试",
+  "未找到带 IPv4 默认路由的物理或云主机网卡；SuperCage 外网保持关闭，请连接网络后重试",
+  "未找到可用的物理 IPv4 网卡。请连接以太网或 Wi-Fi；仅有虚拟网卡的 Windows 虚拟机和云主机暂不可用。SuperCage 外网保持关闭",
   "内置代理未就绪；外网保持关闭",
   "正在识别物理网卡并重新绑定代理…",
   "这份配置已经更新或不在原位置，请点击“重新检测”后再导入",
-  "请在这台电脑的 Cage 窗口中导入本机代理配置；其他连接可手动上传配置文件",
+  "请在这台电脑的 SuperCage 窗口中导入本机代理配置；其他连接可手动上传配置文件",
   // Local proxy discovery & Surge
   "当前生效配置",
   "已保存的配置",
   "加密配置",
   "私有格式配置",
   "本机配置",
-  "配置文件使用 age 加密，Cage 不会解密私有配置，无法直接导入。请从原客户端或服务商导出明文 Clash/Mihomo YAML 后通过“添加来源”导入，或手动添加节点",
-  "SakuraCat 的配置使用私有格式保存，Cage 不会读取或解密，也不能把它的本机代理端口当作节点。请通过 SakuraCat 支持的导出入口或服务商用户中心取得个人 Clash/Mihomo 订阅、YAML 或节点分享链接，再通过“添加来源”导入",
+  "配置文件使用 age 加密，SuperCage 不会解密私有配置，无法直接导入。请从原客户端或服务商导出明文 Clash/Mihomo YAML 后通过“添加来源”导入，或手动添加节点",
+  "SakuraCat 的配置使用私有格式保存，SuperCage 不会读取或解密，也不能把它的本机代理端口当作节点。请通过 SakuraCat 支持的导出入口或服务商用户中心取得个人 Clash/Mihomo 订阅、YAML 或节点分享链接，再通过“添加来源”导入",
   "无法读取当前用户的配置目录，请重新检测或手动导入文件",
   "无法读取这份配置，请检查文件权限或改为手动导入",
   "这份配置没有可导入的节点，或格式暂不支持；请从原软件导出 Clash/Mihomo 配置",
   "这份配置没有可导入的节点；请从原软件导出含节点的 Clash/Mihomo 配置",
-  "{0}。请在原软件中把节点 DNS（dns.proxy-server-nameserver）改为远程 HTTPS DoH 地址后重新导出，或在 Cage 中手动添加节点",
+  "{0}。请在原软件中把节点 DNS（dns.proxy-server-nameserver）改为远程 HTTPS DoH 地址后重新导出，或在 SuperCage 中手动添加节点",
   "有 {0} 份节点列表未能从本机缓存读取，这些节点不会导入。可先在原软件中更新配置，再重新检测。",
   "这份 Surge 配置没有可导入的节点",
   "WireGuard 暂不支持",
@@ -184,7 +184,7 @@ export const backendMessageKeys = [
   "同时使用 obfs 与 ShadowTLS，暂不支持",
   "ShadowTLS v{0} 暂不支持（支持 v1～v3）",
   "Snell v{0} 暂不支持（支持 v1～v3）",
-  "SSH 使用 Surge 钥匙串中的私钥，无法读取；请在 Cage 中手动添加 SSH 节点",
+  "SSH 使用 Surge 钥匙串中的私钥，无法读取；请在 SuperCage 中手动添加 SSH 节点",
   "协议 {0} 暂不支持",
   "有 {0} 处引用了远程配置，未下载；这些节点不会导入。可在 Surge 中导出完整配置后再导入",
   "以下节点未导入：{0}",
@@ -195,7 +195,7 @@ export const backendMessageKeys = [
   "SSH 主机选择无效，请重新打开导入预览",
   "SSH 配置参数数量无效",
   "依赖代理、跳板机或主机名规范化，请手动配置",
-  "Cage 无法保留此连接设置：{0}",
+  "SuperCage 无法保留此连接设置：{0}",
   "PreferredAuthentications 未包含 publickey，请手动选择认证方式",
   "包含暂不支持的连接选项：{0}",
   "IdentitiesOnly 无法通过导入保留，请手动选择认证方式",
@@ -205,11 +205,11 @@ export const backendMessageKeys = [
   "IdentityAgent 不支持变量展开，请填写完整的本机路径",
   "IdentityAgent 需要使用本机 Windows 命名管道",
   "IdentityAgent 需要使用符合系统长度限制的 Unix 套接字绝对路径",
-  "主机名、用户名或端口不符合 Cage 连接要求",
+  "主机名、用户名或端口不符合 SuperCage 连接要求",
   "最多保存 100 台远程主机，现有配置未修改",
   // Jobs & usererror
   "另一个操作仍在进行，请稍候",
-  "后台正在更新，请重新打开 Cage。",
+  "后台正在更新，请重新打开 SuperCage。",
   "另一个操作仍在进行，请稍候：当前正在{0}。请等待完成，或先停止当前操作。",
   "正在准备…",
   "已取消",
@@ -254,8 +254,8 @@ export const backendMessageKeys = [
   "连接恢复后会自动重试，也可手动重新检测。",
   // Common workbench HTTP & native errors
   "本地账户尚未初始化",
-  "请先解锁 Cage",
-  "请先启动 Cage 环境",
+  "请先解锁 SuperCage",
+  "请先启动 SuperCage 环境",
   "请先启动环境",
   "环境尚未就绪",
   "环境正在执行其他操作，请稍后重试",
@@ -338,7 +338,7 @@ export function localizeBackendMessage(message, localize = translate) {
     return translateTemplate(localize, "一次最多测速 {0} 个节点", m[1]) ?? trimmed;
   }
   if ((m = trimmed.match(/^Cage 代理核心操作失败（([^）]+)）$/))) {
-    return translateTemplate(localize, "Cage 代理核心操作失败（{0}）", m[1]) ?? trimmed;
+    return translateTemplate(localize, "SuperCage 代理核心操作失败（{0}）", m[1]) ?? trimmed;
   }
   if ((m = trimmed.match(/^节点字段 ([^\s]+) 存在重复写法，请仅保留一种$/))) {
     return translateTemplate(localize, "节点字段 {0} 存在重复写法，请仅保留一种", m[1]) ?? trimmed;
@@ -358,7 +358,7 @@ export function localizeBackendMessage(message, localize = translate) {
   if ((m = trimmed.match(/^([\s\S]+)。请在原软件中把节点 DNS（dns\.proxy-server-nameserver）改为远程 HTTPS DoH 地址后重新导出，或在 Cage 中手动添加节点$/))) {
     return translateTemplate(
       localize,
-      "{0}。请在原软件中把节点 DNS（dns.proxy-server-nameserver）改为远程 HTTPS DoH 地址后重新导出，或在 Cage 中手动添加节点",
+      "{0}。请在原软件中把节点 DNS（dns.proxy-server-nameserver）改为远程 HTTPS DoH 地址后重新导出，或在 SuperCage 中手动添加节点",
       localizeBackendMessage(m[1], localize),
     ) ?? trimmed;
   }
@@ -386,7 +386,7 @@ export function localizeBackendMessage(message, localize = translate) {
     return translateTemplate(localize, "以下节点未导入：{0}", items) ?? trimmed;
   }
   if ((m = trimmed.match(/^Cage 无法保留此连接设置：([a-z0-9]+)$/))) {
-    return translateTemplate(localize, "Cage 无法保留此连接设置：{0}", m[1]) ?? trimmed;
+    return translateTemplate(localize, "SuperCage 无法保留此连接设置：{0}", m[1]) ?? trimmed;
   }
   if ((m = trimmed.match(/^包含暂不支持的连接选项：([a-z0-9]+)$/))) {
     return translateTemplate(localize, "包含暂不支持的连接选项：{0}", m[1]) ?? trimmed;

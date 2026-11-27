@@ -1,6 +1,6 @@
 ---
 title: 云端部署与 SSH
-description: 将工作环境放到自己的 Linux VPS，通过桌面 Cage 部署、连接和管理服务器上的任务。
+description: 将工作环境放到自己的 Linux VPS，通过桌面 SuperCage 部署、连接和管理服务器上的任务。
 group: 远程使用
 order: 8
 keywords: 云端 远程部署 VPS SSH 无KVM rootless 服务器 主机 指纹 远程项目
@@ -19,7 +19,7 @@ keywords: 云端 远程部署 VPS SSH 无KVM rootless 服务器 主机 指纹 �
 
 用户管理器 `user@<UID>.service` 须委派 `cpu`、`memory`、`pids` 控制器。Ubuntu 22.04 等发行版默认不委派 `cpu`，部署预检会提示；由管理员添加含 `Delegate=cpu memory pids` 的 drop-in，执行 `systemctl daemon-reload` 后重新登录或重启该用户管理器。
 
-完整前提和维护命令见[部署说明](https://github.com/Lee-xeo/Claude-Cage/blob/main/deploy/cloud/README.md)。权限缺失应修复服务器配置，不要改用特权容器或把 Docker socket 暴露给工作环境。
+完整前提和维护命令见[部署说明](https://github.com/larito001/Super-Cage/blob/main/deploy/cloud/README.md)。权限缺失应修复服务器配置，不要改用特权容器或把 Docker socket 暴露给工作环境。
 
 需要在退出 SSH 后持续运行或在服务器重启后恢复服务时，由服务器管理员配置 systemd 用户服务、linger 与相应启动策略。
 
@@ -30,17 +30,17 @@ keywords: 云端 远程部署 VPS SSH 无KVM rootless 服务器 主机 指纹 �
 
 ## 从侧栏部署并连接
 
-1. 打开 Cage，进入左栏“SSH 主机”，点击加号填写名称、地址、端口、用户名和本机密钥文件或 SSH agent。自定义路径可在“云端安装路径”设置。使用 SSH agent 时见下文[指定 SSH agent](#指定-ssh-agent)。
+1. 打开 SuperCage，进入左栏“SSH 主机”，点击加号填写名称、地址、端口、用户名和本机密钥文件或 SSH agent。自定义路径可在“云端安装路径”设置。使用 SSH agent 时见下文[指定 SSH agent](#指定-ssh-agent)。
 2. 点击“连接此主机”，将 SSH 主机指纹与服务器独立显示的记录核对。指纹变化时先核查原因，再继续。
-3. 首次使用空配置目录时，点击“部署并连接”。Cage 传输匹配的程序和脚本，在服务器准备独立引擎与持久环境。
+3. 首次使用空配置目录时，点击“部署并连接”。SuperCage 传输匹配的程序和脚本，在服务器准备独立引擎与持久环境。
 4. 已部署且就绪时直接进入；能确认归属的用户服务已停止时会尝试启动。安装中断后可用同一版本重试。
-5. 云端工作台打开后，创建或解锁服务器自己的 Cage 账户，再配置服务器的代理和项目。
+5. 云端工作台打开后，创建或解锁服务器自己的 SuperCage 账户，再配置服务器的代理和项目。
 
 本机有任务时，连接卡片提供保留或停止本机环境的选项，停止前先保存内容。不要在未经备份的已有本机数据目录上首次部署云端实例。
 
 ### 指定 SSH agent
 
-登录方式选“本机 SSH agent”时，“SSH agent 套接字”留空即沿用原有行为：macOS 和 Linux 使用启动 Cage 时的 `SSH_AUTH_SOCK`；Windows 先用 `SSH_AUTH_SOCK`，未设置时使用 Windows OpenSSH agent（`\\.\pipe\openssh-ssh-agent`）。
+登录方式选“本机 SSH agent”时，“SSH agent 套接字”留空即沿用原有行为：macOS 和 Linux 使用启动 SuperCage 时的 `SSH_AUTH_SOCK`；Windows 先用 `SSH_AUTH_SOCK`，未设置时使用 Windows OpenSSH agent（`\\.\pipe\openssh-ssh-agent`）。
 
 密码管理器等程序自带 agent、而 `SSH_AUTH_SOCK` 指向另一个没有密钥的 agent 时（例如 macOS 默认的 launchd agent），在这一栏填写该程序给出的 agent 位置，与 SSH 配置中 `IdentityAgent` 的值相同，但要写成完整路径：
 
@@ -51,7 +51,7 @@ keywords: 云端 远程部署 VPS SSH 无KVM rootless 服务器 主机 指纹 �
 
 在「SSH 主机」侧栏点「导入本机 SSH 配置」，勾选要添加的主机。macOS 和 Linux 读取 `~/.ssh/config`，Windows 读取 `%USERPROFILE%\.ssh\config`。已有记录和已核对的 SSH 指纹会保留。
 
-导入的主机用本机 SSH agent 登录。先用 `ssh-add` 加入密钥，Cage 不读取私钥。需要跳板机或代理命令的主机会跳过。配置含 `Include` 或 `Match` 时，请手动添加主机。
+导入的主机用本机 SSH agent 登录。先用 `ssh-add` 加入密钥，SuperCage 不读取私钥。需要跳板机或代理命令的主机会跳过。配置含 `Include` 或 `Match` 时，请手动添加主机。
 
 <figure class="guide-shot">
   <a href="../../www/public/docs/screenshots/ssh-host-form.jpg" target="_blank" rel="noopener" aria-label="查看原图：远程主机地址、认证与私钥路径表单"><img src="../../www/public/docs/screenshots/ssh-host-form.jpg" alt="远程主机地址、认证与私钥路径表单" width="2560" height="1764" loading="lazy" decoding="async" /></a>

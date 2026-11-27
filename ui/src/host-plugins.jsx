@@ -46,7 +46,7 @@ const permissionText = list => list?.length ? list.map(name => permissions[name]
 // The app explains in problem when a plugin needs a newer app: a guest plugin,
 // an unmet engines range or more than one MCP server. Otherwise an unsupported
 // plugin was not built for this system.
-const unsupportedLabel = item => item.problem ? translate("需要更新 Cage") : translate("不支持此系统");
+const unsupportedLabel = item => item.problem ? translate("需要更新 SuperCage") : translate("不支持此系统");
 
 // contributions lists what a plugin adds to the app beyond its tools: pages in
 // the sidebar. Every MCP plugin has a server, so servers alone are not shown
@@ -365,7 +365,7 @@ async function installPlugin(model, entry, onConfirm) {
   const replace = Boolean(entry.plugin);
   const adds = contributionText(offer);
   const runs = offer.kind === "guest"
-    ? translate("插件在 Cage 环境中以普通用户身份运行，它声明需要：{0}。", permissionText(offer.permissions))
+    ? translate("插件在 SuperCage 环境中以普通用户身份运行，它声明需要：{0}。", permissionText(offer.permissions))
     : translate("插件以你的系统账户权限在这台电脑上运行，它声明需要：{0}。调用前会弹窗征求你的同意，你可以选择始终允许。", permissionText(offer.permissions));
   // A plugin with tools can be allowed for good at install: the user's nod is remembered.
   const offerAlways = !replace && offer.source === "market" && purposes(offer).includes("AI 工具");
@@ -805,7 +805,7 @@ function PluginSettings({ model, plugin, onConfirm }) {
     }
     const giving = settings.some(item => item.type === "secret" && secrets[item.id]);
     if (guest && giving && !await onConfirm({ title: translate("把密钥交给环境内的插件？"), danger: true, confirm: translate("仍然保存"),
-      body: translate("这个插件在 Cage 环境中运行，密钥会离开这台电脑，以环境变量交给它的程序。环境内以同一用户运行的其他程序，包括 AI 助手，也可能读取到它。只在你信任这个插件时继续。") })) return;
+      body: translate("这个插件在 SuperCage 环境中运行，密钥会离开这台电脑，以环境变量交给它的程序。环境内以同一用户运行的其他程序，包括 AI 助手，也可能读取到它。只在你信任这个插件时继续。") })) return;
     const saved = await change({ plugin: plugin.name, settings: body, ...(guest && giving ? { confirm_guest_secrets: true } : {}) }, key);
     setFailed(!saved);
     if (saved) { setSecrets({}); setCleared([]); }
@@ -814,8 +814,8 @@ function PluginSettings({ model, plugin, onConfirm }) {
   return (
     <form className="plugin-settings" onSubmit={save} aria-label={tr("设置")}>
       <p className="plugin-page-lead">{guest
-        ? tr("这些值以环境变量交给插件在 Cage 环境中的程序，保存后插件会重新启动。密钥用你的 Cage 账户加密保存，之后不再显示；交给环境内的插件前需要你确认风险。")
-        : tr("这些值以环境变量交给插件在这台电脑上的程序，保存后插件会重新启动。密钥用你的 Cage 账户加密保存，之后不再显示；Cage 锁定时，用到密钥的插件会停止，解锁后自动恢复。")}</p>
+        ? tr("这些值以环境变量交给插件在 SuperCage 环境中的程序，保存后插件会重新启动。密钥用你的 SuperCage 账户加密保存，之后不再显示；交给环境内的插件前需要你确认风险。")
+        : tr("这些值以环境变量交给插件在这台电脑上的程序，保存后插件会重新启动。密钥用你的 SuperCage 账户加密保存，之后不再显示；SuperCage 锁定时，用到密钥的插件会停止，解锁后自动恢复。")}</p>
       {settings.map(item => {
         const id = `plugin-setting-${plugin.name}-${item.id}`, clearing = cleared.includes(item.id);
         const value = values[item.id] || "";
@@ -883,7 +883,7 @@ function Detail({ model, name, onConfirm, onPage }) {
   const globalProviders = globalProvidersMap(view);
   const remove = async () => {
     const bodyText = plugin?.default
-      ? "插件会停止运行并移到 plugins-removed 中保留。后续更新 Cage 不会强制重新安装它；如需恢复，可随时在插件设置中一键装回。"
+      ? "插件会停止运行并移到 plugins-removed 中保留。后续更新 SuperCage 不会强制重新安装它；如需恢复，可随时在插件设置中一键装回。"
       : "插件会停止运行。它的文件夹不会被删除，而是移到数据目录的 plugins-removed 中保留。";
     if (!await onConfirm({ title: translate("卸载「{0}」？", info.title), body: bodyText, confirm: "卸载" })) return;
     // A plugin the market offers stays on its page, ready to install again.
@@ -1026,7 +1026,7 @@ function Detail({ model, name, onConfirm, onPage }) {
             <div><dt>{tr("标识符")}</dt><dd><code>{name}</code></dd></div>
             {info.version && <div><dt>{tr("版本")}</dt><dd>{info.version}</dd></div>}
             <div><dt>{tr("来源")}</dt><dd>{translate(sources[entry.source])}</dd></div>
-            {(plugin || offer).kind && <div><dt>{tr("运行位置")}</dt><dd>{(plugin || offer).kind === "guest" ? (isRemoteClient() ? tr("远程 Cage 环境") : tr("Cage 环境")) : (isRemoteClient() ? tr("远程主机") : tr("这台电脑"))}</dd></div>}
+            {(plugin || offer).kind && <div><dt>{tr("运行位置")}</dt><dd>{(plugin || offer).kind === "guest" ? (isRemoteClient() ? tr("远程 SuperCage 环境") : tr("SuperCage 环境")) : (isRemoteClient() ? tr("远程主机") : tr("这台电脑"))}</dd></div>}
             {runtimeLabel && <div><dt>{tr("运行环境")}</dt><dd>{runtimeLabel}</dd></div>}
             {platformList && <div><dt>{tr("支持系统")}</dt><dd>{platformList}</dd></div>}
             <div><dt>{tr("状态")}</dt><dd>{plugin ? tr(info.state.label) : offer.supported ? tr("未安装") : unsupportedLabel(offer)}</dd></div>
@@ -1274,7 +1274,7 @@ function SettingsPage({ model, status, onConfirm, onPage }) {
       {view.dismissed_defaults?.length > 0 && (
         <section className="plugin-card">
           <h3>{tr("已卸载的默认插件")}</h3>
-          <p className="plugin-card-lead">{tr("这些随应用附带的默认插件已被你卸载，更新 Cage 时不会强制装回。需要时可随时恢复安装。")}</p>
+          <p className="plugin-card-lead">{tr("这些随应用附带的默认插件已被你卸载，更新 SuperCage 时不会强制装回。需要时可随时恢复安装。")}</p>
           <ul className="plugin-bridge-list">
             {view.dismissed_defaults.map(item => {
               const restoring = busy === `restore:${item.name}`;
@@ -1341,7 +1341,7 @@ function DraftCard({ draft, model, onConfirm, onPage }) {
       : "";
     const runNote = kind === "host"
       ? translate("你将以「主机插件」身份在这台电脑上运行它，调用前会逐次弹窗询问。请先展开并确认源码可信。")
-      : translate("插件将在 Cage 环境内以普通用户身份运行。");
+      : translate("插件将在 SuperCage 环境内以普通用户身份运行。");
     const confirmed = await onConfirm({
       title: draft.exists ? translate("覆盖安装草稿「{0}」？", title) : translate("安装自定义插件「{0}」？", title),
       body: [runNote, overwriteNote].filter(Boolean).join(" "),
@@ -1412,7 +1412,7 @@ function DraftCard({ draft, model, onConfirm, onPage }) {
           <span className="plugin-draft-label">{tr("运行位置")}</span>
           <div className="plugin-segmented" role="radiogroup" aria-label={tr("选择运行位置")}>
             <button type="button" role="radio" aria-checked={kind === "guest"} disabled={Boolean(busy)} onClick={() => setKind("guest")}>
-              {tr("Cage 环境内（推荐）")}
+              {tr("SuperCage 环境内（推荐）")}
             </button>
             <button type="button" role="radio" aria-checked={kind === "host"} disabled={Boolean(busy)} onClick={() => setKind("host")}>
               {tr("这台电脑（主机）")}

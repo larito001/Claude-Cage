@@ -1,4 +1,4 @@
-package io.github.leexeo.cage.mobile;
+package io.github.larito001.supercage.mobile;
 
 import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
@@ -46,7 +46,7 @@ final class HostCredentials {
         return generator.generateKey();
     }
     private static byte[] context(String relay, String pin) {
-        return ("Cage saved host v1\n" + relay + "\n" + pin).getBytes(StandardCharsets.UTF_8);
+        return ("SuperCage saved host v1\n" + relay + "\n" + pin).getBytes(StandardCharsets.UTF_8);
     }
     synchronized void save(String relay, String pin, String lookup) throws Exception {
         SharedPreferences.Editor change = prefs.edit().putString("relay", relay).putString("pin", pin);

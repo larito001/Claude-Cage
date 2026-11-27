@@ -36,7 +36,7 @@ const expected = frames(readFileSync(icon));
 // NSIS uses icon group 103 for the executable's primary shell icon.
 const group = resource(".rsrc/GROUP_ICON/103");
 if (group.length !== 6 + expected.size * 14 || group.readUInt32LE(0) !== 0x00010000 || group.readUInt16LE(4) !== expected.size) {
-  throw new Error("Installer icon sizes differ from the Cage icon.");
+  throw new Error("Installer icon sizes differ from the SuperCage icon.");
 }
 const seen = new Set();
 for (let index = 0; index < expected.size; index++) {
@@ -49,8 +49,8 @@ for (let index = 0; index < expected.size; index++) {
     ? frames(bytes).get(key)
     : createHash("sha256").update(bytes).digest("hex");
   if (seen.has(key) || !expected.has(key) || actual !== expected.get(key)) {
-    throw new Error(`Installer icon ${key} differs from the Cage logo.`);
+    throw new Error(`Installer icon ${key} differs from the SuperCage logo.`);
   }
   seen.add(key);
 }
-console.log(`Verified ${expected.size} Cage installer icon sizes.`);
+console.log(`Verified ${expected.size} SuperCage installer icon sizes.`);

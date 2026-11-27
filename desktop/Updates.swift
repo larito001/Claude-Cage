@@ -3,7 +3,7 @@ import CryptoKit
 import Security
 import Darwin
 
-let cageUpdateBundleID = "io.github.lee-xeo.claude-cage"
+let cageUpdateBundleID = "io.github.lee-xeo.super-cage"
 // Pinned official Apple Developer ID Team for eligible unsigned source builds
 // upgrading in-place to the official signed release. Signed installs always
 // pin strictly to their own running Team ID.
@@ -13,18 +13,18 @@ enum CageProfile {
     static var clientOnly: Bool { Bundle.main.object(forInfoDictionaryKey: "CageClientOnly") as? Bool == true }
     static var intelMacTest: Bool { Bundle.main.bundleIdentifier == cageUpdateBundleID + ".intel-macos-test" }
     static func configURL() -> URL {
-        if let path = ProcessInfo.processInfo.environment["CLAUDE_CAGE_CONFIG"], !path.isEmpty {
+        if let path = ProcessInfo.processInfo.environment["SUPER_CAGE_CONFIG"], !path.isEmpty {
             return URL(fileURLWithPath: path).standardizedFileURL
         }
         if intelMacTest {
-            return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude-cage-intel-test/config.json")
+            return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".super-cage-intel-test/config.json")
         }
-        return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(clientOnly ? ".claude-cage/client/config.json" : ".claude-cage/config.json")
+        return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(clientOnly ? ".super-cage/client/config.json" : ".super-cage/config.json")
     }
 
     // Every helper and relaunched app inherits the same absolute profile, even
     // when its working directory differs from the original launch directory.
-    static func pinEnvironment() { setenv("CLAUDE_CAGE_CONFIG", configURL().path, 1) }
+    static func pinEnvironment() { setenv("SUPER_CAGE_CONFIG", configURL().path, 1) }
 }
 
 final class CageUpdateValidation {
@@ -237,7 +237,7 @@ enum CageUpdateFiles {
         guard let info = try PropertyListSerialization.propertyList(from: Data(contentsOf: plist), format: nil) as? [String: Any],
               info["CFBundleIdentifier"] as? String == cageUpdateBundleID,
               info["CageClientOnly"] as? Bool != true,
-              info["CFBundleExecutable"] as? String == "Cage" else {
+              info["CFBundleExecutable"] as? String == "SuperCage" else {
             throw CageUpdateError("当前应用身份不匹配，无法自动切换为官方签名版本")
         }
         if let version, info["CageVersion"] as? String != version {
@@ -266,19 +266,19 @@ enum CageUpdateFiles {
     static func verifyApp(_ url: URL, version: String, team: String, gatekeeper: Bool = true, validation: CageUpdateValidation? = nil) throws {
         try validation?.checkCancellation()
         let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-        guard values.isDirectory == true, values.isSymbolicLink != true, url.pathExtension == "app" else { throw CageUpdateError("更新包中缺少有效的 Cage.app") }
+        guard values.isDirectory == true, values.isSymbolicLink != true, url.pathExtension == "app" else { throw CageUpdateError("更新包中缺少有效的 SuperCage.app") }
         let plist = url.appendingPathComponent("Contents/Info.plist")
         guard let info = try PropertyListSerialization.propertyList(from: Data(contentsOf: plist), format: nil) as? [String: Any],
               info["CFBundleIdentifier"] as? String == cageUpdateBundleID,
               info["CageVersion"] as? String == version,
-              info["CFBundleExecutable"] as? String == "Cage" else { throw CageUpdateError("更新包的应用身份或版本不匹配") }
+              info["CFBundleExecutable"] as? String == "SuperCage" else { throw CageUpdateError("更新包的应用身份或版本不匹配") }
         if let minimum = info["LSMinimumSystemVersion"] as? String {
             let parts = minimum.split(separator: ".").compactMap { Int($0) }
             guard minimum.range(of: "^[0-9]+(\\.[0-9]+){0,2}$", options: .regularExpression) != nil,
                   (1...3).contains(parts.count), ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: parts[0], minorVersion: parts.count > 1 ? parts[1] : 0, patchVersion: parts.count > 2 ? parts[2] : 0)) else { throw CageUpdateError("此更新需要更高版本的 macOS") }
         }
         _ = try signingInfo(url, bundle: true, expectedTeam: team)
-        try verifyArchitecture(url.appendingPathComponent("Contents/MacOS/Cage"), validation: validation)
+        try verifyArchitecture(url.appendingPathComponent("Contents/MacOS/SuperCage"), validation: validation)
         for name in ["cage", "mihomo", "CageUpdateInstaller"] {
             let nested = url.appendingPathComponent("Contents/Resources/\(name)")
             guard FileManager.default.fileExists(atPath: nested.path) else { throw CageUpdateError("更新包缺少必要的应用组件") }
@@ -316,10 +316,10 @@ enum CageUpdateFiles {
     static func extract(archive: URL, hash: String, version: String, team: String, directory: URL, validation: CageUpdateValidation? = nil) throws -> URL {
         guard try digest(archive, validation: validation) == hash else { throw CageUpdateError("安装包下载后发生变化，请重新下载") }
         return try withMountedImage(archive: archive, directory: directory, validation: validation) { mount in
-            let source = mount.appendingPathComponent("Cage.app", isDirectory: true)
+            let source = mount.appendingPathComponent("SuperCage.app", isDirectory: true)
             try validateTree(source, validation: validation)
             try verifyApp(source, version: version, team: team, validation: validation)
-            let target = directory.appendingPathComponent("Cage.app", isDirectory: true)
+            let target = directory.appendingPathComponent("SuperCage.app", isDirectory: true)
             _ = try run("/usr/bin/ditto", [source.path, target.path], validation: validation)
             try validateTree(target, validation: validation)
             try verifyApp(target, version: version, team: team, validation: validation)
@@ -409,7 +409,7 @@ final class CageUpdateProcessMonitor {
 
 /// Owns update state for one native window. All state transitions run on main.
 final class CageAppUpdater {
-    private static let unsignedManualMessage = "当前 macOS 应用未签名或签名无法验证，请从官方发布页下载安装包，退出 Cage 后替换原应用；配置、凭据、项目和虚拟机磁盘会保留。"
+    private static let unsignedManualMessage = "当前 macOS 应用未签名或签名无法验证，请从官方发布页下载安装包，退出 SuperCage 后替换原应用；配置、凭据、项目和虚拟机磁盘会保留。"
     private let bundleURL: URL
     private let root: URL
     private let onChange: ([String: Any]) -> Void
@@ -519,7 +519,7 @@ final class CageAppUpdater {
             try CageUpdateFiles.privateDirectory(root)
             try CageUpdateFiles.write(data, to: root.appendingPathComponent("launch-\(token).json"))
             launchAcknowledged = true
-            change(["phase": "current", "message": "Cage 已更新至 \(state["currentVersion"] as? String ?? "")"])
+            change(["phase": "current", "message": "SuperCage 已更新至 \(state["currentVersion"] as? String ?? "")"])
         } catch { failure("更新已安装，但启动确认未能保存") }
     }
     private func change(_ values: [String: Any]) {
@@ -601,7 +601,7 @@ final class CageAppUpdater {
         guard let path = result["archivePath"] as? String, let hash = result["sha256"] as? String,
               let version = result["latestVersion"] as? String, hash.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil else { failure("下载进程返回了无效安装包"); return }
         let archive = URL(fileURLWithPath: path).resolvingSymlinksInPath()
-        guard archive.path.hasPrefix(root.resolvingSymlinksInPath().path + "/download-"), archive.lastPathComponent == "Cage.dmg" else { failure("安装包路径不属于本次私有下载"); return }
+        guard archive.path.hasPrefix(root.resolvingSymlinksInPath().path + "/download-"), archive.lastPathComponent == "SuperCage.dmg" else { failure("安装包路径不属于本次私有下载"); return }
         change(["phase": "verifying", "message": "正在验证 Apple 签名和应用内容", "retryable": false])
         let task = CageUpdateValidation()
         validationTask = task
@@ -656,12 +656,12 @@ final class CageAppUpdater {
                 if prepared.unsignedSource {
                     guard prepared.team == cageOfficialAppleTeamID,
                           CageUpdateFiles.isInstalledApplicationsPath(self.bundleURL) else {
-                        throw CageUpdateError("请先将 Cage 安装到应用程序目录，再自动切换为官方签名版本")
+                        throw CageUpdateError("请先将 SuperCage 安装到应用程序目录，再自动切换为官方签名版本")
                     }
                     try CageUpdateFiles.verifyUnsignedAppIdentity(self.bundleURL)
                 } else {
                     guard !self.bundleURL.path.hasPrefix("/Volumes/"), self.bundleURL.pathExtension == "app" else {
-                        throw CageUpdateError("请先将 Cage 安装到应用程序目录，再自动更新")
+                        throw CageUpdateError("请先将 SuperCage 安装到应用程序目录，再自动更新")
                     }
                 }
                 try CageUpdateFiles.verifyApp(prepared.app, version: prepared.version, team: prepared.team, validation: task)
@@ -734,7 +734,7 @@ final class CageAppUpdater {
                             try self.installerInput?.fileHandleForWriting.write(contentsOf: Data("COMMIT\n".utf8))
                             try self.installerInput?.fileHandleForWriting.close()
                             self.installationCommitted = true
-                            self.change(["phase": "installing", "message": "正在安装并重启 Cage"])
+                            self.change(["phase": "installing", "message": "正在安装并重启 SuperCage"])
                             self.quit()
                         } catch { self.abortInstaller(); self.failure("无法开始安装，原应用已保留"); self.reconnect() }
                     case "stop_required":

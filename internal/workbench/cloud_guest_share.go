@@ -74,7 +74,7 @@ func (s *Server) closeClientMounts() {
 }
 
 // After a controller crash a disconnected FUSE mount may outlive its stream.
-// Only retire exact Cage names in the guest's reserved, root-owned directory.
+// Only retire exact SuperCage names in the guest's reserved, root-owned directory.
 // rmdir preserves any unexpected nonempty directory.
 func (s *Server) recoverClientMounts(ctx context.Context) error {
 	s.mu.Lock()

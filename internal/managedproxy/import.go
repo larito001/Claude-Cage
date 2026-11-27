@@ -26,11 +26,11 @@ type NodeIssue struct {
 // understands. The bundled Mihomo cannot parse them, so the skip reason names
 // the client and the migration path instead of a generic unsupported protocol.
 var clientOnlyTypes = map[string]string{
-	"ninja": "Clash Verge Ninja 专用的 ninja 协议，Cage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
-	"nexo":  "Clash Neo 专用的 nexo 协议，Cage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
+	"ninja": "Clash Verge Ninja 专用的 ninja 协议，SuperCage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
+	"nexo":  "Clash Neo 专用的 nexo 协议，SuperCage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入",
 }
 
-// Parse enforces Cage's import boundaries. Call Validate before committing a
+// Parse enforces SuperCage's import boundaries. Call Validate before committing a
 // candidate source; protocol parameters are interpreted by the bundled core.
 // Store.Import also retains skipped-node details.
 func Parse(data []byte, sourceID string) ([]Node, error) {
@@ -81,7 +81,7 @@ func parseNodes(data []byte, sourceID string) ([]Node, []NodeIssue, error) {
 	counts := map[string]int{}
 	keyErrors := make([]error, len(proxies))
 	for i, p := range proxies {
-		// Canonicalize only fields Cage reads or rewrites. Protocol parameters
+		// Canonicalize only fields SuperCage reads or rewrites. Protocol parameters
 		// and opaque maps such as HTTP headers belong to the bundled core.
 		keyErrors[i] = normalizeImportKeys(p, "name", "type", "server", "udp", "dialer-proxy")
 		name, _ := p["name"].(string)
@@ -277,7 +277,7 @@ func resolveGroupNode(target string, groups map[string][]string, names map[strin
 // inlineProviderNodes reads nodes from inline proxy-providers in file order.
 // Remote and file providers are not fetched. An inline provider whose override
 // or filters would rewrite or drop its nodes is reported instead of imported,
-// because Cage would otherwise apply them differently from the source client.
+// because SuperCage would otherwise apply them differently from the source client.
 func inlineProviderNodes(node *yaml.Node) ([]map[string]any, []string) {
 	if node.Kind != yaml.MappingNode {
 		return nil, nil

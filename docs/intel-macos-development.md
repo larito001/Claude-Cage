@@ -1,10 +1,10 @@
 # Intel Mac 构建与验证
 
-公开发行版提供 Intel Mac 安装包 `Cage-<版本>-macos-amd64.dmg`，与 Apple Silicon 一样经过 Developer ID 签名和公证，并支持应用内更新。Intel Mac 上的环境同样是 Debian 13（x86_64），沿用其他平台的工作台；主机最低版本为 macOS 14，并需要可用的硬件虚拟化（`sysctl kern.hv_support` 为 1）。本文说明源码构建、CI 与验收范围。
+公开发行版提供 Intel Mac 安装包 `SuperCage-<版本>-macos-amd64.dmg`，与 Apple Silicon 一样经过 Developer ID 签名和公证，并支持应用内更新。Intel Mac 上的环境同样是 Debian 13（x86_64），沿用其他平台的工作台；主机最低版本为 macOS 14，并需要可用的硬件虚拟化（`sysctl kern.hv_support` 为 1）。本文说明源码构建、CI 与验收范围。
 
 ## 运行方式
 
-Intel Mac 使用随包的 QEMU 和 Hypervisor.framework 硬件虚拟化运行环境，Apple Silicon 继续使用 Virtualization.framework。两者共用 Cage 的账户、工作台、项目共享和网络检查流程。
+Intel Mac 使用随包的 QEMU 和 Hypervisor.framework 硬件虚拟化运行环境，Apple Silicon 继续使用 Virtualization.framework。两者共用 SuperCage 的账户、工作台、项目共享和网络检查流程。
 
 ## 构建独立测试包
 
@@ -21,17 +21,17 @@ QEMU 配置阶段（`mkvenv`）除源码归档自带的 `qemu.qmp` 外，还需�
 bash scripts/build-app.sh --intel-macos-test
 ```
 
-输出 `_output/Cage Intel.app`，可通过 `CAGE_BUILD_OUTPUT` 指定另一个绝对 `.app` 路径。包内包含独立运行时、许可证及所需源码材料，不包含系统盘、账户或代理配置。测试包使用独立的应用标识和 `~/.claude-cage-intel-test` 默认配置目录；更新使用新的测试包。
+输出 `_output/SuperCage Intel.app`，可通过 `CAGE_BUILD_OUTPUT` 指定另一个绝对 `.app` 路径。包内包含独立运行时、许可证及所需源码材料，不包含系统盘、账户或代理配置。测试包使用独立的应用标识和 `~/.super-cage-intel-test` 默认配置目录；更新使用新的测试包。
 
 ## GitHub Actions 产物
 
-三平台检查在 `macos-15-intel` 上独立运行 Intel 构建，产物名为 `cage-macos-amd64-test`，与 `cage-macos-arm64-test` 并列。Intel 任务使用标准的 `scripts/build-app.sh` 构建完整 `Cage.app`，包含 QEMU/HVF、Linux 启动固件和相应源代码材料；本地独立测试包只是额外的应用标识与配置隔离选项。
+三平台检查在 `macos-15-intel` 上独立运行 Intel 构建，产物名为 `cage-macos-amd64-test`，与 `cage-macos-arm64-test` 并列。Intel 任务使用标准的 `scripts/build-app.sh` 构建完整 `SuperCage.app`，包含 QEMU/HVF、Linux 启动固件和相应源代码材料；本地独立测试包只是额外的应用标识与配置隔离选项。
 
 上传前执行 Go、工作台、更新和账户检查，核对主程序与运行时的 x86_64 架构，并解压回验签名及可执行权限。GitHub 托管 runner 不启动嵌套虚拟机；环境首次安装和工作台验收仍需 Intel Mac 实机记录。
 
 ## 正式发行
 
-发版流程（`release.yml`）在 `macos-15-intel` 上运行 `macos-intel-build.yml` 的 release 任务：从固定版本源码编译 QEMU 运行时（不读取缓存），以同一 Developer ID 证书签名并公证 App 与 DMG，产出 `Cage-<版本>-macos-amd64.dmg`。两个 macOS 安装包随附相同的 Mihomo，对应源码只由 Apple Silicon 任务发布一份。发布前要求 Apple Silicon、Intel、Windows、Linux 四个安装包全部通过校验；发布后官网构建会重新下载两个 DMG，逐个核对签名、公证、版本与架构。
+发版流程（`release.yml`）在 `macos-15-intel` 上运行 `macos-intel-build.yml` 的 release 任务：从固定版本源码编译 QEMU 运行时（不读取缓存），以同一 Developer ID 证书签名并公证 App 与 DMG，产出 `SuperCage-<版本>-macos-amd64.dmg`。两个 macOS 安装包随附相同的 Mihomo，对应源码只由 Apple Silicon 任务发布一份。发布前要求 Apple Silicon、Intel、Windows、Linux 四个安装包全部通过校验；发布后官网构建会重新下载两个 DMG，逐个核对签名、公证、版本与架构。
 
 应用内更新按处理器选择安装包：Intel 版只接受 `macos-amd64.dmg`，某个版本没有 Intel 安装包时不会改用 Apple Silicon 安装包。`--intel-macos-test` 测试包使用独立的应用标识，不进入更新通道。
 

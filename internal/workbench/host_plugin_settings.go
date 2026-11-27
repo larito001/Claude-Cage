@@ -20,11 +20,11 @@ import (
 )
 
 // A plugin's settings are kept in two files of the profile. What may be read
-// while Cage is locked is in plugin-settings.json: plain values, which
+// while SuperCage is locked is in plugin-settings.json: plain values, which
 // secrets are set, and whether the user agreed that a plugin inside the
 // environment receives its secrets. The secrets themselves are in
 // plugin-secrets.json, sealed with a key derived from the account key as the
-// password vault is, so they are readable only while Cage is unlocked.
+// password vault is, so they are readable only while SuperCage is unlocked.
 const (
 	pluginSettingsFile  = "plugin-settings.json"
 	pluginSecretsFile   = "plugin-secrets.json"
@@ -33,8 +33,8 @@ const (
 )
 
 // errPluginSecretsLocked is a plugin that cannot receive its secrets while
-// Cage is locked.
-var errPluginSecretsLocked = errors.New("Cage 已锁定，解锁后插件会重新启动")
+// SuperCage is locked.
+var errPluginSecretsLocked = errors.New("SuperCage 已锁定，解锁后插件会重新启动")
 
 type pluginSettingsRecord struct {
 	Values map[string]string `json:"values,omitempty"`
@@ -206,7 +206,7 @@ func pluginMissingSettings(manifest hostbridge.Manifest, record pluginSettingsRe
 
 // pluginSettingsEnv gives the variables of the plugin's settings for its
 // program. It fails with a MissingSettingsError while a required setting has
-// no value, and with errPluginSecretsLocked while Cage is locked and the
+// no value, and with errPluginSecretsLocked while SuperCage is locked and the
 // plugin has secrets to receive.
 func (s *Server) pluginSettingsEnv(_ context.Context, manifest hostbridge.Manifest) ([]string, error) {
 	settings := pluginSettingsOf(manifest)
@@ -255,7 +255,7 @@ func (s *Server) pluginSettingsEnv(_ context.Context, manifest hostbridge.Manife
 }
 
 // pluginUsesSecrets reports whether the plugin's program receives secrets,
-// and so must stop when Cage locks.
+// and so must stop when SuperCage locks.
 func (s *Server) pluginUsesSecrets(manifest hostbridge.Manifest) bool {
 	if len(pluginSettingsOf(manifest)) == 0 {
 		return false
@@ -330,7 +330,7 @@ func (s *Server) savePluginSettings(name string, values map[string]*string, conf
 		err = s.account.withPluginSecrets(true, func(all map[string]map[string]string) error {
 			mine := map[string]string{}
 			// Only secrets the record knows are kept: others are left from a
-			// plugin of this name removed while Cage was locked.
+			// plugin of this name removed while SuperCage was locked.
 			for id, value := range all[name] {
 				if slices.Contains(record.Secrets, id) {
 					mine[id] = value
@@ -357,7 +357,7 @@ func (s *Server) savePluginSettings(name string, values map[string]*string, conf
 			return nil
 		})
 		if errors.Is(err, errPluginSecretsLocked) {
-			return errors.New("请先解锁 Cage")
+			return errors.New("请先解锁 SuperCage")
 		}
 		if err != nil {
 			return err
@@ -379,7 +379,7 @@ func (s *Server) savePluginSettings(name string, values map[string]*string, conf
 }
 
 // forgetPluginSettings removes what the user entered for a plugin that is
-// uninstalled. Secrets stay sealed while Cage is locked and are removed the
+// uninstalled. Secrets stay sealed while SuperCage is locked and are removed the
 // next time the plugin's settings are saved.
 func (s *Server) forgetPluginSettings(name string) {
 	s.pluginSettingsMu.Lock()

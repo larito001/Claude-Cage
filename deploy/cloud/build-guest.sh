@@ -9,7 +9,7 @@ case "$(uname -s)/$(uname -m)" in
   *) echo 'Build the guest image on x86_64 or aarch64 Linux.' >&2; exit 1 ;;
 esac
 cage_binary="${CAGE_SERVER_BINARY:-$PWD/_output/bin/cage}"
-cage_engine="${CAGE_CONTAINER_ENGINE:-$HOME/.claude-cage/container-engine/tools/docker}"
+cage_engine="${CAGE_CONTAINER_ENGINE:-$HOME/.super-cage/container-engine/tools/docker}"
 cage_socket="${DOCKER_HOST:-unix:///run/user/$(id -u)/cage-container-engine/docker.sock}"
 cage_tag="${CAGE_GUEST_IMAGE_TAG:-cage-guest:development}"
 [[ "$cage_binary" == /* && -x "$cage_binary" && "$cage_engine" == /* && -x "$cage_engine" ]] || {
@@ -111,8 +111,8 @@ if [[ -n "${CAGE_DEBIAN_MIRROR:-}" ]]; then
     'from pathlib import Path; import sys; p=Path("/etc/apt/sources.list.d/debian.sources"); p.write_text(p.read_text().replace("http://deb.debian.org", sys.argv[1]))' \
     "$CAGE_DEBIAN_MIRROR"
 fi
-CLAUDE_CAGE_CONFIG="$cage_stage/profile/config.json" "$cage_binary" container-install-script tools > "$cage_stage/install-tools.sh"
-CLAUDE_CAGE_CONFIG="$cage_stage/profile/config.json" "$cage_binary" container-install-script services > "$cage_stage/install-services.sh"
+SUPER_CAGE_CONFIG="$cage_stage/profile/config.json" "$cage_binary" container-install-script tools > "$cage_stage/install-tools.sh"
+SUPER_CAGE_CONFIG="$cage_stage/profile/config.json" "$cage_binary" container-install-script services > "$cage_stage/install-services.sh"
 engine exec --interactive --user cage --workdir /home/cage "$cage_container_id" bash -l \
   < "$cage_stage/install-tools.sh" > "$cage_stage/tools.log" 2>&1
 engine exec --interactive --user cage --workdir /home/cage "$cage_container_id" zsh -l \
@@ -126,7 +126,7 @@ test ! -e /etc/claude-cage/browser-control.json
 test ! -e /home/cage/.config/claude-cage/browser-password
 test ! -e /home/cage/.claude/.credentials.json
 test ! -e /home/cage/.claude.json
-test ! -e /home/cage/.claude-cage/account.json
+test ! -e /home/cage/.super-cage/account.json
 sh /usr/local/lib/cage-image-restore-sources
 systemctl stop ssh cage-audio
 systemctl stop systemd-journald@cage.service systemd-journald@cage.socket systemd-journald-dev-log@cage.socket 2>/dev/null || true
@@ -147,7 +147,7 @@ cage_image_id=$(cat "$cage_stage/image-id")
 [[ "$cage_image_id" =~ ^sha256:[a-f0-9]{64}$ ]] || { echo 'Invalid committed image identity.' >&2; exit 1; }
 engine run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
   --cgroup-parent "$cage_slice" --cpus 1 --memory 256m --pids-limit 64 --entrypoint /bin/sh "$cage_image_id" -ec \
-  'test ! -s /etc/machine-id; test ! -e /var/lib/dbus/machine-id; test ! -L /var/lib/dbus/machine-id; test -z "$(find /etc/ssh -maxdepth 1 -name "ssh_host_*" -print -quit)"; test ! -e /etc/ssh/cage_authorized_keys; test ! -e /etc/claude-cage/browser-control.json; test ! -e /home/cage/.config/claude-cage/browser-password; test ! -e /home/cage/.claude/.credentials.json; test ! -e /home/cage/.claude-cage; test ! -e /home/cage/.config/code-server/config.yaml; test ! -e /home/cage/.config/pulse/cookie; test ! -e /etc/systemd/system/cage-memory.service; test -x /usr/local/lib/cage-runtime; test -s /usr/local/lib/cage-browser-agent.mjs; grep -qx "URIs: http://deb.debian.org/debian" /etc/apt/sources.list.d/debian.sources; grep -qx "URIs: http://deb.debian.org/debian-security" /etc/apt/sources.list.d/debian.sources; test "$(grep -c "^URIs:" /etc/apt/sources.list.d/debian.sources)" = 2; printf "image identity and software source checks passed\n"' \
+  'test ! -s /etc/machine-id; test ! -e /var/lib/dbus/machine-id; test ! -L /var/lib/dbus/machine-id; test -z "$(find /etc/ssh -maxdepth 1 -name "ssh_host_*" -print -quit)"; test ! -e /etc/ssh/cage_authorized_keys; test ! -e /etc/claude-cage/browser-control.json; test ! -e /home/cage/.config/claude-cage/browser-password; test ! -e /home/cage/.claude/.credentials.json; test ! -e /home/cage/.super-cage; test ! -e /home/cage/.config/code-server/config.yaml; test ! -e /home/cage/.config/pulse/cookie; test ! -e /etc/systemd/system/cage-memory.service; test -x /usr/local/lib/cage-runtime; test -s /usr/local/lib/cage-browser-agent.mjs; grep -qx "URIs: http://deb.debian.org/debian" /etc/apt/sources.list.d/debian.sources; grep -qx "URIs: http://deb.debian.org/debian-security" /etc/apt/sources.list.d/debian.sources; test "$(grep -c "^URIs:" /etc/apt/sources.list.d/debian.sources)" = 2; printf "image identity and software source checks passed\n"' \
   > "$cage_stage/image-check.log"
 if [[ -n "${CAGE_IMAGE_ID_OUTPUT:-}" ]]; then
   cp "$cage_stage/image-id" "$CAGE_IMAGE_ID_OUTPUT"

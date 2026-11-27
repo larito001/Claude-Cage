@@ -203,7 +203,7 @@ func join(ctx context.Context, base, roomID, role, token string) (*websocket.Con
 }
 
 // ServeHost waits for an authenticated device and serves this workbench only.
-// All requests pass the canonical mobile route filter and local Cage gates.
+// All requests pass the canonical mobile route filter and local SuperCage gates.
 func ServeHost(ctx context.Context, base, roomID, hostToken string, identity *remotelink.Identity, expectedPin string, b *Workbench) error {
 	if b == nil {
 		return errors.New("local workbench session required")

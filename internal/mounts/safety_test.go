@@ -83,7 +83,7 @@ func TestUnsafeLocationNoCase(t *testing.T) {
 }
 
 // Subdirectories of the home folder containing credentials or application data
-// may be explicitly shared as projects; the home folder itself, Cage/agent-vm
+// may be explicitly shared as projects; the home folder itself, SuperCage/agent-vm
 // state and git metadata directories remain refused.
 func TestCredentialDirectoriesAllowed(t *testing.T) {
 	s := newSandbox(t)

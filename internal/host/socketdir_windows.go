@@ -29,11 +29,11 @@ func PrivateSocketDir(profile string, room int, create bool) (string, error) {
 		return "", err
 	}
 	if err != nil {
-		return "", fmt.Errorf("Cage 找不到可用于本机控制通道的私有目录：配置目录与用户目录需位于本地 NTFS 等支持权限设置的磁盘、路径不超过约 %d 个字符，并在含中文等非英文字符时提供 8.3 短文件名（%w）", windowsSocketPathLimit-room, err)
+		return "", fmt.Errorf("SuperCage 找不到可用于本机控制通道的私有目录：配置目录与用户目录需位于本地 NTFS 等支持权限设置的磁盘、路径不超过约 %d 个字符，并在含中文等非英文字符时提供 8.3 短文件名（%w）", windowsSocketPathLimit-room, err)
 	}
 	if create {
 		if err := EnsurePrivateDir(dir); err != nil {
-			return "", fmt.Errorf("Cage 无法将本机控制通道目录 %s 设为仅当前用户可访问：%w", dir, err)
+			return "", fmt.Errorf("SuperCage 无法将本机控制通道目录 %s 设为仅当前用户可访问：%w", dir, err)
 		}
 	} else if !existingDir(dir) {
 		// Not created yet: the core is not running.

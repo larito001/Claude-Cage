@@ -26,10 +26,10 @@ func macInspection(goarch string, hv uint32, probeErr error) Inspection {
 		}
 		reason := strings.TrimSpace(probeErr.Error())
 		if errors.Is(probeErr, os.ErrPermission) || errors.Is(probeErr, syscall.EPERM) || errors.Is(probeErr, syscall.EACCES) {
-			r.Detail = "当前上下文无权检测 " + target + "能力（读取 kern.hv_support 失败：" + reason + "），这通常表示当前 CLI 运行在受限沙箱中，不能据此判定主机不支持虚拟化或原生桌面后台不可用，也无需重建或重装应用。请在普通终端执行 sysctl kern.hv_support 核对，或通过已运行的原生 Cage 桌面后台检查状态。"
+			r.Detail = "当前上下文无权检测 " + target + "能力（读取 kern.hv_support 失败：" + reason + "），这通常表示当前 CLI 运行在受限沙箱中，不能据此判定主机不支持虚拟化或原生桌面后台不可用，也无需重建或重装应用。请在普通终端执行 sysctl kern.hv_support 核对，或通过已运行的原生 SuperCage 桌面后台检查状态。"
 			return r
 		}
-		r.Detail = "当前上下文无法检测 " + target + "能力（读取 kern.hv_support 失败：" + reason + "），不能据此判定主机不支持虚拟化或原生桌面后台不可用，也无需重建或重装应用。请在普通终端执行 sysctl kern.hv_support 核对，或通过已运行的原生 Cage 桌面后台检查状态。"
+		r.Detail = "当前上下文无法检测 " + target + "能力（读取 kern.hv_support 失败：" + reason + "），不能据此判定主机不支持虚拟化或原生桌面后台不可用，也无需重建或重装应用。请在普通终端执行 sysctl kern.hv_support 核对，或通过已运行的原生 SuperCage 桌面后台检查状态。"
 		return r
 	}
 	hypervisor := hv == 1

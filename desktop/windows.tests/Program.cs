@@ -20,7 +20,7 @@ if (args is ["app-update", "check" or "download"])
 if (args is ["prepare-update", "--json", "--stop"])
 {
     File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "controller-invoked"), Environment.ProcessId.ToString());
-    File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "profile-invoked"), Environment.GetEnvironmentVariable("CLAUDE_CAGE_CONFIG") ?? "missing");
+    File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "profile-invoked"), Environment.GetEnvironmentVariable("SUPER_CAGE_CONFIG") ?? "missing");
     if (File.Exists(Path.Combine(AppContext.BaseDirectory, "broken-backend")))
     {
         Console.WriteLine("{\"status\":\"failed\"}"); Environment.Exit(7);
@@ -91,19 +91,19 @@ Check(Organization("C=CN, O=Example Publisher") != Organization("C=CN, O=Example
 foreach (var subject in new[] { "CN=Example Publisher", "C=CN, CN=Example Publisher", "O=Example Publisher", "C=CN, O=First, O=Second" })
     Check(Organization(subject).Length == 0, "incomplete or ambiguous publisher accepted: " + subject);
 var root = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "cage-update-policy-tests"));
-var good = Path.Combine(root, "download-abc", "Cage-setup.exe");
+var good = Path.Combine(root, "download-abc", "SuperCage-setup.exe");
 Check(UpdatePolicy.DownloadPath(good, root) == good, "private download rejected");
-foreach (var path in new[] { Path.Combine(root + "-other", "download-abc", "Cage-setup.exe"), Path.Combine(root, "verified-abc", "Cage-setup.exe"), Path.Combine(root, "download-abc", "nested", "Cage-setup.exe"), Path.Combine(root, "download-abc", "Cage.exe") })
+foreach (var path in new[] { Path.Combine(root + "-other", "download-abc", "SuperCage-setup.exe"), Path.Combine(root, "verified-abc", "SuperCage-setup.exe"), Path.Combine(root, "download-abc", "nested", "SuperCage-setup.exe"), Path.Combine(root, "download-abc", "SuperCage.exe") })
     Reject(() => UpdatePolicy.DownloadPath(path, root), "untrusted download path accepted: " + path);
 Console.WriteLine($"Windows update/bridge policy: {assertions} assertions passed.");
 
 var integration = Path.Combine(OperatingSystem.IsMacOS() ? "/private/tmp" : Path.GetTempPath(), "cage-recovery-" + Guid.NewGuid());
 Directory.CreateDirectory(integration);
-var savedProfile = Environment.GetEnvironmentVariable("CLAUDE_CAGE_CONFIG");
+var savedProfile = Environment.GetEnvironmentVariable("SUPER_CAGE_CONFIG");
 try
 {
     var selectedProfile = Path.Combine(integration, "selected profile", "config.json");
-    Environment.SetEnvironmentVariable("CLAUDE_CAGE_CONFIG", Path.GetRelativePath(Environment.CurrentDirectory, selectedProfile));
+    Environment.SetEnvironmentVariable("SUPER_CAGE_CONFIG", Path.GetRelativePath(Environment.CurrentDirectory, selectedProfile));
     var backup = Path.Combine(integration, "old application");
     var candidate = Path.Combine(integration, "new application");
     void InstallFixture(string app, bool broken)
@@ -141,8 +141,8 @@ try
     foreach (var directory in new[] { intactApp, intactBackup })
     {
         Directory.CreateDirectory(Path.Combine(directory, "resources"));
-        File.WriteAllText(Path.Combine(directory, "Cage.exe"), "original launcher");
-        File.WriteAllText(Path.Combine(directory, "Cage.install-id"), "io.github.lee-xeo.claude-cage");
+        File.WriteAllText(Path.Combine(directory, "SuperCage.exe"), "original launcher");
+        File.WriteAllText(Path.Combine(directory, "Cage.install-id"), "io.github.lee-xeo.super-cage");
         File.WriteAllText(Path.Combine(directory, "resources", "cage.exe"), "original backend");
     }
     Directory.CreateDirectory(Path.Combine(intactApp, "my-project"));
@@ -154,7 +154,7 @@ try
     File.WriteAllText(intactApp + ".cage-installation.json", "unresolved transaction");
     Check(!UpdateRecovery.OriginalIntact(intactApp, intactBackup), "unfinished personal-file transfer was treated as intact");
     File.Delete(intactApp + ".cage-installation.json");
-    File.Delete(Path.Combine(intactApp, "Cage.exe"));
+    File.Delete(Path.Combine(intactApp, "SuperCage.exe"));
     Check(!UpdateRecovery.OriginalIntact(intactApp, intactBackup), "missing launcher was treated as intact");
     Check(File.ReadAllText(Path.Combine(intactApp, "my-project", "work.txt")) == "latest personal data", "recovery classification changed personal data");
     var ensureComplete = typeof(UpdateInstaller).GetMethod("EnsureInstallationComplete", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
@@ -197,9 +197,9 @@ try
         InstallFixture(running, false);
         foreach (var file in Directory.EnumerateFiles(AppContext.BaseDirectory))
             File.Copy(file, Path.Combine(running, Path.GetFileName(file)));
-        File.Copy(Environment.ProcessPath!, Path.Combine(running, "Cage.exe"), true);
+        File.Copy(Environment.ProcessPath!, Path.Combine(running, "SuperCage.exe"), true);
         var runningRelease = Path.Combine(integration, "running release");
-        using var runningApp = System.Diagnostics.Process.Start(Backend.StartInfo(Path.Combine(running, "Cage.exe"), "smoke-wait", runningRelease))!;
+        using var runningApp = System.Diagnostics.Process.Start(Backend.StartInfo(Path.Combine(running, "SuperCage.exe"), "smoke-wait", runningRelease))!;
         using var runningChild = System.Diagnostics.Process.Start(Backend.StartInfo(Path.Combine(running, "resources", "cage.exe"), "smoke-wait", runningRelease))!;
         try
         {
@@ -227,7 +227,7 @@ try
     var lockedFile = Path.Combine(garbage, "old.dll"); File.WriteAllText(lockedFile, "old version");
     var download = Path.Combine(integration, "download"); Directory.CreateDirectory(download);
     var marker = Path.Combine(integration, "ack.json"); File.WriteAllText(marker, "confirmed");
-    var liveApp = Path.Combine(candidate, "Cage.exe"); File.WriteAllText(liveApp, "healthy new application");
+    var liveApp = Path.Combine(candidate, "SuperCage.exe"); File.WriteAllText(liveApp, "healthy new application");
     FileStream? locked = null;
     if (OperatingSystem.IsWindows()) locked = new FileStream(lockedFile, FileMode.Open, FileAccess.Read, FileShare.Read);
     else File.SetUnixFileMode(garbage, UnixFileMode.UserRead | UnixFileMode.UserExecute);
@@ -307,6 +307,6 @@ try
     }
 }
 finally {
-    Environment.SetEnvironmentVariable("CLAUDE_CAGE_CONFIG", savedProfile);
+    Environment.SetEnvironmentVariable("SUPER_CAGE_CONFIG", savedProfile);
     Directory.Delete(integration, true);
 }

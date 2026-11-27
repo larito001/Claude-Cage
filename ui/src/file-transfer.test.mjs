@@ -51,7 +51,7 @@ test("native copied files consume an opaque selection handle for the original de
 
 test("attachment paths preserve apostrophes in both PowerShell and POSIX shells", () => {
   const f = fixture();
-  assert.equal(f.shellFilePaths(["C:\\Users\\Cage\\O'Brien.txt"]), "'C:\\Users\\Cage\\O''Brien.txt' ");
+  assert.equal(f.shellFilePaths(["C:\\Users\\SuperCage\\O'Brien.txt"]), "'C:\\Users\\SuperCage\\O''Brien.txt' ");
   assert.equal(f.shellFilePaths(["/home/cage/O'Brien.txt"]), "'/home/cage/O'\\''Brien.txt' ");
 });
 

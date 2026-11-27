@@ -711,7 +711,7 @@ export function ProviderAccountsPanel({
 
       {!running ? (
         <p className="claude-profile-note">
-          {tr("启动 Cage 环境后可检测普通终端的登录，也可登录新账号。")}
+          {tr("启动 SuperCage 环境后可检测普通终端的登录，也可登录新账号。")}
         </p>
       ) : (
         detectionStatus === "offline" && (

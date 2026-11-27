@@ -135,9 +135,9 @@ func Run(configPath string, args []string, output io.Writer) int {
 	if st, e := os.Lstat(job); e != nil || !st.IsDir() || st.Mode()&os.ModeSymlink != 0 {
 		return fail(errors.New("更新下载任务必须是私有普通目录"))
 	}
-	localName := "Cage.dmg"
+	localName := "SuperCage.dmg"
 	if runtime.GOOS == "windows" {
-		localName = "Cage-setup.exe"
+		localName = "SuperCage-setup.exe"
 	}
 	archive := filepath.Join(job, localName)
 	state.Phase, state.Message, state.TotalBytes = "downloading", "正在下载更新", c.Archive.Size
@@ -160,15 +160,15 @@ func Run(configPath string, args []string, output io.Writer) int {
 func managedClient(ctx context.Context, configPath string) (*http.Client, error) {
 	cfg, err := cage.Load(configPath)
 	if err != nil {
-		return nil, errors.New("Cage 所选代理尚未配置")
+		return nil, errors.New("SuperCage 所选代理尚未配置")
 	}
 	profile := filepath.Dir(configPath)
 	p, err := managedproxy.Applied(profile, cfg.ProxyURL, cfg.ProxyRevision)
 	if err != nil {
-		return nil, &proxyUnavailableError{"Cage 所选代理尚未应用"}
+		return nil, &proxyUnavailableError{"SuperCage 所选代理尚未应用"}
 	}
 	if !managedproxy.Running(ctx, profile, p) {
-		return nil, &proxyUnavailableError{"Cage 所选代理未运行"}
+		return nil, &proxyUnavailableError{"SuperCage 所选代理未运行"}
 	}
 	egress, err := cage.NewEgress(cfg)
 	if err != nil {
@@ -217,7 +217,7 @@ func request(ctx context.Context, client *http.Client, raw string) (*http.Respon
 func requestFrom(ctx context.Context, client *http.Client, raw string, offset int64) (*http.Response, error) {
 	u, err := url.Parse(raw)
 	if err != nil || !allowedURL(u, false) {
-		return nil, errors.New("更新地址不属于 Cage 的受信发布源")
+		return nil, errors.New("更新地址不属于 SuperCage 的受信发布源")
 	}
 	req, err := http.NewRequestWithContext(ctx, "GET", raw, nil)
 	if err != nil {
@@ -239,7 +239,7 @@ func requestFrom(ctx context.Context, client *http.Client, raw string, offset in
 		if errors.As(err, &unavailable) {
 			return nil, &transientError{unavailable}
 		}
-		return nil, &transientError{usererror.Wrap("连接应用更新源", errors.Join(ctx.Err(), err), "请检查主机网络与系统代理；主机连接失败时还会尝试 Cage 所选代理。恢复网络后可重新检测更新。")}
+		return nil, &transientError{usererror.Wrap("连接应用更新源", errors.Join(ctx.Err(), err), "请检查主机网络与系统代理；主机连接失败时还会尝试 SuperCage 所选代理。恢复网络后可重新检测更新。")}
 	}
 	if resp.StatusCode != http.StatusOK && !(offset > 0 && resp.StatusCode == http.StatusPartialContent) {
 		resp.Body.Close()
@@ -248,7 +248,7 @@ func requestFrom(ctx context.Context, client *http.Client, raw string, offset in
 			if strings.Contains(u.Path, "/compare/") {
 				return nil, errors.New("当前构建提交未被源码仓库收录，无法核对提交关系")
 			}
-			return nil, errors.New("更新源找不到请求的版本或安装包（HTTP 404）。请稍后检查更新；需要手动安装时，请核对 Cage 发布页面中的对应平台文件。")
+			return nil, errors.New("更新源找不到请求的版本或安装包（HTTP 404）。请稍后检查更新；需要手动安装时，请核对 SuperCage 发布页面中的对应平台文件。")
 		case 403, 429:
 			return nil, updateSourceError(resp, time.Now())
 		default:

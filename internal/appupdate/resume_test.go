@@ -71,10 +71,10 @@ func (s *rangeSource) RoundTrip(r *http.Request) (*http.Response, error) {
 func resumeFixture(t *testing.T) (asset, string, string, string) {
 	t.Helper()
 	downloadBackoff = 0
-	content := strings.Repeat("Cage archive ", 64)
+	content := strings.Repeat("SuperCage archive ", 64)
 	a := fixtureRelease("0.2.0", false).Assets[0]
 	a.Size = int64(len(content))
-	return a, content, fmt.Sprintf("%x", sha256.Sum256([]byte(content))), filepath.Join(t.TempDir(), "Cage.dmg")
+	return a, content, fmt.Sprintf("%x", sha256.Sum256([]byte(content))), filepath.Join(t.TempDir(), "SuperCage.dmg")
 }
 
 func TestDroppedDownloadContinuesFromStoredBytes(t *testing.T) {

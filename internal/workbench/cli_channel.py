@@ -347,7 +347,7 @@ def view(config, session_id, path=None):
     if state.get("blocked"):
         notice = "这台主机的 Claude Code 管理策略关闭了 Channels，请由主机管理员处理。"
     elif state.get("policy_unavailable"):
-        notice = "Cage 默认环境的通道配置未能更新，请在电脑更新环境组件。"
+        notice = "SuperCage 默认环境的通道配置未能更新，请在电脑更新环境组件。"
     return {"cli_id": session_id, "config": str(config), "connection": connection, "native_ccs_unverified": bool(state.get("native_ccs_unverified")),
             "workspace": workspace or state.get("workspace", ""), "title": title or queued_title or "Claude Code",
             "updated_at": modified, "turns": turns, "running": bool(running), "active": bool(running and (state.get("busy") or state.get("approvals"))), "channel_ready": bool(channel), "can_send": bool(channel and not state.get("resume_task")), "has_history": has_history, "history_truncated": shortened,
@@ -540,9 +540,9 @@ def hook(connection):
             return {"decision": "block", "reason": "正在核对这个终端已更改的 Claude 登录，请稍后继续。"}
         if state.get("account_switch"):
             if event == "UserPromptSubmit":
-                return {"decision": "block", "reason": "Cage 正在切换账号，请在目标会话中继续。"}
+                return {"decision": "block", "reason": "SuperCage 正在切换账号，请在目标会话中继续。"}
             if event == "PreToolUse":
-                return {"hookSpecificOutput": {"hookEventName": event, "permissionDecision": "deny", "permissionDecisionReason": "Cage 正在切换账号。"}}
+                return {"hookSpecificOutput": {"hookEventName": event, "permissionDecision": "deny", "permissionDecisionReason": "SuperCage 正在切换账号。"}}
         state["updated_at"] = time.time()
         state["cli_id"] = identifier(payload["session_id"])
         state["workspace"] = payload.get("cwd", state.get("workspace", ""))

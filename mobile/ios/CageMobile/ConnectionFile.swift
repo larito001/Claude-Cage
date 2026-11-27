@@ -83,7 +83,7 @@ enum ConnectionFile {
 
 enum HostKeychain {
     private static var query: [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "io.github.lee-xeo.claude-cage.mobile.saved-host",
+        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: "io.github.lee-xeo.super-cage.mobile.saved-host",
          kSecAttrAccount as String: "v1", kSecAttrSynchronizable as String: false]
     }
     private static var collectionQuery: [String: Any] {

@@ -43,7 +43,7 @@ try {
     $report = Join-Path $directory 'smoke.json'
     $fixture = Join-Path $directory 'fixture.json'
     $profile = Join-Path $directory 'profile'
-    $storageError = '请选择具体项目，不要共享主目录、Cage 配置或包含配置的上级目录'
+    $storageError = '请选择具体项目，不要共享主目录、SuperCage 配置或包含配置的上级目录'
     $controllerLogs = Join-Path $profile 'logs'
     New-Item -ItemType Directory -Path $controllerLogs -Force | Out-Null
     @(
@@ -100,7 +100,7 @@ try {
         Assert-SmokeContract (-not $failure.Contains('unrelated-private-controller-message')) 'Unsafe controller or report content leaked.'
     }
     $timeoutFailure = ''
-    try { Stop-WindowsWorkbenchAcceptance 'Cage workbench acceptance timed out.' $profile }
+    try { Stop-WindowsWorkbenchAcceptance 'SuperCage workbench acceptance timed out.' $profile }
     catch { $timeoutFailure = $_.Exception.Message }
     Assert-SmokeContract ($timeoutFailure.Contains('timed out') -and $timeoutFailure.Contains($storageError)) 'Missing backend evidence on timeout.'
     [IO.File]::WriteAllText($report, '{"success":true,"nativeBridgeReady":true}')
@@ -110,7 +110,7 @@ try {
     Assert-SmokeContract $rejected 'Nonzero child exit was accepted because its report said success.'
     $app = Join-Path $directory 'app'
     New-Item -ItemType Directory -Path (Join-Path $app 'resources') -Force | Out-Null
-    [IO.File]::WriteAllText((Join-Path $app 'Cage.exe'), 'native fixture')
+    [IO.File]::WriteAllText((Join-Path $app 'SuperCage.exe'), 'native fixture')
     $image = Join-Path $app 'resources/cage.exe'
     [IO.File]::WriteAllText($image, 'backend fixture')
     $ready = Join-Path $directory 'image-locked'
@@ -149,7 +149,7 @@ try {
     Assert-SmokeContract (Test-WindowsLowIntegrityText @('Mandatory Label\Low Mandatory Level Label S-1-16-4096 Mandatory group')) 'whoami /groups S-1-16-4096 SID was not detected.'
     Assert-SmokeContract (Test-WindowsLowIntegrityText @('S:(ML;OICI;NW;;;LW)')) 'SDDL Low Mandatory Level was not detected.'
     Assert-SmokeContract (-not (Test-WindowsLowIntegrityText @(
-        'C:\src\Claude-Cage Mandatory Label\Medium Mandatory Level:(OI)(CI)(NW)',
+        'C:\src\Super-Cage Mandatory Label\Medium Mandatory Level:(OI)(CI)(NW)',
         'Mandatory Label\Medium Mandatory Level Label S-1-16-8192 Mandatory group',
         'Mandatory Label\High Mandatory Level Label S-1-16-12288 Mandatory group'
     ))) 'Medium or High integrity was falsely flagged as Low Mandatory Level.'

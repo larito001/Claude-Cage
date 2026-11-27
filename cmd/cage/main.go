@@ -35,20 +35,20 @@ import (
 	"syscall"
 )
 
-const help = `Claude Cage — local isolated Claude development
+const help = `SuperCage — local isolated Claude development
 
-cage desktop       Open the unified Cage workbench (desktop launcher)
+cage desktop       Open the unified SuperCage workbench (desktop launcher)
 cage agent         Discover and use the versioned, JSON-only external Agent interface
 cage serve         Run its private localhost control service
 cage server-entry --json  Issue a private SSH remote connection entry
 cage container-configure --json  Configure a Linux container from JSON stdin
-cage init          Create a private profile; add and select nodes in Cage settings
+cage init          Create a private profile; add and select nodes in SuperCage settings
 cage check         Verify proxy transport (no VM required)
 cage guest-os --json  Check host prerequisites for a same-system guest
-cage proxy-start   Start Cage's bundled proxy core with the applied node
-cage proxy-stop    Stop Cage's core and close external networking
+cage proxy-start   Start SuperCage's bundled proxy core with the applied node
+cage proxy-stop    Stop SuperCage's core and close external networking
 cage setup         Build the isolated base VM through the specified proxy
-cage up            Start the shared Cage environment, editor and browser
+cage up            Start the shared SuperCage environment, editor and browser
                    --reset re-clones the VM; files and logins on its disk are lost
 cage login         Start cage services, then Claude's login flow inside the VM
                    --reset re-clones the VM; files and logins on its disk are lost
@@ -63,7 +63,7 @@ cage run COMMAND   Execute a command in the shared environment: from the current
 cage claude        Run Claude Code in the shared environment
 cage agy           Run Antigravity CLI in the shared environment
 cage codex         Run Codex CLI in the shared environment
-cage stop          Stop the shared Cage environment and its proxy core
+cage stop          Stop the shared SuperCage environment and its proxy core
                    --keep-proxy keeps the core running for an environment restart
 cage list          List this cage profile's VMs
 cage doctor        Diagnose the VM
@@ -71,7 +71,7 @@ cage diagnostics --json PATH.zip   Export a redacted diagnostic bundle
 cage version       Print this build's version. --min VERSION fails if older
 cage licenses      Print third-party license notices
 
-Configuration: ~/.claude-cage/config.json (override CLAUDE_CAGE_CONFIG).
+Configuration: ~/.super-cage/config.json (override SUPER_CAGE_CONFIG).
 Each configuration directory is an independent cage profile.
 Only explicitly opened project folders are shared. No host Claude credentials are imported.
 `
@@ -92,7 +92,7 @@ func main() {
 func run() int {
 	hostproxy.CaptureEnvironment()
 	// Apply this before desktop/serve dispatch: the control service and every
-	// child process must keep Cage's isolation even when launched from a shell
+	// child process must keep SuperCage's isolation even when launched from a shell
 	// configured to relax agent-vm's protections.
 	for _, name := range []string{
 		"AGENT_VM_UNSAFE_OPEN_NETWORK",
@@ -102,10 +102,10 @@ func run() int {
 		os.Unsetenv(name)
 	}
 	// The shared commands otherwise name agent-vm and suggest its installer.
-	cli.Command = "claude-cage"
-	cli.UpdateHint = "update Cage from the app, or with the installer or package that installed it"
+	cli.Command = "super-cage"
+	cli.UpdateHint = "update SuperCage from the app, or with the installer or package that installed it"
 	// --reset deletes the environment's disk with the user's files and logins.
-	cli.StaleBaseHint = "提示：Cage 的基础镜像比当前环境新。当前环境的磁盘会保留，不需要重建；请在 Cage 的“设置 > 环境与恢复”中更新环境组件或环境工具，也可以运行 cage update-tools。"
+	cli.StaleBaseHint = "提示：SuperCage 的基础镜像比当前环境新。当前环境的磁盘会保留，不需要重建；请在 SuperCage 的“设置 > 环境与恢复”中更新环境组件或环境工具，也可以运行 cage update-tools。"
 	args := os.Args[1:]
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
 		fmt.Print(help)
@@ -164,7 +164,7 @@ func run() int {
 	path := os.Getenv(cage.ConfigEnv)
 	if path == "" {
 		home, _ := os.UserHomeDir()
-		path = filepath.Join(home, ".claude-cage", "config.json")
+		path = filepath.Join(home, ".super-cage", "config.json")
 	}
 	path, err := filepath.Abs(path)
 	if err != nil {
@@ -453,7 +453,7 @@ func run() int {
 			if err := openWorkbench(entry.URL); err != nil {
 				return fail(err)
 			}
-			fmt.Println("Cage workbench opened.")
+			fmt.Println("SuperCage workbench opened.")
 		}
 		return 0
 	}
@@ -576,7 +576,7 @@ func run() int {
 		}
 		return 0
 	}
-	// Every Cage operation targets this profile's one persistent environment.
+	// Every SuperCage operation targets this profile's one persistent environment.
 	switch args[0] {
 	case "up", "login", "shell", "run", "claude", "agy", "codex", "stop", "doctor", "access", "name":
 		directory := cage.EnvironmentDir(filepath.Dir(path))
@@ -676,7 +676,7 @@ func containerInstallScript(kind string) (string, error) {
 	case "services":
 		return cage.GuestSetup, nil
 	case "tools":
-		script := "set -e\nexport CLAUDE_CAGE=1\n" + cage.InstallTLS12Prelude(os.Getenv(cage.InstallTLS12Env) == "1") + cage.APTBootstrapScript + "\n" + cage.ToolInstallPrelude()
+		script := "set -e\nexport SUPER_CAGE=1\n" + cage.InstallTLS12Prelude(os.Getenv(cage.InstallTLS12Env) == "1") + cage.APTBootstrapScript + "\n" + cage.ToolInstallPrelude()
 		enabled := map[string]bool{"NODE": true, "PYTHON": true, "CHROMIUM": true, "GH": true, "CLAUDE": true, "AGY": true, "CODEX": true, "CODE_SERVER": true}
 		for _, name := range []string{"PYTHON", "NODE", "RUBY", "RUST", "GOLANG", "DOCKER", "CHROMIUM", "GH", "CLAUDE", "AGY", "OPENCODE", "CODEX", "VIBE", "PI", "CODE_SERVER", "CODE_CLAUDE", "CODE_OPENCODE", "CODE_CODEX", "CODE_VIBE", "MCP_CHROME", "MCP_PLAYWRIGHT"} {
 			value := "0"
@@ -715,7 +715,7 @@ func startEnvironment(command string, args []string, stdio cli.IO, invoke func([
 	if err := startServices(); err != nil {
 		return fail(err)
 	}
-	fmt.Fprintln(stdio.Stdout, "Cage local services are ready. Open Cage, run cage desktop or run 'cage agent call network.check --wait 5m' to complete the required network checks. External networking stays closed until the workbench approves this VM; no local access password is required.")
+	fmt.Fprintln(stdio.Stdout, "SuperCage local services are ready. Open SuperCage, run cage desktop or run 'cage agent call network.check --wait 5m' to complete the required network checks. External networking stays closed until the workbench approves this VM; no local access password is required.")
 	if command == "login" {
 		return invoke([]string{"run", "--tty", "bash", "-lc", "source /etc/profile.d/claude-cage.sh; exec claude auth login"}, stdio)
 	}
@@ -900,7 +900,7 @@ func verifyVMAssets(mktemp func(string, string) (string, error), writeShare func
 	dir, err := mktemp("", "cage-vm-assets-")
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) {
-			return fmt.Errorf("%w (ensure TEMP/TMP points to a writable directory; on Windows, executables built in a Low Mandatory Level / sandboxed checkout directory cannot write to %%TEMP%% — move the repository to a normal local directory such as C:\\src\\Claude-Cage)", err)
+			return fmt.Errorf("%w (ensure TEMP/TMP points to a writable directory; on Windows, executables built in a Low Mandatory Level / sandboxed checkout directory cannot write to %%TEMP%% — move the repository to a normal local directory such as C:\\src\\Super-Cage)", err)
 		}
 		return err
 	}

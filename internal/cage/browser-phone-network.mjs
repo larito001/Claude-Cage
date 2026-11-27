@@ -1,6 +1,6 @@
 // Chromium's own loopback bypass is disabled. Pin each connection to the
 // checked IPv4 from the guest resolver, including redirects and subresources.
-// The guest's existing Cage network gate still controls these sockets.
+// The guest's existing SuperCage network gate still controls these sockets.
 import { resolve4 } from "node:dns/promises";
 import { once } from "node:events";
 import net from "node:net";

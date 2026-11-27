@@ -1,4 +1,4 @@
-package io.github.leexeo.cage.mobile;
+package io.github.larito001.supercage.mobile;
 
 import android.animation.ValueAnimator;
 import android.app.Activity;
@@ -44,9 +44,9 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
         instructions.setPadding(dp(24),dp(12),dp(24),dp(20));
         TextView heading = new TextView(this);heading.setText("连接你的电脑");heading.setTextSize(22);heading.setTextColor(Color.WHITE);heading.setTypeface(Typeface.DEFAULT,Typeface.BOLD);instructions.addView(heading);
         message = new TextView(this);message.setGravity(Gravity.CENTER);message.setTextSize(15);message.setPadding(0,dp(12),0,dp(10));
-        message.setTextColor(0xffe1e5e2);message.setText("将 Cage 配对二维码放入框内\n在电脑「设置 → 远程连接」中生成");
+        message.setTextColor(0xffe1e5e2);message.setText("将 SuperCage 配对二维码放入框内\n在电脑「设置 → 远程连接」中生成");
         message.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);instructions.addView(message);
-        TextView privacy = new TextView(this);privacy.setText("仅识别 Cage 配对码");privacy.setTextSize(12);privacy.setTextColor(0xffa9b4ae);instructions.addView(privacy);
+        TextView privacy = new TextView(this);privacy.setText("仅识别 SuperCage 配对码");privacy.setTextSize(12);privacy.setTextColor(0xffa9b4ae);instructions.addView(privacy);
         FrameLayout.LayoutParams copy = new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);frame.addView(instructions,copy);
         frame.setOnApplyWindowInsetsListener((view,insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;
@@ -95,7 +95,7 @@ public final class ScanActivity extends Activity implements SurfaceHolder.Callba
             if(code.startsWith("CAGE1:") && code.length()<=4096){
                 finished=true;finder.performHapticFeedback(HapticFeedbackConstants.CONFIRM);
                 setResult(RESULT_OK,new Intent().putExtra("code",code));finish();
-            } else message.setText("请扫描 Cage 配对二维码\n在电脑「设置 → 远程连接」中生成");
+            } else message.setText("请扫描 SuperCage 配对二维码\n在电脑「设置 → 远程连接」中生成");
         } catch(ReaderException ignored){} finally {reader.reset();}
     }
     @Override public void onResume(){super.onResume();resumed=true;start();}

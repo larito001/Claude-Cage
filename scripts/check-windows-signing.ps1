@@ -5,7 +5,7 @@ param([ValidateSet('sign', 'credential-info')][string]$Mode = 'sign')
 . (Join-Path $PSScriptRoot 'windows-common.ps1')
 if (-not $IsWindows) { throw 'This verification requires Windows trust APIs.' }
 if ($env:GITHUB_ACTIONS -ne 'true' -or $env:GITHUB_EVENT_NAME -ne 'workflow_dispatch' -or
-    $env:GITHUB_REPOSITORY -ne 'Lee-xeo/Claude-Cage' -or
+    $env:GITHUB_REPOSITORY -ne 'larito001/Super-Cage' -or
     $env:GITHUB_REF -ne 'refs/heads/main') {
     throw 'Run the explicit main-branch signing verification workflow.'
 }
@@ -30,7 +30,7 @@ try {
     @'
 using System;
 public static class SigningProbe {
-    public static void Main() { Console.WriteLine("Cage code signing verification fixture."); }
+    public static void Main() { Console.WriteLine("SuperCage code signing verification fixture."); }
 }
 '@ | Set-Content -LiteralPath $source -Encoding utf8
     $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'

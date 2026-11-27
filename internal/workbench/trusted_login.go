@@ -98,7 +98,7 @@ func (d *desktopGateway) trustedLogin(w http.ResponseWriter, r *http.Request) {
 	var reply trustedLoginReply
 	status, err := c.callContext(r.Context(), "POST", "/api/desktop-local/trusted-login", in, &reply)
 	if err != nil || status != http.StatusOK {
-		http.Error(w, "本机后台未接受登录请求，请确认已更新 Cage", 409)
+		http.Error(w, "本机后台未接受登录请求，请确认已更新 SuperCage", 409)
 		return
 	}
 	if reply.Error != "" {
@@ -124,7 +124,7 @@ func (s *Server) localTrustedLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer finish()
 	if in.Action == "create" {
-		jsonReply(w, trustedLoginReply{Error: "请先注册 Cage 用户名和密码，再开始安装"})
+		jsonReply(w, trustedLoginReply{Error: "请先注册 SuperCage 用户名和密码，再开始安装"})
 		return
 	}
 	base, err := os.UserConfigDir()
@@ -226,7 +226,7 @@ func (a *localAccount) trustedLogin(action, password, devices string) error {
 		}
 	case "disable":
 		if a.record == nil || len(a.key) != 32 {
-			return errors.New("请先解锁 Cage")
+			return errors.New("请先解锁 SuperCage")
 		}
 		if a.record.TrustedUnlock == nil && a.record.Devices["automatic"].ID == "" {
 			return nil

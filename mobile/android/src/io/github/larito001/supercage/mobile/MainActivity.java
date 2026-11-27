@@ -1,4 +1,4 @@
-package io.github.leexeo.cage.mobile;
+package io.github.larito001.supercage.mobile;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -322,7 +322,7 @@ public final class MainActivity extends Activity {
         mark.setBackground(surface(palette.panel, 18, false));
         mark.setClipToOutline(true);
         form.addView(mark, dp(120), dp(120));
-        TextView title = text("Cage", 38, palette.ink);
+        TextView title = text("SuperCage", 38, palette.ink);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, dp(8), 0, dp(52));
@@ -492,7 +492,7 @@ public final class MainActivity extends Activity {
         });
         displayRelay(imported != null && host ? imported.relay : preferredRelay());
         if (!host) {
-            label("关闭自建中继后，使用 Cage 官方中继。", 14);
+            label("关闭自建中继后，使用 SuperCage 官方中继。", 14);
             button(form, "保存中继设置", true, v -> {
                 try { rememberRelay(selectedRelay()); status.setText("中继设置已保存。"); }
                 catch (Exception e) { status.setText("请填写有效的 HTTPS 地址。"); }
@@ -507,7 +507,7 @@ public final class MainActivity extends Activity {
         button(form, "复制手机指纹", false, v -> {
             if (fingerprint.isEmpty()) return;
             ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-            clipboard.setPrimaryClip(ClipData.newPlainText("Cage 手机指纹", fingerprint));
+            clipboard.setPrimaryClip(ClipData.newPlainText("SuperCage 手机指纹", fingerprint));
             status.setText("手机指纹已复制，请在电脑上核对并信任。");
         });
         label("电脑指纹", 15);

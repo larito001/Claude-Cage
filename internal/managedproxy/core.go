@@ -33,7 +33,7 @@ type coreError struct {
 }
 
 func (e *coreError) Error() string {
-	message := "Cage 代理核心操作失败（" + e.stage + "）"
+	message := "SuperCage 代理核心操作失败（" + e.stage + "）"
 	var nested *coreError
 	var errno syscall.Errno
 	var network net.Error
@@ -81,7 +81,7 @@ func missingCoreError(name, goos string) error {
 	if goos == "windows" {
 		build = "源码构建请运行 scripts/build-windows.ps1"
 	}
-	return fmt.Errorf("Cage 随附代理核心缺失：%s 应与 cage 可执行文件位于同一目录，或位于其上级目录的 proxy-core 中；请重新安装完整应用，%s", name, build)
+	return fmt.Errorf("SuperCage 随附代理核心缺失：%s 应与 cage 可执行文件位于同一目录，或位于其上级目录的 proxy-core 中；请重新安装完整应用，%s", name, build)
 }
 func Validate(ctx context.Context, profile string, s Store) error {
 	core, err := CorePath()
@@ -261,7 +261,7 @@ func checkRunningSocket(ctx context.Context, socketPath, bound string, s Store) 
 }
 func label(profile string) string {
 	h := sha256.Sum256([]byte(profile))
-	return fmt.Sprintf("local.claude-cage.managed-proxy.%x", h[:8])
+	return fmt.Sprintf("local.super-cage.managed-proxy.%x", h[:8])
 }
 
 // coreReadyTimeout matches Linux and Windows; a freshly signed core can take
@@ -292,7 +292,7 @@ func Stop(profile string) error {
 		return nil
 	}
 	if exec.Command("launchctl", "bootout", domain, servicePath(profile)).Run() != nil {
-		return errors.New("未能停止 Cage 专属代理进程")
+		return errors.New("未能停止 SuperCage 专属代理进程")
 	}
 	return nil
 }
@@ -326,7 +326,7 @@ func Start(ctx context.Context, profile string, s Store) error {
 	// Never attach to or kill an unknown listener, even if it uses our port.
 	l, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", s.Port))
 	if err != nil {
-		return errors.New("Cage 代理端口已被占用，请更换独立端口")
+		return errors.New("SuperCage 代理端口已被占用，请更换独立端口")
 	}
 	l.Close()
 	_, err = CorePath()
@@ -355,19 +355,19 @@ func Start(ctx context.Context, profile string, s Store) error {
 	if err != nil {
 		return err
 	}
-	configPath := os.Getenv("CLAUDE_CAGE_CONFIG")
+	configPath := os.Getenv("SUPER_CAGE_CONFIG")
 	if configPath == "" {
 		configPath = filepath.Join(profile, "config.json")
 	}
 	escape := func(s string) string { var b bytes.Buffer; _ = xml.EscapeText(&b, []byte(s)); return b.String() }
-	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>Label</key><string>%s</string><key>ProgramArguments</key><array><string>%s</string><string>log-relay</string><string>proxy</string></array><key>EnvironmentVariables</key><dict><key>HOME</key><string>%s</string><key>PATH</key><string>/usr/bin:/bin</string><key>CLAUDE_CAGE_CONFIG</key><string>%s</string></dict><key>RunAtLoad</key><true/></dict></plist>`, escape(label(profile)), escape(executable), escape(Dir(profile)), escape(configPath))
+	plist := fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>Label</key><string>%s</string><key>ProgramArguments</key><array><string>%s</string><string>log-relay</string><string>proxy</string></array><key>EnvironmentVariables</key><dict><key>HOME</key><string>%s</string><key>PATH</key><string>/usr/bin:/bin</string><key>SUPER_CAGE_CONFIG</key><string>%s</string></dict><key>RunAtLoad</key><true/></dict></plist>`, escape(label(profile)), escape(executable), escape(Dir(profile)), escape(configPath))
 
 	if err = Write(servicePath(profile), []byte(plist)); err != nil {
 		return err
 	}
 	bootstrap, kickstart := launchdStartArgs(os.Getuid(), label(profile), servicePath(profile))
 	if exec.CommandContext(ctx, "launchctl", bootstrap...).Run() != nil {
-		return errors.New("无法启动 Cage 自带代理核心")
+		return errors.New("无法启动 SuperCage 自带代理核心")
 	}
 	// RunAtLoad is only a request: a GUI domain in on-demand-only mode keeps
 	// the job pending. Start it explicitly; without -k a running job is kept.

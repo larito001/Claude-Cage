@@ -46,7 +46,7 @@ export function EnvironmentStorage({ status, onConfirm }) {
     const path = directory.trim();
     if (location.has_environment && !(await onConfirm({
       title: "迁移本机环境？",
-      body: translate("请先保存文件。Cage 会停止环境和终端，将虚拟磁盘复制到 {0}，校验后再切换位置。原数据保留为备份，迁移完成后可手动启动环境。", path),
+      body: translate("请先保存文件。SuperCage 会停止环境和终端，将虚拟磁盘复制到 {0}，校验后再切换位置。原数据保留为备份，迁移完成后可手动启动环境。", path),
       confirm: "迁移环境",
     }))) return;
     setSubmitting(true);
@@ -83,7 +83,7 @@ export function EnvironmentStorage({ status, onConfirm }) {
     <p className="field-help">{tr("系统镜像、下载缓存和虚拟磁盘可以放在另一块本地磁盘。项目文件保存在各自的项目文件夹。")}</p>
     <div className="setting-summary-row"><span>{tr("当前环境目录")}</span><strong>{location?.directory || tr("正在读取…")}</strong></div>
     {status.environment_identity_directory && status.environment_identity_directory !== status.environment_directory &&
-      <p className="field-help">{tr("原工作目录中的文件保留在") + " "}<code>{status.environment_identity_directory}</code>{tr("。需要使用时可从工作台添加该文件夹；位于 Cage 私有配置目录中的项目需先移到配置目录之外。")}</p>}
+      <p className="field-help">{tr("原工作目录中的文件保留在") + " "}<code>{status.environment_identity_directory}</code>{tr("。需要使用时可从工作台添加该文件夹；位于 SuperCage 私有配置目录中的项目需先移到配置目录之外。")}</p>}
     {location?.missing && location.error && <p role="alert" className="error-message"><SafetyMessage message={location.error} /></p>}
     {location?.backup && <p className="field-help">{tr("迁移前的备份保存在") + " "}<code>{location.backup}</code>{tr("。确认新环境能正常启动、文件和登录状态齐全后，可自行清理备份。")}</p>}
     <label>{tr("新存储位置")}

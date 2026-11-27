@@ -163,7 +163,7 @@ export function ProviderDesktopView({
           <h2>
             {appState?.installed
               ? spec.desktopLabel
-              : tr("在 Cage 中安装 {0}", spec.desktopLabel)}
+              : tr("在 SuperCage 中安装 {0}", spec.desktopLabel)}
           </h2>
           <p>{tr("{0} 实例拥有独立的桌面配置、密钥环与网络隔离，不与浏览器空间或 {1} 共享登录状态。", spec.desktopLabel, spec.cliName)}</p>
           <div className="desktop-actions">

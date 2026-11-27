@@ -136,8 +136,8 @@ export function NotificationSettings({ onUpdated }) {
         if (systemStatus?.permission === "not_determined") await requestPermission();
         const result = await native("showNotification", {
           id: "cage-test-" + Date.now(),
-          title: tr("Cage 通知测试"),
-          body: tr("AI 终端完成回复时会像这样提醒你，点击可回到 Cage。"),
+          title: tr("SuperCage 通知测试"),
+          body: tr("AI 终端完成回复时会像这样提醒你，点击可回到 SuperCage。"),
           terminal_id: "",
           connection_id: "",
           sound: prefs.sound,
@@ -146,7 +146,7 @@ export function NotificationSettings({ onUpdated }) {
         if (result?.delivered) {
           setFeedback(tr("已发送测试通知。"));
         } else if (result?.permission === "denied" || result?.permission === "not_determined") {
-          setError(tr("系统通知权限已关闭，请在系统设置中允许 Cage 发送通知。"));
+          setError(tr("系统通知权限已关闭，请在系统设置中允许 SuperCage 发送通知。"));
         } else if (result?.permission === "unavailable") {
           setError(tr("未检测到系统通知服务，请确认桌面环境已开启通知后重试。"));
         } else {
@@ -158,7 +158,7 @@ export function NotificationSettings({ onUpdated }) {
           await refreshSystemStatus();
         }
         if (window.Notification.permission === "granted") {
-          new window.Notification(tr("Cage 通知测试"), {
+          new window.Notification(tr("SuperCage 通知测试"), {
             body: tr("AI 终端完成回复时会像这样提醒你。"),
             silent: !prefs.sound,
           });
@@ -179,7 +179,7 @@ export function NotificationSettings({ onUpdated }) {
   const permission = systemStatus?.permission || "unknown";
   const allOff = prefs.turn_completion === "off" && prefs.approval === "off";
   // Windows follows its own notification sound setting; show the switch only
-  // where Cage can actually choose a sound.
+  // where SuperCage can actually choose a sound.
   const soundSupported = systemStatus?.sound !== false;
 
   const modeOptions = [
@@ -228,14 +228,14 @@ export function NotificationSettings({ onUpdated }) {
               </strong>
               <p>
                 {permission === "authorized" || permission === "provisional"
-                  ? tr("Cage 可以直接通过系统通知中心提醒你。")
+                  ? tr("SuperCage 可以直接通过系统通知中心提醒你。")
                   : permission === "not_determined"
                     ? tr("授权后，切到其他应用时也能及时收到 AI 终端完成提醒。")
                     : permission === "denied"
-                      ? tr("请在系统设置中为 Cage 打开通知权限，返回后状态会自动刷新。")
+                      ? tr("请在系统设置中为 SuperCage 打开通知权限，返回后状态会自动刷新。")
                       : permission === "unavailable"
                         ? tr("未检测到系统通知服务，请确认桌面环境已开启通知后重试。")
-                        : tr("请使用 Cage 桌面应用以获得完整的系统通知与点击回跳体验。")}
+                        : tr("请使用 SuperCage 桌面应用以获得完整的系统通知与点击回跳体验。")}
               </p>
             </div>
           </div>

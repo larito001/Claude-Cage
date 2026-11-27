@@ -31,7 +31,7 @@ internal static class Program
         InterfaceLanguage.Refresh().GetAwaiter().GetResult();
         if (RuntimeInformation.OSArchitecture != Architecture.X64 || Environment.OSVersion.Version.Build < 19045)
         {
-            MessageBox.Show(InterfaceLanguage.Text("Cage 需要 Windows 10 22H2（19045）或 Windows 11，x64（Intel/AMD）系统。"), "Cage");
+            MessageBox.Show(InterfaceLanguage.Text("SuperCage 需要 Windows 10 22H2（19045）或 Windows 11，x64（Intel/AMD）系统。"), "SuperCage");
             return 1;
         }
         var sid = WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName;
@@ -45,8 +45,8 @@ internal static class Program
                 using var client = new NamedPipeClientStream(".", "Cage-" + key, PipeDirection.Out, PipeOptions.CurrentUserOnly);
                 client.Connect(3000); client.WriteByte(1);
             }
-            catch (IOException) { MessageBox.Show(InterfaceLanguage.Text("Cage 已在运行，但窗口暂时无法唤起。请从任务栏打开 Cage。"), "Cage"); }
-            catch (TimeoutException) { MessageBox.Show(InterfaceLanguage.Text("Cage 正在启动，请稍候。"), "Cage"); }
+            catch (IOException) { MessageBox.Show(InterfaceLanguage.Text("SuperCage 已在运行，但窗口暂时无法唤起。请从任务栏打开 SuperCage。"), "SuperCage"); }
+            catch (TimeoutException) { MessageBox.Show(InterfaceLanguage.Text("SuperCage 正在启动，请稍候。"), "SuperCage"); }
             return 0;
         }
         using var form = new MainWindow();

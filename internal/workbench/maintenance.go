@@ -82,13 +82,13 @@ func (p *maintenanceProxy) close() {
 func (p *maintenanceProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	expected := "Basic " + base64.StdEncoding.EncodeToString([]byte("cage-install:"+p.token))
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get("Proxy-Authorization")), []byte(expected)) != 1 {
-		w.Header().Set("Proxy-Authenticate", `Basic realm="Cage maintenance"`)
+		w.Header().Set("Proxy-Authenticate", `Basic realm="SuperCage maintenance"`)
 		http.Error(w, "Maintenance authentication required", 407)
 		return
 	}
 	if r.Method == http.MethodConnect {
 		if !maintenanceDestination(r.Host, true) {
-			http.Error(w, "Not a Cage software source", 403)
+			http.Error(w, "Not a SuperCage software source", 403)
 			return
 		}
 		remote, err := p.dial(p.ctx, "tcp", r.Host)
@@ -136,7 +136,7 @@ func (p *maintenanceProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		address = net.JoinHostPort(r.URL.Hostname(), "80")
 	}
 	if r.URL.Scheme != "http" || r.URL.User != nil || !maintenanceDestination(address, false) {
-		http.Error(w, "Not a Cage software source", 403)
+		http.Error(w, "Not a SuperCage software source", 403)
 		return
 	}
 	request := r.Clone(p.ctx)

@@ -17,7 +17,7 @@ func (s *Server) writeInitialization(r *http.Request, record initializationRecor
 	lifetime := s.lifetimeContext()
 	epoch, _ := r.Context().Value(accountEpochKey{}).(context.Context)
 	if s.account == nil {
-		return errors.New("Cage 已锁定，请先登录")
+		return errors.New("SuperCage 已锁定，请先登录")
 	}
 	// Linearize this small record write with account revocation. Never hold
 	// account.mu during lock acquisition, VM checks or network observation.
@@ -27,7 +27,7 @@ func (s *Server) writeInitialization(r *http.Request, record initializationRecor
 	}
 	defer s.account.mu.Unlock()
 	if epoch == nil || epoch != s.account.epoch || epoch.Err() != nil || len(s.account.key) != 32 {
-		return errors.New("Cage 登录状态已变化，请重新进入工作台")
+		return errors.New("SuperCage 登录状态已变化，请重新进入工作台")
 	}
 	if err := r.Context().Err(); err != nil {
 		return err
@@ -167,7 +167,7 @@ func (s *Server) initialization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.hasTrustedView(r) || !s.localVMStorage() {
-		http.Error(w, "请在本机 Cage 窗口完成初始化", http.StatusForbidden)
+		http.Error(w, "请在本机 SuperCage 窗口完成初始化", http.StatusForbidden)
 		return
 	}
 	var input struct {
@@ -193,7 +193,7 @@ func (s *Server) initialization(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.hasTrustedView(r) || !s.localVMStorage() {
-		http.Error(w, "请在本机 Cage 窗口完成初始化", http.StatusForbidden)
+		http.Error(w, "请在本机 SuperCage 窗口完成初始化", http.StatusForbidden)
 		return
 	}
 	if err := s.requireStorageReady(); err != nil {

@@ -434,7 +434,7 @@ func (e *app) buildBase(ctx context.Context, in install, disk, memory, cpus int)
 		}
 	}
 	resume := false
-	if os.Getenv("CLAUDE_CAGE_CONFIG") != "" {
+	if os.Getenv("SUPER_CAGE_CONFIG") != "" {
 		previous, err := b.Get(ctx, building)
 		resume = err == nil && previous != nil
 	}
@@ -528,7 +528,7 @@ func (e *app) buildBase(ctx context.Context, in install, disk, memory, cpus int)
 		fmt.Fprintf(e.io.Stdout, "Running custom setup from %s...\n", e.state.Path("setup.sh"))
 		shell := "zsh"
 		if os.Getenv(cage.ConfigEnv) != "" {
-			// Cage owns this script and its Bash functions. A guest's default
+			// SuperCage owns this script and its Bash functions. A guest's default
 			// login shell must not change their syntax or reserved variables.
 			shell = "bash"
 		}
@@ -567,12 +567,12 @@ func (e *app) buildBase(ctx context.Context, in install, disk, memory, cpus int)
 }
 
 func cageInstallEnv() string {
-	if os.Getenv("CLAUDE_CAGE_CONFIG") != "" {
+	if os.Getenv("SUPER_CAGE_CONFIG") != "" {
 		progress := ""
 		if os.Getenv("CAGE_SETUP_PROGRESS") == "1" {
 			progress = "export CAGE_SETUP_PROGRESS=1\n"
 		}
-		return "set -e\nexport CLAUDE_CAGE=1\n" + progress + cage.InstallTLS12Prelude(os.Getenv(cage.InstallTLS12Env) == "1") + cage.DebianPrepareScriptFor(os.Getenv(cage.DebianMirrorEnv)) + "\n" + cage.ToolInstallPrelude()
+		return "set -e\nexport SUPER_CAGE=1\n" + progress + cage.InstallTLS12Prelude(os.Getenv(cage.InstallTLS12Env) == "1") + cage.DebianPrepareScriptFor(os.Getenv(cage.DebianMirrorEnv)) + "\n" + cage.ToolInstallPrelude()
 	}
 	return ""
 }

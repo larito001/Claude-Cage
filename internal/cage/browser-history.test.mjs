@@ -71,16 +71,16 @@ test("PhoneHistoryStore persists public visits, searches, deletes and clears ran
   const profile = "a".repeat(64);
 
   await store.record(profile, "http://127.0.0.1:3000/private", "Private");
-  await store.record(profile, "https://github.com/Lee-xeo/Claude-Cage", "Claude Cage");
+  await store.record(profile, "https://github.com/larito001/Super-Cage", "SuperCage");
   clock += 1000;
-  await store.record(profile, "https://github.com/Lee-xeo/Claude-Cage", "Claude Cage Repo");
+  await store.record(profile, "https://github.com/larito001/Super-Cage", "SuperCage Repo");
   clock += 2 * 60 * 60 * 1000;
   await store.record(profile, "https://www.youtube.com/watch?v=abc", "Live Stream");
 
   const listed = await store.request(profile, { mode: "list", query: "", limit: 10 });
   assert.equal(listed.items.length, 2);
   assert.equal(listed.items[0].url, "https://www.youtube.com/watch?v=abc");
-  assert.equal(listed.items[1].title, "Claude Cage Repo");
+  assert.equal(listed.items[1].title, "SuperCage Repo");
   assert.equal(listed.items[1].visitCount, 1);
 
   const searched = await store.request(profile, { mode: "list", query: "youtube" });
@@ -88,9 +88,9 @@ test("PhoneHistoryStore persists public visits, searches, deletes and clears ran
 
   await store.request(profile, { mode: "clear", range: "hour" });
   const afterHour = await store.request(profile, { mode: "list" });
-  assert.deepEqual(afterHour.items.map(i => i.url), ["https://github.com/Lee-xeo/Claude-Cage"]);
+  assert.deepEqual(afterHour.items.map(i => i.url), ["https://github.com/larito001/Super-Cage"]);
 
-  await store.request(profile, { mode: "delete", url: "https://github.com/Lee-xeo/Claude-Cage" });
+  await store.request(profile, { mode: "delete", url: "https://github.com/larito001/Super-Cage" });
   const afterDelete = await store.request(profile, { mode: "list" });
   assert.equal(afterDelete.items.length, 0);
 });

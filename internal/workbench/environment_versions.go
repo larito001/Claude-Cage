@@ -184,7 +184,7 @@ func (s *Server) updateEnvironmentTools(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) synchronizeEnvironment() error {
 	if !s.vmRunning() {
-		return errors.New("请先启动 Cage 环境。")
+		return errors.New("请先启动 SuperCage 环境。")
 	}
 	s.mu.Lock()
 	recovering := s.guestManifest == nil || s.guestManifest.Updating
@@ -229,7 +229,7 @@ func (s *Server) toolsNetworkAllowedLocked() bool {
 }
 func (s *Server) upgradeEnvironmentTools() error {
 	if !s.vmRunning() {
-		return errors.New("请先启动 Cage 环境。")
+		return errors.New("请先启动 SuperCage 环境。")
 	}
 	s.mu.Lock()
 	allowed := s.toolsNetworkAllowedLocked()

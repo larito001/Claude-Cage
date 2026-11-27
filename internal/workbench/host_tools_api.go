@@ -143,9 +143,9 @@ func hostContributes(c *hostbridge.Contributes) *hostContributesView {
 func hostPluginUnavailable(reason string) string {
 	switch reason {
 	case hostbridge.NeedsNewerApplication:
-		return "需要更新 Cage 才能使用这个插件"
+		return "需要更新 SuperCage 才能使用这个插件"
 	case hostbridge.GuestNotSupported:
-		return "这类插件暂不支持，需要更新 Cage"
+		return "这类插件暂不支持，需要更新 SuperCage"
 	case hostbridge.TooManyServers:
 		return "暂只支持一个 MCP 服务"
 	}
@@ -525,7 +525,7 @@ func (s *Server) setHostTools(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.hasPluginControlView(r) {
-		http.Error(w, "请在受信任的 Cage 窗口更改主机工具", http.StatusForbidden)
+		http.Error(w, "请在受信任的 SuperCage 窗口更改主机工具", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {
@@ -828,7 +828,7 @@ func (s *Server) installFromMarket(ctx context.Context, name string, replace boo
 		return errors.New("这个插件不支持此系统")
 	}
 	if !entries[index].EngineSatisfied(version.Version) {
-		return errors.New("需要更新 Cage 才能安装这个插件")
+		return errors.New("需要更新 SuperCage 才能安装这个插件")
 	}
 	aside := ""
 	target := filepath.Join(s.hostPluginDir(), name)

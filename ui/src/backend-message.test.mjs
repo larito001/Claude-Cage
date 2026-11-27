@@ -9,20 +9,20 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const languages = JSON.parse(read("../../internal/uilocale/languages.json")).slice(1);
 
 test("localizeBackendMessage preserves original Chinese in default locale", () => {
-  const errLocalNode = "本机代理端口不能用作节点。请导入原客户端的具体节点，在 Cage 中按中转到最终出口的顺序重新配置并应用";
+  const errLocalNode = "本机代理端口不能用作节点。请导入原客户端的具体节点，在 SuperCage 中按中转到最终出口的顺序重新配置并应用";
   assert.equal(localizeBackendMessage(errLocalNode, formatMessage), errLocalNode);
   const routeErr = `节点 "local-1080" 需要迁移：${errLocalNode}`;
   assert.equal(localizeBackendMessage(routeErr, formatMessage), routeErr);
 });
 
 test("localizeBackendMessage translates ErrLocalProxyNode and dynamic backend errors across all 14 languages", () => {
-  const errLocalNode = "本机代理端口不能用作节点。请导入原客户端的具体节点，在 Cage 中按中转到最终出口的顺序重新配置并应用";
+  const errLocalNode = "本机代理端口不能用作节点。请导入原客户端的具体节点，在 SuperCage 中按中转到最终出口的顺序重新配置并应用";
   const samples = [
     errLocalNode,
     `节点 "local-socks" 需要迁移：${errLocalNode}`,
     `没有可导入的节点，已跳过 2 个；第 1 个节点 "socks1"：${errLocalNode}；第 2 个节点 "bad"：节点协议暂不支持`,
-    `没有可导入的节点，已跳过 1 个；第 1 个节点 "hk"：Clash Verge Ninja 专用的 ninja 协议，Cage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入`,
-    `没有可导入的节点，已跳过 1 个；第 1 个节点 "neo"：Clash Neo 专用的 nexo 协议，Cage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入`,
+    `没有可导入的节点，已跳过 1 个；第 1 个节点 "hk"：Clash Verge Ninja 专用的 ninja 协议，SuperCage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入`,
+    `没有可导入的节点，已跳过 1 个；第 1 个节点 "neo"：Clash Neo 专用的 nexo 协议，SuperCage 随附的标准 Mihomo 核心无法解析，请向服务商获取同一出口的标准 Mihomo 节点后重新导入`,
     `订阅更新移除或跳过了当前出口或中转节点 "HK-01"：节点未包含在更新中；原配置已保留，请先应用其他节点再更新`,
     "订阅服务器返回 HTTP 403",
     "测速失败：代理核心返回 HTTP 504",
@@ -74,7 +74,7 @@ test("Russian ErrLocalProxyNode and daily refresh interval match issue #749 expe
   const localize = (source, ...values) => formatMessage(Object.hasOwn(catalog, source) ? catalog[source] : source, ...values);
 
   assert.equal(localize("每天"), "Каждый день");
-  const errLocalNode = "本机代理端口不能用作节点。请导入原客户端的具体节点，在 Cage 中按中转到最终出口的顺序重新配置并应用";
+  const errLocalNode = "本机代理端口不能用作节点。请导入原客户端的具体节点，在 SuperCage 中按中转到最终出口的顺序重新配置并应用";
   const ruErr = localizeBackendMessage(errLocalNode, localize);
   assert.match(ruErr, /\p{Script=Cyrillic}/u);
   assert.doesNotMatch(ruErr, /\p{Script=Han}/u);

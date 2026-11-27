@@ -214,7 +214,7 @@ function App() {
   // Keep feedback continuous until polling observes the accepted start job.
   const clientStatus = serverStatus && { ...serverStatus, keyboard: clientKeyboard(serverStatus.keyboard) };
   const status = clientStatus && startRequest
-    ? { ...clientStatus, job: { running: true, kind: "start", message: "正在启动 Cage 环境…" } }
+    ? { ...clientStatus, job: { running: true, kind: "start", message: "正在启动 SuperCage 环境…" } }
     : clientStatus;
   const { active } = layout;
   const setActive = id => setLayout(previous => focusTab(previous, id));
@@ -435,7 +435,7 @@ function App() {
   const stopDefaultDesktop = async (entry, anchor = null) => {
     if (!(await confirm({
       title: entry?.label ? tr("关闭 {0}？", desktopTitle(entry)) : "关闭 Claude Desktop？",
-      body: "请先保存应用内的工作。浏览器和 Cage 终端会继续运行。",
+      body: "请先保存应用内的工作。浏览器和 SuperCage 终端会继续运行。",
       confirm: "关闭应用",
       anchor,
     }))) return;
@@ -1324,7 +1324,7 @@ function App() {
     document.title =
       (current?.title && current.title !== "新标签页"
         ? current.title + " · "
-        : "") + "Cage";
+        : "") + "SuperCage";
     if (active && !current?.incognito) localStorage.setItem(clientStorageKey("cage-active"), active);
   }, [current?.url, current?.title, current?.incognito, active]);
   useEffect(() => {
@@ -1550,7 +1550,7 @@ function App() {
         }
         if (connectionError || fatal) {
           setDialog({
-            title: "退出 Cage",
+            title: "退出 SuperCage",
             body: "工作台连接已中断，暂时无法确认环境状态。仍在运行的后台任务会继续。",
             confirm: "仅退出桌面应用",
             resolve: (confirmed) => confirmed && native("quitNow"),
@@ -1558,7 +1558,7 @@ function App() {
           return;
         }
         setDialog({
-          title: "退出 Cage",
+          title: "退出 SuperCage",
           body: "退出前请保存文件和设置。可以保留环境，让后台任务继续运行；下次打开会重新连接。",
           confirm: "停止环境并退出",
           secondary: "保留运行并退出",
@@ -1822,7 +1822,7 @@ function App() {
           footer={
             <>
               <button onClick={cancelAutomaticExit}>
-                {quitting.error ? tr("留在 Cage") : tr("取消自动退出")}
+                {quitting.error ? tr("留在 SuperCage") : tr("取消自动退出")}
               </button>
               <button onClick={quitDesktopOnly}>{tr("仅退出桌面应用")}</button>
               {quitting.error && (
@@ -1841,7 +1841,7 @@ function App() {
               {quitting.error ||
                 (connectionError
                   ? tr("正在恢复工作台连接，恢复后会继续确认停止结果。")
-                  : tr("停止完成后 Cage 会自动退出。取消自动退出只保留窗口，环境仍会停止。"))}
+                  : tr("停止完成后 SuperCage 会自动退出。取消自动退出只保留窗口，环境仍会停止。"))}
             </p>
             {!quitting.error && (
               <p>
@@ -1861,10 +1861,10 @@ function App() {
       <>
         <div className="boot-screen">
           <Shield size={36} />
-          <h1>{tr("连接 Cage 工作台")}</h1>
+          <h1>{tr("连接 SuperCage 工作台")}</h1>
           <p>{fatal}</p>
           <p className="muted">
-            {tr("请从 Cage 应用打开，或在终端运行") + " "}<code>cage desktop</code>。
+            {tr("请从 SuperCage 应用打开，或在终端运行") + " "}<code>cage desktop</code>。
           </p>
           <button
             className="primary"
@@ -1883,7 +1883,7 @@ function App() {
       <>
         <div className="boot-screen">
           <div className="brand-mark">C</div>
-          <h1>Cage</h1>
+          <h1>SuperCage</h1>
           <p>
             <LoaderCircle size={16} className="spin" />
             {tr("正在连接工作区…")}
@@ -2264,33 +2264,33 @@ function App() {
             {showHome && (
               <div className="welcome">
                 <div className="welcome-content">
-                  <img className="welcome-logo" src={logo} alt="Cage" />
+                  <img className="welcome-logo" src={logo} alt="SuperCage" />
                   {storageRecovery ? <>
                     <h1>{tr("环境存储需要恢复")}</h1>
                     <p className="welcome-subtitle"><SafetyMessage message={status.storage_recovery.error} /></p>
                     <p className="field-help">{tr("在设置中恢复环境存储后，再启动浏览器和终端。诊断包可以从同一页面导出。")}</p>
                     <button className="primary" onClick={() => openSettings("project")}>{tr("恢复环境存储")}</button>
                   </> : setupProgress ? <>
-                    <h1>{status.job.error ? tr("环境安装未完成") : tr("正在安装 Cage 环境")}</h1>
+                    <h1>{status.job.error ? tr("环境安装未完成") : tr("正在安装 SuperCage 环境")}</h1>
                     <SetupProgress job={status.job} onDetails={() => setDetails(true)}
                       onStop={stop} onRetry={() => startEnvironment(status.job.kind === "guest-install" ? { guest_system: status.job.setup_progress.system } : {})} disconnected={Boolean(connectionError)} />
                   </> : <>
                   <h1>
                     {busy
                       ? status.job.kind === "stop"
-                        ? tr("正在停止 Cage 环境")
+                        ? tr("正在停止 SuperCage 环境")
                         : status.job.kind === "storage"
                           ? tr("正在调整环境存储")
                         : status.job.kind === "project"
                           ? tr("正在打开项目")
-                          : tr("正在准备 Cage 环境")
+                          : tr("正在准备 SuperCage 环境")
                       : running
                         ? !status.ready
-                          ? tr("Cage 环境正在连接")
-                          : tr("Cage 环境已就绪")
+                          ? tr("SuperCage 环境正在连接")
+                          : tr("SuperCage 环境已就绪")
                         : setupProxy
                           ? tr("为 Claude 准备独立工作区")
-                          : "Claude Cage"}
+                          : "SuperCage"}
                   </h1>
                   {(busy || (running && (!status.ready || network.mode !== "open"))) && (
                     <p className="welcome-subtitle">
@@ -2302,7 +2302,7 @@ function App() {
                     </p>
                   )}
                   {!running && (
-                    <ol className="onboarding-steps" aria-label={tr("开始使用 Cage")}>
+                    <ol className="onboarding-steps" aria-label={tr("开始使用 SuperCage")}>
                       {["配置代理", "启动环境", "开始工作"].map(
                         (label, index) => (
                           <li
@@ -2330,7 +2330,7 @@ function App() {
                           />
                         </span>
                         <span className="environment-summary-copy">
-                          <strong>{tr("Cage 隔离环境")}</strong>
+                          <strong>{tr("SuperCage 隔离环境")}</strong>
                           <small className="environment-status-line">
                             <i className={`status-dot ${network.mode}`} />
                             {busy
@@ -2376,7 +2376,7 @@ function App() {
                           : !running
                             ? setupProxy
                               ? tr("配置网络与代理")
-                              : guestSystem?.pending ? tr("继续安装") : tr("启动 Cage 环境")
+                              : guestSystem?.pending ? tr("继续安装") : tr("启动 SuperCage 环境")
                             : !status.ready
                               ? tr("恢复浏览器")
                               : !workspace
@@ -2418,7 +2418,7 @@ function App() {
                           onClick={async () => {
                             if (await confirm({
                               title: tr("保留旧 Ubuntu 环境并新建 Debian？"),
-                              body: tr("旧 Ubuntu 环境会原样移到数据目录的 state/guests-removed 文件夹，不删除任何文件。随后 Cage 下载并创建新的 Debian 环境；旧环境里的文件和登录状态不会带到新环境。"),
+                              body: tr("旧 Ubuntu 环境会原样移到数据目录的 state/guests-removed 文件夹，不删除任何文件。随后 SuperCage 下载并创建新的 Debian 环境；旧环境里的文件和登录状态不会带到新环境。"),
                               confirm: tr("保留并新建 Debian"),
                             })) startEnvironment({ set_aside_abandoned: true });
                           }}
@@ -2718,7 +2718,7 @@ function App() {
                   setTransfer(null);
                 }}
               >
-                {tr("粘贴到 Cage")}
+                {tr("粘贴到 SuperCage")}
               </button>
             </>
           }

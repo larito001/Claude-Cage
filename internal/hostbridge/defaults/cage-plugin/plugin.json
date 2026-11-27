@@ -1,6 +1,6 @@
 {
   "name": "cage-plugin",
-  "displayName": "Cage Plugin",
+  "displayName": "SuperCage Plugin",
   "version": "0.1.1",
   "description": "Searches the plugin market for existing plugins, or scaffolds, validates, and submits custom MCP tools and sidebar views for review.",
   "icon": "icon.svg",

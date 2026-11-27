@@ -32,7 +32,7 @@ try {
   await page.getByRole("button", { name: "浏览器下载", exact: true }).waitFor();
   // A tiny export can finish between polls; it must still offer Save As.
   const item = { id, name: "桌面视频.mp4", state: "saved", target: "desktop",
-    startedAt: new Date(Date.now() + 5).toISOString(), path: "/Users/test/Cage/Downloads/桌面视频.mp4" };
+    startedAt: new Date(Date.now() + 5).toISOString(), path: "/Users/test/SuperCage/Downloads/桌面视频.mp4" };
   saved = [{ id, name: item.name, path: item.path }];
   downloads = [item];
   await waitFor(() => calls.some((call) => call.action === "saveBrowserDownload"));
@@ -46,7 +46,7 @@ try {
   await page.getByRole("button", { name: "浏览器下载", exact: true }).click();
   await dialog.getByText(item.path, { exact: true }).waitFor();
   assert.equal(calls.filter((call) => call.action === "saveBrowserDownload").length, 1, "history reopened a save dialog");
-  const openError = "文件打开关联未能完成，请在 Cage 下载列表中打开文件。";
+  const openError = "文件打开关联未能完成，请在 SuperCage 下载列表中打开文件。";
   downloads = [{ ...item, openError }];
   await dialog.getByText(openError, { exact: true }).waitFor();
   assert.equal(await page.getByRole("button", { name: "浏览器下载", exact: true }).getAttribute("title"), "有下载需要处理，点击查看");

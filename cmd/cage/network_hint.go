@@ -44,7 +44,7 @@ func networkHint(status json.RawMessage) string {
 	}
 	switch {
 	case view.NetworkPaused:
-		return "external networking is paused, so guest connections are refused. Run '" + networkCheckCommand + "' or check the network again in Cage to resume it."
+		return "external networking is paused, so guest connections are refused. Run '" + networkCheckCommand + "' or check the network again in SuperCage to resume it."
 	case view.Safety.Gate != nil && view.Safety.Gate.Mode == "checking":
 		return "the network check is still running; guest connections are refused until it passes. Run 'cage agent call status' to follow it."
 	}

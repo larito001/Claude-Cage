@@ -37,7 +37,7 @@ func LoadEnvironmentRecord(profile string) (EnvironmentRecord, error) {
 func DefaultEnvironmentDir(profile string) string {
 	path := filepath.Clean(profile) + "-downloads"
 	if home, err := os.UserHomeDir(); err == nil {
-		defaultProfile := filepath.Join(home, ".claude-cage")
+		defaultProfile := filepath.Join(home, ".super-cage")
 		if !paths.Equal(profile, defaultProfile) && StorageContains(defaultProfile, profile) {
 			if relative, err := filepath.Rel(defaultProfile, profile); err == nil {
 				path = filepath.Join(defaultProfile+"-downloads", relative)
@@ -79,7 +79,7 @@ func EnvironmentIdentityDir(profile string) string {
 	return EnvironmentDir(profile)
 }
 
-// InstanceName is shared by the controller and each Cage CLI subprocess.
+// InstanceName is shared by the controller and each SuperCage CLI subprocess.
 // It uses the same spelling as the CLI's AbsDir, including Windows drives.
 func InstanceName(profile, workspace string) string {
 	if saved, err := LoadEnvironmentRecord(profile); err == nil && saved.IdentityDirectory != "" &&

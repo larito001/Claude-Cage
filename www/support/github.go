@@ -21,8 +21,8 @@ import (
 	"time"
 )
 
-const issueRepo = "/repos/Lee-xeo/Claude-Cage"
-const issueRepoURL = "https://github.com/Lee-xeo/Claude-Cage/issues/"
+const issueRepo = "/repos/larito001/Super-Cage"
+const issueRepoURL = "https://github.com/larito001/Super-Cage/issues/"
 
 type appKey struct {
 	ID  int64  `json:"id"`
@@ -99,7 +99,7 @@ func botToken(ctx context.Context) (string, error) {
 	}
 	var grant struct{ Token string }
 	path := fmt.Sprintf("/app/installations/%d/access_tokens", install.ID)
-	err = ghJSON(ctx, "POST", path, jwt, map[string]any{"repositories": []string{"Claude-Cage"}, "permissions": map[string]string{"issues": "write"}}, &grant)
+	err = ghJSON(ctx, "POST", path, jwt, map[string]any{"repositories": []string{"Super-Cage"}, "permissions": map[string]string{"issues": "write"}}, &grant)
 	if err != nil {
 		return "", err
 	}

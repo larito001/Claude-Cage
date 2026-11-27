@@ -1,5 +1,5 @@
 // Package mobilelink connects a paired mobile client to the mobile
-// operations of a single Cage host. It never exposes the full workbench API.
+// operations of a single SuperCage host. It never exposes the full workbench API.
 package mobilelink
 
 import (
@@ -172,7 +172,7 @@ func operations(do performFunc) http.Handler {
 		}
 		reply, err := do(r.Context(), r.Method, r.URL.RequestURI(), body)
 		if err != nil {
-			http.Error(w, "与电脑的连接已中断。请检查手机网络和电脑上的 Cage，再重新读取会话。", http.StatusBadGateway)
+			http.Error(w, "与电脑的连接已中断。请检查手机网络和电脑上的 SuperCage，再重新读取会话。", http.StatusBadGateway)
 			return
 		}
 		w.Header().Set("Content-Type", reply.ContentType)

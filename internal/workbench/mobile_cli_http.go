@@ -168,7 +168,7 @@ func (s *Server) mobileApprovalResponse(w http.ResponseWriter, r *http.Request) 
 	s.account.mu.Lock()
 	if !s.mobileAuthorized(r.Context()) {
 		s.account.mu.Unlock()
-		http.Error(w, "请先解锁 Cage", 423)
+		http.Error(w, "请先解锁 SuperCage", 423)
 		return
 	}
 	m := &s.mobileCLI

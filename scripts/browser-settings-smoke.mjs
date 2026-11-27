@@ -17,11 +17,11 @@ try {
   const bytes = execFileSync('uv', ['run', '--no-project', 'python', '-c', `import io,zipfile,json,sys
 b=io.BytesIO()
 with zipfile.ZipFile(b,'w') as z:
- z.writestr('manifest.json',json.dumps({'manifest_version':3,'name':'Cage test extension','version':'1.0','permissions':['storage'],'content_scripts':[{'matches':['http://localhost/*'],'js':['content.js']}]}))
+ z.writestr('manifest.json',json.dumps({'manifest_version':3,'name':'SuperCage test extension','version':'1.0','permissions':['storage'],'content_scripts':[{'matches':['http://localhost/*'],'js':['content.js']}]}))
  z.writestr('content.js','document.documentElement.dataset.cageExtension="active"; chrome.storage.local.set({persisted:"retained"});')
 sys.stdout.buffer.write(b.getvalue())`], { maxBuffer: 1 << 20, stdio: ['ignore', 'pipe', 'ignore'] });
   const selected = await fixture.uploadExtension(bytes);
-  assert.equal(selected.name, 'Cage test extension'); assert.deepEqual(selected.permissions, ['storage']);
+  assert.equal(selected.name, 'SuperCage test extension'); assert.deepEqual(selected.permissions, ['storage']);
   assert.ok(selected.hostPermissions.includes('http://localhost/*'));
   assert.equal((await api('/extensions', { mode: 'list' })).items.length, 0);
   const source = 'a'.repeat(32) + ':' + 'b'.repeat(32);
@@ -58,7 +58,7 @@ sys.stdout.buffer.write(b.getvalue())`], { maxBuffer: 1 << 20, stdio: ['ignore',
   const registry = JSON.parse(await readFile(join(directory, 'extensions/registry.json'), 'utf8'));
   assert.deepEqual(registry, []);
   checks.push('uninstall removes the extension and persistent installation record');
-  const helper = (await cdp(null, 'Extensions.getExtensions')).extensions.find(item => item.name === 'Cage browser panes');
+  const helper = (await cdp(null, 'Extensions.getExtensions')).extensions.find(item => item.name === 'SuperCage browser panes');
   const control = (await cdp(null, 'Target.getTargets')).targetInfos.find(item => item.url.endsWith('/control.html'));
   const { sessionId } = await cdp(null, 'Target.attachToTarget', { targetId: control.targetId, flatten: true });
   await api('/__privacy-test', { sessionId, method: 'Runtime.evaluate', params: { expression: `chrome.management.setEnabled(${JSON.stringify(helper.id)}, false)`, userGesture: true } }).catch(() => {});

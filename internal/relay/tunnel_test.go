@@ -50,7 +50,7 @@ func TestMutualTLSAcrossRelay(t *testing.T) {
 	defer client.Close()
 	_ = host.connection.SetDeadline(time.Now().Add(3 * time.Second))
 	_ = client.SetDeadline(time.Now().Add(3 * time.Second))
-	payload := bytes.Repeat([]byte("Cage 远程传输 — binary\x00\xff\n"), 12000)
+	payload := bytes.Repeat([]byte("SuperCage 远程传输 — binary\x00\xff\n"), 12000)
 	writeDone := make(chan error, 1)
 	go func() { _, err := client.Write(payload); writeDone <- err }()
 	received := make([]byte, len(payload))

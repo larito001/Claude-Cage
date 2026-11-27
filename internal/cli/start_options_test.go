@@ -39,7 +39,7 @@ func TestStartArgsResetAndReuse(t *testing.T) {
 func TestStartArgsRejectResourceOptions(t *testing.T) {
 	for _, args := range [][]string{{"--cpus", "2"}, {"--memory=4"}, {"--ram", "4"}, {"--reset", "--cpus=1"}} {
 		got, err := StartArgs(args)
-		if err == nil || got != nil || !strings.Contains(err.Error(), "resource settings in the Cage app") {
+		if err == nil || got != nil || !strings.Contains(err.Error(), "resource settings in the SuperCage app") {
 			t.Errorf("%q: %q, %v", args, got, err)
 		}
 	}

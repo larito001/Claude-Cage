@@ -684,7 +684,7 @@ function draftCard(draft: Draft, changed: () => void) {
   function receipt() {
     const link = el("a", "", "查看 Issue #" + draft.issueNumber + " ↗");
     link.href =
-      "https://github.com/Lee-xeo/Claude-Cage/issues/" + draft.issueNumber;
+      "https://github.com/larito001/Super-Cage/issues/" + draft.issueNumber;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     card.replaceChildren(
@@ -724,7 +724,7 @@ function draftCard(draft: Draft, changed: () => void) {
   const msg = el(
     "p",
     "",
-    "确认后，项目机器人会将以上文字公开发布到 Lee-xeo/Claude-Cage。截图不会随草稿上传。",
+    "确认后，项目机器人会将以上文字公开发布到 larito001/Super-Cage。截图不会随草稿上传。",
   );
   const publish = btn("确认并公开提交", async () => {
     if (!title.value.trim() || !body.value.trim()) {
@@ -750,7 +750,7 @@ function draftCard(draft: Draft, changed: () => void) {
       const data = await res.json();
       if (!res.ok) throw Error(data.error || "提交失败，请重试。");
       if (
-        !/^https:\/\/github\.com\/Lee-xeo\/Claude-Cage\/issues\/\d+$/.test(
+        !/^https:\/\/github\.com\/larito001\/Super-Cage\/issues\/\d+$/.test(
           data.url,
         )
       )
@@ -769,7 +769,7 @@ function draftCard(draft: Draft, changed: () => void) {
 }
 function speaker() {
   const s = el("div", "speaker");
-  s.append(template("bot-avatar"), el("span", "", "Cage 助手"));
+  s.append(template("bot-avatar"), el("span", "", "SuperCage 助手"));
   return s;
 }
 function sendMessage(question: string) {

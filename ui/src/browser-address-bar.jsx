@@ -279,7 +279,7 @@ export function BrowserAddressBar({ tab, tabs, ready, onNavigate, onSelect }) {
           }}
           placeholder={
             ready
-              ? tr("输入网址或搜索，在 Cage 内打开")
+              ? tr("输入网址或搜索，在 SuperCage 内打开")
               : tr("启动环境后浏览网页")
           }
           disabled={!ready}

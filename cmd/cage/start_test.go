@@ -70,7 +70,7 @@ func TestStartUsageBeforeOpeningProfile(t *testing.T) {
 		} {
 			t.Run(command+"/"+strings.Join(args, " "), func(t *testing.T) {
 				profile := filepath.Join(t.TempDir(), "profile")
-				t.Setenv("CLAUDE_CAGE_CONFIG", filepath.Join(profile, "config.json"))
+				t.Setenv("SUPER_CAGE_CONFIG", filepath.Join(profile, "config.json"))
 				previous := os.Args
 				os.Args = append([]string{"cage", command}, args...)
 				t.Cleanup(func() { os.Args = previous })

@@ -33,7 +33,7 @@ func TestExecutionFailureNamesAPTResolverVariants(t *testing.T) {
 }
 
 func TestExecutionFailureNamesUnconfirmedStop(t *testing.T) {
-	output := "Stopping VM 'claude-cage-downloads-1234'...\nError: VM 'claude-cage-downloads-1234' is still running, or Lima cannot say. See 'claude-cage list'.\n"
+	output := "Stopping VM 'super-cage-downloads-1234'...\nError: VM 'super-cage-downloads-1234' is still running, or Lima cannot say. See 'super-cage list'.\n"
 	message := executionFailure("停止环境", errors.New("exit status 1"), output).Error()
 	if !strings.Contains(message, "无法确认环境已停止") || strings.Contains(message, "可识别") {
 		t.Fatalf("%q", message)
@@ -41,7 +41,7 @@ func TestExecutionFailureNamesUnconfirmedStop(t *testing.T) {
 }
 
 func TestExecutionFailureNamesUnmountablePath(t *testing.T) {
-	output := "Error: project path contains whitespace, which Lima cannot mount:\n  C:/Users/Jae Young/.claude-cage-downloads\nRename the directory, then retry.\n"
+	output := "Error: project path contains whitespace, which Lima cannot mount:\n  C:/Users/Jae Young/.super-cage-downloads\nRename the directory, then retry.\n"
 	message := executionFailure("启动环境", errors.New("exit status 1"), output).Error()
 	if !strings.Contains(message, "含有空格") || strings.Contains(message, "可识别") {
 		t.Fatalf("%q", message)
@@ -83,10 +83,10 @@ func TestExecutionFailureNamesMissingQEMU(t *testing.T) {
 
 func TestExecutionFailureNamesLimaHomeConflict(t *testing.T) {
 	rawSamples := []string{
-		`Error: could not query Lima: agent-vm's Lima home C:\Users\alice\.claude-cage\state\lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
-		`agent-vm's Lima home /Users/alice/.claude-cage/state/lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
-		`agent-vm's Lima home /home/alice/.claude-cage/state/lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
-		`agent-vm's Lima home /data/.claude-cage/state/lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
+		`Error: could not query Lima: agent-vm's Lima home C:\Users\alice\.super-cage\state\lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
+		`agent-vm's Lima home /Users/alice/.super-cage/state/lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
+		`agent-vm's Lima home /home/alice/.super-cage/state/lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
+		`agent-vm's Lima home /data/.super-cage/state/lima is also your own Lima's home: set AGENT_VM_LIMA_HOME to a folder for agent-vm alone`,
 	}
 	for _, raw := range rawSamples {
 		for _, output := range []string{raw, diagnostics.Redact(raw)} {

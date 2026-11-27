@@ -12,8 +12,8 @@ if [ "${1:-}" = upgrade ] || [ "${1:-}" = install ] || [ "${1:-}" = remove ]; th
       executable=$(tr '\000' '\n' < "$process/cmdline" 2>/dev/null | head -n 1) || executable=
     fi
     case "$executable" in
-      /usr/bin/claude-cage|/usr/bin/cage-desktop|/usr/lib/claude-cage/cage|/usr/lib/claude-cage/cage-desktop|/usr/lib/claude-cage/mihomo|/usr/lib/claude-cage/*' (deleted)')
-        echo 'Cage is running. Save work, stop the environment, and quit Cage before changing the installation.' >&2
+      /usr/bin/super-cage|/usr/bin/cage-desktop|/usr/lib/super-cage/cage|/usr/lib/super-cage/cage-desktop|/usr/lib/super-cage/mihomo|/usr/lib/super-cage/*' (deleted)')
+        echo 'SuperCage is running. Save work, stop the environment, and quit SuperCage before changing the installation.' >&2
         exit 1
         ;;
     esac

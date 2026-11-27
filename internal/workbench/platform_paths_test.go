@@ -25,9 +25,9 @@ func TestBoundaryProbeUsesGuestFilePaths(t *testing.T) {
 		windows                                  bool
 		private, shared, wantPrivate, wantShared string
 	}{
-		{"Windows backslashes and another drive", true, `C:\Users\甲 用户\Cage\private-probe`, `D:\项目 工作区\shared-probe`, "/c/Users/甲 用户/Cage/private-probe", "/d/项目 工作区/shared-probe"},
-		{"Windows forward slashes", true, "C:/Users/user/Cage/private-probe", "C:/Users/user/work/shared-probe", "/c/Users/user/Cage/private-probe", "/c/Users/user/work/shared-probe"},
-		{"POSIX", false, "/Users/user/Cage/private-probe", "/Users/user/work/shared-probe", "/Users/user/Cage/private-probe", "/Users/user/work/shared-probe"},
+		{"Windows backslashes and another drive", true, `C:\Users\甲 用户\SuperCage\private-probe`, `D:\项目 工作区\shared-probe`, "/c/Users/甲 用户/SuperCage/private-probe", "/d/项目 工作区/shared-probe"},
+		{"Windows forward slashes", true, "C:/Users/user/SuperCage/private-probe", "C:/Users/user/work/shared-probe", "/c/Users/user/SuperCage/private-probe", "/c/Users/user/work/shared-probe"},
+		{"POSIX", false, "/Users/user/SuperCage/private-probe", "/Users/user/work/shared-probe", "/Users/user/SuperCage/private-probe", "/Users/user/work/shared-probe"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			paths.Windows = func() bool { return tc.windows }

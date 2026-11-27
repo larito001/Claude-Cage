@@ -206,7 +206,7 @@ func protectedDeviceResetItems() []string {
 	return []string{
 		"宿主机上所有项目文件夹（双向共享，绝不删除或修改）",
 		"代理订阅、节点配置与出口规则",
-		"密码库、收藏与 Cage 应用通用设置",
+		"密码库、收藏与 SuperCage 应用通用设置",
 	}
 }
 
@@ -444,7 +444,7 @@ func (s *Server) measureDirBytes(dir string) int64 {
 
 func (s *Server) deviceResetStatusHandler(w http.ResponseWriter, r *http.Request) {
 	if !s.hasTrustedView(r) {
-		http.Error(w, "请在已信任的 Cage 窗口管理环境换机", http.StatusForbidden)
+		http.Error(w, "请在已信任的 SuperCage 窗口管理环境换机", http.StatusForbidden)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
@@ -505,7 +505,7 @@ func (s *Server) deviceResetStatusHandler(w http.ResponseWriter, r *http.Request
 
 func (s *Server) deviceResetPreviewHandler(w http.ResponseWriter, r *http.Request) {
 	if !s.hasTrustedView(r) {
-		http.Error(w, "请在已信任的 Cage 窗口预览新机配置", http.StatusForbidden)
+		http.Error(w, "请在已信任的 SuperCage 窗口预览新机配置", http.StatusForbidden)
 		return
 	}
 	var options guestprofile.Options
@@ -530,7 +530,7 @@ func (s *Server) deviceResetPreviewHandler(w http.ResponseWriter, r *http.Reques
 
 func (s *Server) deviceResetExecuteHandler(w http.ResponseWriter, r *http.Request) {
 	if !s.hasTrustedView(r) {
-		http.Error(w, "请在已信任的 Cage 窗口执行环境换机", http.StatusForbidden)
+		http.Error(w, "请在已信任的 SuperCage 窗口执行环境换机", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {
@@ -1051,7 +1051,7 @@ func (s *Server) executeContainerRebuild(ctx context.Context, nextProfile *guest
 
 func (s *Server) deviceResetRestoreHandler(w http.ResponseWriter, r *http.Request) {
 	if !s.hasTrustedView(r) {
-		http.Error(w, "请在已信任的 Cage 窗口恢复旧环境", http.StatusForbidden)
+		http.Error(w, "请在已信任的 SuperCage 窗口恢复旧环境", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {
@@ -1285,7 +1285,7 @@ func (s *Server) restoreDeviceArchive(archiveID string) error {
 
 func (s *Server) deviceResetDeleteArchiveHandler(w http.ResponseWriter, r *http.Request) {
 	if !s.hasTrustedView(r) {
-		http.Error(w, "请在已信任的 Cage 窗口管理旧环境归档", http.StatusForbidden)
+		http.Error(w, "请在已信任的 SuperCage 窗口管理旧环境归档", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {

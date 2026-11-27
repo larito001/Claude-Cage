@@ -14,7 +14,7 @@ internal static class TrayMenuTests
             try { RunOnUiThread(); }
             catch (Exception error) { failure = error; }
         })
-        { IsBackground = true, Name = "Cage tray menu regression" };
+        { IsBackground = true, Name = "SuperCage tray menu regression" };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         if (!thread.Join(TimeSpan.FromSeconds(15)))
@@ -98,11 +98,11 @@ internal static class TrayMenuTests
 
         // 3. Layout sizing, shrink-back, handle creation, and offscreen rendering
         using var menu = new TrayMenu();
-        var open = new ToolStripMenuItem("打开 Cage") { Tag = new TrayItemMetadata("打开 Cage", TrayIconKind.Open) };
+        var open = new ToolStripMenuItem("打开 SuperCage") { Tag = new TrayItemMetadata("打开 SuperCage", TrayIconKind.Open) };
         var update = new ToolStripMenuItem("检查应用更新…") { Tag = new TrayItemMetadata("检查应用更新…", TrayIconKind.CheckUpdates) };
-        var about = new ToolStripMenuItem("关于 Cage") { Tag = new TrayItemMetadata("关于 Cage", TrayIconKind.About) };
+        var about = new ToolStripMenuItem("关于 SuperCage") { Tag = new TrayItemMetadata("关于 SuperCage", TrayIconKind.About) };
         var sep = new ToolStripSeparator();
-        var quit = new ToolStripMenuItem("退出 Cage…") { Tag = new TrayItemMetadata("退出 Cage…", TrayIconKind.Quit, Destructive: true) };
+        var quit = new ToolStripMenuItem("退出 SuperCage…") { Tag = new TrayItemMetadata("退出 SuperCage…", TrayIconKind.Quit, Destructive: true) };
         menu.Items.AddRange([open, update, about, sep, quit]);
 
         _ = menu.Handle;
@@ -124,12 +124,12 @@ internal static class TrayMenuTests
         if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
             Check(menu.RoundedWindowFrame, "Windows 11 DWM rounded corner frame was not applied");
 
-        open.Text = "Открыть изолированную рабочую область Cage с длинным заголовком";
+        open.Text = "Открыть изолированную рабочую область SuperCage с длинным заголовком";
         onOpening.Invoke(menu, [new CancelEventArgs()]);
         int wideWidth = menu.Width;
         Check(wideWidth > narrowWidth, "menu did not widen for longer localized label");
 
-        open.Text = "打开 Cage";
+        open.Text = "打开 SuperCage";
         onOpening.Invoke(menu, [new CancelEventArgs()]);
         Check(menu.Width == narrowWidth, "menu did not shrink back after switching to shorter label");
 

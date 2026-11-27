@@ -84,7 +84,7 @@ images=[png(1),png(2)]
 received=[]
 errors=[]
 window=Gtk.Window()
-window.set_title('Cage image input test')
+window.set_title('SuperCage image input test')
 field=Gtk.TextView()
 window.add(field)
 def key(_widget,event):
@@ -98,7 +98,7 @@ window.show_all()
 field.grab_focus()
 def worker():
     try:
-        subprocess.run(['xdotool','search','--name','Cage image input test','windowfocus','--sync'],check=True,timeout=3)
+        subprocess.run(['xdotool','search','--name','SuperCage image input test','windowfocus','--sync'],check=True,timeout=3)
         for image in images:
             result=subprocess.run(['python3','/tmp/cage-image-input.py','paste'],input=image,capture_output=True,timeout=15)
             assert result.returncode==0,(result.returncode,result.stderr)

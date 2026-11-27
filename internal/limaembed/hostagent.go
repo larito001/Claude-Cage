@@ -3,7 +3,7 @@
 
 // Copied from third_party/lima/cmd/limactl/hostagent.go, which is in package
 // main and cannot be imported. Changed by agent-vm: the package name, and
-// WrapArgsError (in limactl's main.go) is cobra's own error here. Cage also
+// WrapArgsError (in limactl's main.go) is cobra's own error here. SuperCage also
 // receives stop requests through its buffered channel and Windows event.
 // TestHostagentCopy fails when the two drift apart.
 

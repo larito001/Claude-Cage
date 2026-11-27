@@ -19,15 +19,15 @@ import '../../styles/cage.css';
 import '../../styles/plugins-market.css';
 
 const base = import.meta.env.BASE_URL;
-const repo = 'https://github.com/Lee-xeo/Claude-Cage';
+const repo = 'https://github.com/larito001/Super-Cage';
 const plugins = normalizeMarketIndex(rawMarketIndex, base);
 const counts = countByCategory(plugins);
 const hostCount = plugins.filter(p => p.kind === 'host').length;
 const guestCount = plugins.filter(p => p.kind === 'guest').length;
 const canonical = new URL(`${base}plugins/`, Astro.site);
-const title = '插件市场 · Claude Cage';
+const title = '插件市场 · SuperCage';
 const description =
-  'Claude Cage 开放插件市场（cage-plugins）：插件 = MCP + 扩展，为轻量化本地隔离环境中的 Claude 接入安全、受控的本机与环境能力，并定制工作台页面。';
+  'SuperCage 开放插件市场（cage-plugins）：插件 = MCP + 扩展，为轻量化本地隔离环境中的 Claude 接入安全、受控的本机与环境能力，并定制工作台页面。';
 ---
 <!doctype html>
 <html lang="zh-CN">
@@ -41,16 +41,16 @@ const description =
   <link rel="canonical" href={canonical} />
   <link rel="icon" href={`${base}cage-icon.png`} />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Claude Cage" />
+  <meta property="og:site_name" content="SuperCage" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:url" content={canonical} />
 </head>
 <body class="market-page">
   <header class="nav wrap market-header">
-    <a class="brand" href={base} aria-label="Claude Cage">
+    <a class="brand" href={base} aria-label="SuperCage">
       <img src={`${base}cage-icon.png`} width="36" height="36" alt="" />
-      <span>Claude Cage</span>
+      <span>SuperCage</span>
     </a>
     <nav aria-label="网站导航">
       <a href={`${base}ask/`}>使用答疑</a>
@@ -67,7 +67,7 @@ const description =
       <div class="pm-hero wrap">
         <div class="pm-hero-copy">
           <span class="eyebrow"><span class="seed"></span>CAGE PLUGIN MARKETPLACE · MCP + 扩展</span>
-          <h1>把能力接进 Cage，<br /><em>把风险留在门外。</em></h1>
+          <h1>把能力接进 SuperCage，<br /><em>把风险留在门外。</em></h1>
           <p class="pm-hero-lead">
             在轻量化本地隔离环境里运行 Claude，再通过开放插件市场按需连接本机桌面、Office 文档、Blender、浏览器自动化与自定义工作台页面。开源社区在 <code>cage-plugins</code> 自由共建，每一次越出环境的调用均受权限声明与确认弹窗保护。
           </p>
@@ -102,7 +102,7 @@ const description =
             <span class="pm-eq-op" aria-hidden="true">＋</span>
             <div class="pm-eq-box">
               <strong>沙箱扩展页面</strong>
-              <span>定制 Cage 侧栏视图与专属工作流</span>
+              <span>定制 SuperCage 侧栏视图与专属工作流</span>
             </div>
           </div>
 
@@ -178,7 +178,7 @@ const description =
           if (plugin.source?.project) {
             metaParts.push(plugin.source.license ? `${plugin.source.project} · ${plugin.source.license}` : plugin.source.project);
           } else if (plugin.author?.official) {
-            metaParts.push('Cage 官方');
+            metaParts.push('SuperCage 官方');
           } else if (plugin.author?.name) {
             metaParts.push(plugin.author.name);
           } else if (plugin.minBytes > 0) {
@@ -243,7 +243,7 @@ const description =
           <span class="eyebrow"><span class="seed"></span>OPEN ECOSYSTEM · 解耦协作</span>
           <h2 id="pm-build-title">用任何语言写插件，<br />把能力贡献给社区</h2>
           <p>
-            插件采用标准输入输出 MCP 协议与静态 HTML 沙箱页面，无需依赖特定 SDK。社区可以直接在 <code>cage-plugins</code> 提 PR 上架，让全球 Cage 用户一键安装。
+            插件采用标准输入输出 MCP 协议与静态 HTML 沙箱页面，无需依赖特定 SDK。社区可以直接在 <code>cage-plugins</code> 提 PR 上架，让全球 SuperCage 用户一键安装。
           </p>
           <ol class="pm-build-steps">
             <li>
@@ -264,7 +264,7 @@ const description =
               <span>03</span>
               <div>
                 <strong>向 cage-plugins 提交 PR</strong>
-                <p>按 PR 模板填写信息并附上插件在 Cage 中的运行效果图，自动化脚本完成清单校验、打包与 SHA-256 索引生成，合入后自动同步到所有 Cage 客户端与官网市场。</p>
+                <p>按 PR 模板填写信息并附上插件在 SuperCage 中的运行效果图，自动化脚本完成清单校验、打包与 SHA-256 索引生成，合入后自动同步到所有 SuperCage 客户端与官网市场。</p>
               </div>
             </li>
           </ol>
@@ -309,7 +309,7 @@ const description =
   </main>
 
   <footer class="wrap">
-    <a class="brand" href={base}><img src={`${base}cage-icon.png`} width="28" height="28" alt="" />Claude Cage</a>
+    <a class="brand" href={base}><img src={`${base}cage-icon.png`} width="28" height="28" alt="" />SuperCage</a>
     <div>
       <a href={`${base}plugins/`}>插件市场</a>
       <a href={`${base}docs/`}>使用文档</a>
@@ -317,7 +317,7 @@ const description =
       <a href={repo} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       <a href={`${base}privacy/`}>统计与隐私</a>
     </div>
-    <small>Cage 是独立社区项目，与 Anthropic 无隶属关系。插件索引与压缩包来自开源仓库 cage-plugins，安装时由客户端核对 SHA-256。</small>
+    <small>SuperCage 是独立社区项目，与 Anthropic 无隶属关系。插件索引与压缩包来自开源仓库 cage-plugins，安装时由客户端核对 SHA-256。</small>
   </footer>
 
   <dialog id="pm-dialog" class="pm-dialog" aria-labelledby="pm-dialog-title">

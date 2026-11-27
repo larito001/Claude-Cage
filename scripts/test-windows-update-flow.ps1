@@ -12,8 +12,8 @@ try { $administrator = [Security.Principal.WindowsPrincipal]::new($identity).IsI
 finally { $identity.Dispose() }
 if (!$administrator) { throw 'Use an elevated disposable Windows runner for temporary test certificate trust.' }
 $repository = Split-Path $PSScriptRoot -Parent
-$registration = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\ClaudeCage'
-if (Test-Path $registration) { throw 'Use a test account without an installed Cage application.' }
+$registration = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\SuperCage'
+if (Test-Path $registration) { throw 'Use a test account without an installed SuperCage application.' }
 $root = Join-Path ([IO.Path]::GetTempPath()) ('cage-update-flow-' + [guid]::NewGuid().ToString('N'))
 $reportBase = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [IO.Path]::GetTempPath() }
 $reportPath = Join-Path $reportBase ('cage-smoke-update-' + [guid]::NewGuid().ToString('N') + '.json')
@@ -55,7 +55,7 @@ function Start-Fixture([string]$Executable, [string]$Profile, [string[]]$Argumen
     $start.UseShellExecute = $false
     $start.WorkingDirectory = $root
     # Test relative-to-absolute profile inheritance through the real launcher.
-    $start.Environment['CLAUDE_CAGE_CONFIG'] = [IO.Path]::GetRelativePath($root, (Join-Path $Profile 'config.json'))
+    $start.Environment['SUPER_CAGE_CONFIG'] = [IO.Path]::GetRelativePath($root, (Join-Path $Profile 'config.json'))
     foreach ($argument in $Arguments) { $start.ArgumentList.Add($argument) }
     return [Diagnostics.Process]::Start($start)
 }
@@ -86,12 +86,12 @@ function Build-Package([string]$Version) {
     Run-Tool 'dotnet' @('publish', (Join-Path $repository 'desktop/windows.update-tests/UpdateFlow.csproj'), '-c', 'Release', '-r', 'win-x64',
         '--self-contained', 'true', '-p:PublishSingleFile=true', '-p:IncludeNativeLibrariesForSelfExtract=true',
         "-p:Version=$Version", "-p:InformationalVersion=$Version", '-o', $app)
-    Sign (Join-Path $app 'Cage.exe')
+    Sign (Join-Path $app 'SuperCage.exe')
     [IO.Directory]::CreateDirectory((Join-Path $app 'resources')) | Out-Null
-    Copy-Item -LiteralPath (Join-Path $app 'Cage.exe') -Destination (Join-Path $app 'resources/cage.exe')
-    Write-Text (Join-Path $app 'Cage.install-id') 'io.github.lee-xeo.claude-cage'
+    Copy-Item -LiteralPath (Join-Path $app 'SuperCage.exe') -Destination (Join-Path $app 'resources/cage.exe')
+    Write-Text (Join-Path $app 'Cage.install-id') 'io.github.lee-xeo.super-cage'
     Write-Text (Join-Path $app 'version.txt') $Version
-    Write-Text (Join-Path $app 'LICENSE.txt') 'Isolated updater transaction fixture; not a Cage distribution.'
+    Write-Text (Join-Path $app 'LICENSE.txt') 'Isolated updater transaction fixture; not a SuperCage distribution.'
     $files = @(Get-ChildItem -LiteralPath $app -File -Recurse | ForEach-Object {
         @{path = [IO.Path]::GetRelativePath($app, $_.FullName).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
     })
@@ -141,7 +141,7 @@ try {
             Write-Text (Join-Path $profile 'fixture.json') (@{mode = $mode; installer = $installer} | ConvertTo-Json)
             Run-Installer $old.setup $target $initialDiagnostic
             Check ((Read-InstallerDiagnostic $initialDiagnostic).status -eq 'success') 'The initial installer did not record success.'
-            $originalHash = (Get-FileHash -LiteralPath (Join-Path $target 'Cage.exe')).Hash
+            $originalHash = (Get-FileHash -LiteralPath (Join-Path $target 'SuperCage.exe')).Hash
             $personal = @{
                 'account.json' = 'existing-account'; 'favorites.json' = 'existing-favorites';
                 'credentials/private.txt' = 'existing-login'; 'config.json' = 'existing-config'
@@ -159,10 +159,10 @@ try {
                 $disk = [IO.File]::Open((Join-Path $target 'CageData/state/persistent.img'), 'Open', 'Read', 'Read')
             }
             if ($mode -eq 'installer-failure') {
-                $holder = Start-Fixture (Join-Path $old.app 'Cage.exe') $profile @('--hold-directory', $target)
+                $holder = Start-Fixture (Join-Path $old.app 'SuperCage.exe') $profile @('--hold-directory', $target)
                 $null = Wait-File (Join-Path $profile 'held.json')
             }
-            $parent = Start-Fixture (Join-Path $target 'Cage.exe') $profile @('--start-update')
+            $parent = Start-Fixture (Join-Path $target 'SuperCage.exe') $profile @('--start-update')
             $rejected = $mode -in @('signature-failure','digest-failure')
             if ($rejected) {
                 $failure = Wait-File (Join-Path $profile 'parent-failed.json')
@@ -192,13 +192,13 @@ try {
             }
             if ($mode -eq 'success') {
                 $null = Wait-File (Join-Path $profile 'active.json')
-                Check ([Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $target 'Cage.exe')).ProductVersion -eq '0.1.8') 'The update did not install the requested version.'
+                Check ([Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $target 'SuperCage.exe')).ProductVersion -eq '0.1.8') 'The update did not install the requested version.'
             } elseif (!$rejected) {
                 $reopened = Wait-File (Join-Path $profile 'reopened.json')
                 Check ($reopened.version -eq '0.1.7' -and $reopened.profile -eq $profile) 'The original application did not reopen with its original profile.'
             }
             if ($mode -ne 'success') {
-                Check ((Get-FileHash -LiteralPath (Join-Path $target 'Cage.exe')).Hash -eq $originalHash) 'The failed update did not retain the original program bytes.'
+                Check ((Get-FileHash -LiteralPath (Join-Path $target 'SuperCage.exe')).Hash -eq $originalHash) 'The failed update did not retain the original program bytes.'
             }
             $project = if ($mode -eq 'startup-failure') { 'saved by new version' } else { 'original project' }
             Check ((Get-Content -LiteralPath (Join-Path $target 'my-project/work.txt') -Raw) -eq $project) 'Update or rollback lost the latest project contents.'
@@ -244,7 +244,7 @@ try {
                 $owned = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
                 if ($owned) {
                     try {
-                        if ($owned.MainModule.FileName -eq (Join-Path $target 'Cage.exe') -and !$owned.WaitForExit(10000)) { $owned.Kill(); $owned.WaitForExit() }
+                        if ($owned.MainModule.FileName -eq (Join-Path $target 'SuperCage.exe') -and !$owned.WaitForExit(10000)) { $owned.Kill(); $owned.WaitForExit() }
                     } finally { $owned.Dispose() }
                 }
             }

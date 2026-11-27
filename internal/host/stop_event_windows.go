@@ -70,7 +70,7 @@ func ListenInstanceStop(instanceDir string, onStop func()) (func(), error) {
 	return stop, nil
 }
 
-// RequestInstanceStop returns false when no Cage hostagent owns the event.
+// RequestInstanceStop returns false when no SuperCage hostagent owns the event.
 func RequestInstanceStop(instanceDir string) (bool, error) {
 	name, err := stopEventName(instanceDir)
 	if err != nil {

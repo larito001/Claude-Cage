@@ -29,7 +29,7 @@ func TestImageDownloadFailureNamesEachMirror(t *testing.T) {
 	}
 }
 
-// #713: when the host proxy refused the connection, switching Cage nodes
+// #713: when the host proxy refused the connection, switching SuperCage nodes
 // cannot help, so the next step names the host proxy settings instead.
 func TestImageDownloadFailureNamesHostProxy(t *testing.T) {
 	reason, next, ok := imageDownloadFailure(vm.ImageDownloadMarker + " official:proxy:kept nju:proxy:none")
@@ -39,7 +39,7 @@ func TestImageDownloadFailureNamesHostProxy(t *testing.T) {
 }
 
 // #841: unresolvable host proxy settings or PAC are named as such, and the
-// next step points at those settings rather than at a different Cage node.
+// next step points at those settings rather than at a different SuperCage node.
 func TestImageDownloadFailureNamesHostProxySettings(t *testing.T) {
 	reason, next, ok := imageDownloadFailure(vm.ImageDownloadMarker + " official:proxy-config:none nju:proxy-config:none")
 	if !ok || !strings.Contains(reason, "Debian 官方源（无法解析宿主机代理设置）") || !strings.Contains(next, "PAC") || !strings.Contains(next, "未改为直连") || strings.Contains(next, "换一个节点") {

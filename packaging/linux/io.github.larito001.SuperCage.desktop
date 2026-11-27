@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=Cage
+Name=SuperCage
 Comment=Isolated coding workspace
 Comment[zh_CN]=隔离编码工作区
 Exec=/usr/bin/cage-desktop
-Icon=io.github.lee_xeo.Cage
+Icon=io.github.larito001.SuperCage
 Terminal=false
 Categories=Development;
 StartupNotify=true

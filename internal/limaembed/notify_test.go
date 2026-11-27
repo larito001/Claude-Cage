@@ -13,7 +13,7 @@ func TestCagePortEventsGoDirectlyToLog(t *testing.T) {
 	t.Setenv("AGENT_VM_NOTIFY", "1")
 	var log bytes.Buffer
 	if output := hostagentEventOutput(&log, "test"); output != &log {
-		t.Fatal("Cage hostagent output should go directly to the log")
+		t.Fatal("SuperCage hostagent output should go directly to the log")
 	}
 }
 

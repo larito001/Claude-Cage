@@ -563,7 +563,7 @@ func (m *clientPluginBridgeManager) localApprove(manifest hostbridge.Manifest) f
 
 func (m *clientPluginBridgeManager) setShared(ctx context.Context, name string, shared bool) (clientBridgeStatus, error) {
 	if !m.session.Manifest.Capabilities["client_plugin_bridge"] {
-		return m.snapshot(), errors.New("此远程 Cage 尚不支持本机插件反向桥接")
+		return m.snapshot(), errors.New("此远程 SuperCage 尚不支持本机插件反向桥接")
 	}
 	if !hostbridge.ValidPluginName(name) {
 		return m.snapshot(), errors.New("插件名称无效")
@@ -694,7 +694,7 @@ func (m *clientPluginBridgeManager) ensureStream(ctx context.Context) error {
 	if res.StatusCode != http.StatusSwitchingProtocols || !ok || !strings.EqualFold(res.Header.Get("Upgrade"), remotePluginBridgeProtocol) {
 		res.Body.Close()
 		if res.StatusCode == http.StatusLocked {
-			return errors.New("请先解锁远程 Cage 账户，再共享本机插件")
+			return errors.New("请先解锁远程 SuperCage 账户，再共享本机插件")
 		}
 		return fmt.Errorf("远程服务未接受反向桥接（HTTP %d）", res.StatusCode)
 	}

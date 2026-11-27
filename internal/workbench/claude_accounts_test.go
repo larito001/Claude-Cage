@@ -53,7 +53,7 @@ func TestClaudeAccountPanelConcurrentWindowsAndLock(t *testing.T) {
 	}
 	s.account.lock()
 	if w = request(s, "GET", "/api/claude-accounts", "", "", true); w.Code != http.StatusLocked {
-		t.Fatal("locked Cage exposed account data", w.Code)
+		t.Fatal("locked SuperCage exposed account data", w.Code)
 	}
 }
 

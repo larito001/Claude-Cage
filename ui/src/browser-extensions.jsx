@@ -112,7 +112,7 @@ export function BrowserExtensions({ onOpenPage, onInternal, onConfirm }) {
   };
   const act = async (mode, id) => {
     if (busy) return;
-    if (mode === 'remove' && !(await onConfirm({ title: '移除此扩展？', body: '扩展将从 Cage 浏览器中移除。本机 Edge 或 Chrome 中的扩展保持原状。', confirm: '移除扩展' }))) return;
+    if (mode === 'remove' && !(await onConfirm({ title: '移除此扩展？', body: '扩展将从 SuperCage 浏览器中移除。本机 Edge 或 Chrome 中的扩展保持原状。', confirm: '移除扩展' }))) return;
     setBusy(id || mode); setError('');
     try {
       const result = await api('/browser/extensions', { mode, id, ...(mode === 'install' ? { session: preview.session } : {}) });
@@ -136,7 +136,7 @@ export function BrowserExtensions({ onOpenPage, onInternal, onConfirm }) {
       <button aria-label={tr("刷新扩展")} disabled={Boolean(busy)} onClick={load}><RefreshCw size={15} /></button>
     </div>
     <input ref={file} type="file" accept=".zip,application/zip" hidden onChange={select} aria-label={tr("选择扩展 ZIP")} />
-    <p>{tr("支持 Chromium Manifest V3 扩展。扩展运行在 Cage 环境中，并按声明的权限访问网站。")}</p>
+    <p>{tr("支持 Chromium Manifest V3 扩展。扩展运行在 SuperCage 环境中，并按声明的权限访问网站。")}</p>
     {error && <p className="browser-settings-error" role="alert">{localizeBackendMessage(error, tr)}</p>}
     {busy === 'upload' && <p role="status">{tr("正在读取扩展包…")}</p>}
     {preview && <section className="extension-install-preview" aria-label={tr("确认扩展安装")}>

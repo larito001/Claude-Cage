@@ -344,7 +344,7 @@ func surgeNode(name string, positional []string, params map[string]string) (node
 		surgeTLS(node, params, "sni")
 	case "ssh":
 		if params["private-key"] != "" {
-			return nil, "SSH 使用 Surge 钥匙串中的私钥，无法读取；请在 Cage 中手动添加 SSH 节点", false
+			return nil, "SSH 使用 Surge 钥匙串中的私钥，无法读取；请在 SuperCage 中手动添加 SSH 节点", false
 		}
 		node["type"] = "ssh"
 		node["username"] = params["username"]

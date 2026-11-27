@@ -302,8 +302,8 @@ function App() {
       {phoneWorkspace
         ? <button type="button" className="icon-button" aria-haspopup={wideWorkspace ? undefined : "dialog"} aria-expanded={wideWorkspace ? sidebarOpen : drawer}
           aria-label={wideWorkspace ? (sidebarOpen ? "收起侧栏" : "展开侧栏") : "展开侧栏"}
-          onClick={() => wideWorkspace ? setSidebarOpen(open => !open) : setDrawer(true)}><img className="brand-mark" src={cageLogo} alt="Cage" /></button>
-        : <a className="icon-button" href="/" aria-label="返回工作台"><img className="brand-mark" src={cageLogo} alt="Cage" /></a>}
+          onClick={() => wideWorkspace ? setSidebarOpen(open => !open) : setDrawer(true)}><img className="brand-mark" src={cageLogo} alt="SuperCage" /></button>
+        : <a className="icon-button" href="/" aria-label="返回工作台"><img className="brand-mark" src={cageLogo} alt="SuperCage" /></a>}
       {phoneWorkspace && (current.tool === "browser" || current.tool === "claude") && <div className="workspace-address-slot" ref={setAddressSlot} />}
       <div className="top-actions">{phoneWorkspace
         ? <span className="workspace-tool-icon" role="img" aria-label={activeTool?.name || "Claude Code"}><ActiveToolIcon size={19} aria-hidden="true" /></span>
@@ -801,7 +801,7 @@ function Chat({ id, drafts, ready, visible, refresh, onOpenWeb, onDenied, onMiss
     <form className="compose" onSubmit={send}>
       {actionError && <Notice onRetry={uncertain ? () => retry(false) : undefined} label="再次连接">{actionError}</Notice>}
       {session?.single_turn && <p className="note">当前凭据或路由只能验证本轮。请返回会话列表，新建会话后继续。</p>}
-      {!ready && <p className="note">请在电脑上启动 Cage 环境。</p>}
+      {!ready && <p className="note">请在电脑上启动 SuperCage 环境。</p>}
       <div className="composer-field">
         <textarea ref={composerInput} aria-label="消息" rows="1" placeholder={running ? "正在运行，可继续输入排队发送" : willQueue ? "可继续输入，将按顺序排队发送" : "给 Claude Code 发消息"} value={draft} disabled={!session || session.single_turn || !ready}
           onChange={(e) => {

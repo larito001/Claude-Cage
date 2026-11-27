@@ -53,7 +53,7 @@ export function shouldDeliverNotification(prefs, event, viewState = {}) {
   const mode = notificationModeForEvent(normalized, event.kind);
   if (mode === "off") return false;
   if (mode === "always") return true;
-  // "unfocused": suppress only when Cage is focused AND the user is already viewing this terminal.
+  // "unfocused": suppress only when SuperCage is focused AND the user is already viewing this terminal.
   return !(Boolean(viewState.windowFocused) && Boolean(viewState.viewingTerminal));
 }
 

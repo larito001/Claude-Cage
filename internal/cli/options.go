@@ -110,8 +110,8 @@ func (o *VMOpts) takeAll(args []string) (taken, rest []string, err error) {
 	}
 }
 
-// StartArgs validates the options of Cage's persistent start. Only --reset is
-// accepted: every Cage start applies the app's CPU and memory allocation, so a
+// StartArgs validates the options of SuperCage's persistent start. Only --reset is
+// accepted: every SuperCage start applies the app's CPU and memory allocation, so a
 // value given here would be silently replaced.
 func StartArgs(args []string) ([]string, error) {
 	var result []string
@@ -121,7 +121,7 @@ func StartArgs(args []string) ([]string, error) {
 		case arg == "--reset":
 			result = []string{"--reset"}
 		case name == "--cpus" || name == "--memory" || name == "--ram":
-			return nil, fmt.Errorf("%s is not supported: Cage sets CPUs and memory from the resource settings in the Cage app", name)
+			return nil, fmt.Errorf("%s is not supported: SuperCage sets CPUs and memory from the resource settings in the SuperCage app", name)
 		default:
 			return nil, fmt.Errorf("unsupported start argument: %s", arg)
 		}

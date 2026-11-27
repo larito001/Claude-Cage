@@ -80,12 +80,12 @@ try {
     return result.result.value;
   }, "DevTools UI loaded");
   const state = await api("/tabs");
-  assert.equal(state.tabs.length, 1, "DevTools must not appear as a Cage tab");
+  assert.equal(state.tabs.length, 1, "DevTools must not appear as a SuperCage tab");
   assert.equal(state.tabs[0].url, "about:blank");
-  assert.equal(state.active, state.tabs[0].id, "DevTools must not become the active Cage tab");
+  assert.equal(state.active, state.tabs[0].id, "DevTools must not become the active SuperCage tab");
   await cdp("Target.closeTarget", { targetId: devtools.targetId });
   assert.equal((await api("/tabs")).active, state.active);
-  console.log("PASS: production fullscreen controller opens real DevTools, keeps its page out of Cage tabs, and preserves the active website when DevTools closes");
+  console.log("PASS: production fullscreen controller opens real DevTools, keeps its page out of SuperCage tabs, and preserves the active website when DevTools closes");
 } finally {
   if (agent?.exitCode === null) {
     const exited = once(agent, "exit");

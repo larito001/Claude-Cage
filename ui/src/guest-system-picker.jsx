@@ -39,7 +39,7 @@ export function GuestSystemPicker({ system, onChange, onReselect, preserveOnUnmo
     <div className="guest-system-picker">
       <span>{tr("原安装选择")}</span>
       <strong>{names[view.pending.system] || view.pending.system}</strong>
-      {view.available && <small className="guest-install-fields">{tr("此环境保留着早期版本选择的系统镜像，可以继续原安装。镜像通过主机网络下载，遵循主机系统代理或 TUN 设置，不使用 Cage 的客机代理。")}</small>}
+      {view.available && <small className="guest-install-fields">{tr("此环境保留着早期版本选择的系统镜像，可以继续原安装。镜像通过主机网络下载，遵循主机系统代理或 TUN 设置，不使用 SuperCage 的客机代理。")}</small>}
       {view.reason && <small className="guest-install-fields">{view.reason}</small>}
       {view.reselect && <button type="button" className="guest-install-fields" onClick={async () => {
         try {

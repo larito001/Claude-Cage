@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// Remove Cage bundles only after the caller has verified the replacement.
+// Remove SuperCage bundles only after the caller has verified the replacement.
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { lstat, readdir, realpath, rm } from "node:fs/promises";
 import path from "node:path";
 import { isMainModule } from "./is-main-module.mjs";
 
-const bundleID = "io.github.lee-xeo.claude-cage";
+const bundleID = "io.github.lee-xeo.super-cage";
 function isCage(bundle) {
   try {
     return (
@@ -25,7 +25,7 @@ function isCage(bundle) {
   }
 }
 function inUse(bundle) {
-  const files = ["Contents/MacOS/Cage", "Contents/Resources/cage"]
+  const files = ["Contents/MacOS/SuperCage", "Contents/Resources/cage"]
     .map((file) => path.join(bundle, file))
     .filter((file) => existsSync(file));
   if (!files.length) return false;
@@ -48,7 +48,7 @@ function intact(bundle) {
 
 export async function cleanupApps({ keep, roots, onInUse = () => {}, onModified = () => {}, onUnreadable = () => {} }) {
   if (!keep.length)
-    throw new Error("At least one verified Cage.app must be kept.");
+    throw new Error("At least one verified SuperCage.app must be kept.");
   const retained = new Set();
   for (const bundle of keep) {
     if (!isCage(bundle) || !intact(bundle)) throw new Error(`Invalid replacement App: ${bundle}`);
@@ -114,7 +114,7 @@ if (isMainModule(import.meta.url)) {
   if (!roots.length) throw new Error("At least one cleanup root is required.");
   for (const bundle of await cleanupApps({
     keep, roots,
-    onInUse: (bundle) => console.error(`Old Cage App is still running; quit it and rerun cleanup: ${bundle}`),
+    onInUse: (bundle) => console.error(`Old SuperCage App is still running; quit it and rerun cleanup: ${bundle}`),
     onModified: (bundle) => console.error(`旧应用包含修改内容或无法验证完整性，文件已保留：${bundle}`),
     onUnreadable: (directory) => console.error(`Skipped unreadable directory: ${directory}`),
   }))

@@ -24,7 +24,7 @@ case "${1:-}" in
     [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo 'Invalid application VERSION.' >&2; exit 2; }
     manifest_args+=(--replace-version --version-name "$version" --version-code "$CAGE_ANDROID_VERSION_CODE")
     signing_args=(--ks "$CAGE_ANDROID_KEYSTORE" --ks-key-alias "$CAGE_ANDROID_KEY_ALIAS" --ks-pass "file:$CAGE_ANDROID_PASSWORD_FILE")
-    out="$build/Cage-$version-android-arm64.apk"
+    out="$build/SuperCage-$version-android-arm64.apk"
     ;;
   *) echo 'Usage: mobile/android/package.sh [--release]' >&2; exit 2 ;;
 esac
@@ -50,7 +50,7 @@ if [[ ! -f "$zxing" ]]; then
 fi
 echo "8d8064c1636fdaef7189dd9055c7d59950a8940a12f2293956446ec3c109fd82  $zxing" | shasum -a 256 --check --status
 bash "$android/fetch-webkit.sh" "$build"
-javac --release 8 -encoding UTF-8 -classpath "$platform:$work/aar/classes.jar:$zxing:$build/webkit-1.14.0.jar:$build/core-1.1.0.jar" -d "$work/classes" "$android"/src/io/github/leexeo/cage/mobile/*.java
+javac --release 8 -encoding UTF-8 -classpath "$platform:$work/aar/classes.jar:$zxing:$build/webkit-1.14.0.jar:$build/core-1.1.0.jar" -d "$work/classes" "$android"/src/io/github/larito001/supercage/mobile/*.java
 jar cf "$work/app.jar" -C "$work/classes" .
 "$tools/d8" --min-api 26 --lib "$platform" --output "$work/dex" "$work/app.jar" "$work/aar/classes.jar" "$zxing" "$build/webkit-1.14.0.jar" "$build/core-1.1.0.jar"
 cp "$work/dex/"*.dex "$work/apk/"
@@ -60,7 +60,7 @@ if [[ "${1:-}" != --release ]]; then
   key="$build/development.p12"
   if [[ ! -f "$key" ]]; then
     (umask 077; keytool -genkeypair -alias development -keyalg RSA -keysize 2048 -validity 3650 \
-      -keystore "$key" -storetype PKCS12 -storepass android -keypass android -dname "CN=Cage local development")
+      -keystore "$key" -storetype PKCS12 -storepass android -keypass android -dname "CN=SuperCage local development")
   fi
   signing_args=(--ks "$key" --ks-key-alias development --ks-pass pass:android)
 fi

@@ -2,7 +2,7 @@ package cage
 
 import "regexp"
 
-// ProviderSpec defines an AI platform supported inside Cage across Browser
+// ProviderSpec defines an AI platform supported inside SuperCage across Browser
 // Spaces, isolated CLI profiles, and isolated multi-instance Desktop apps.
 // Adding a new platform only requires registering a ProviderSpec entry here
 // and supplying its guest runtime adapter / desktop installer if applicable.

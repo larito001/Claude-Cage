@@ -4,12 +4,12 @@ import { getKeycode, getKeysym } from './core/input/util.js';
 
 const bar = document.createElement('div');
 bar.id = 'cage-clipboard-bar';
-bar.innerHTML = `<strong>Cage 浏览器</strong><button id="cage-copy">复制到本机</button><button id="cage-paste">粘贴到 Cage</button><button id="cage-transfer">文本传递</button><span role="status" id="cage-clipboard-status">远程画面内 ⌘→Ctrl · 剪贴板仅传递文本</span>`;
+bar.innerHTML = `<strong>SuperCage 浏览器</strong><button id="cage-copy">复制到本机</button><button id="cage-paste">粘贴到 SuperCage</button><button id="cage-transfer">文本传递</button><span role="status" id="cage-clipboard-status">远程画面内 ⌘→Ctrl · 剪贴板仅传递文本</span>`;
 document.body.append(bar);
 const panel = document.createElement('div');
 panel.id = 'cage-clipboard-panel';
 panel.hidden = true;
-panel.innerHTML = `<label for="cage-transfer-text">待传递文本（可在这里使用本机复制、粘贴）</label><textarea id="cage-transfer-text" rows="5"></textarea><button id="cage-send">粘贴到 Cage</button><button id="cage-close">关闭</button>`;
+panel.innerHTML = `<label for="cage-transfer-text">待传递文本（可在这里使用本机复制、粘贴）</label><textarea id="cage-transfer-text" rows="5"></textarea><button id="cage-send">粘贴到 SuperCage</button><button id="cage-close">关闭</button>`;
 document.body.append(panel);
 const style = document.createElement('style');
 style.textContent = `#cage-clipboard-bar{position:fixed;z-index:10000;top:0;left:0;right:0;height:42px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#20252b;color:#fff;font:13px system-ui}#cage-clipboard-bar button,#cage-clipboard-panel button{padding:5px 10px;border:1px solid #777;border-radius:5px;cursor:pointer}#cage-clipboard-status{color:#c7d2df}body{padding-top:42px;box-sizing:border-box}#cage-clipboard-panel{position:fixed;z-index:10001;top:50px;right:12px;width:min(440px,90vw);padding:16px;background:#fff;color:#222;font:14px system-ui;border:1px solid #aaa;border-radius:8px}#cage-transfer-text{display:block;box-sizing:border-box;width:100%;margin:10px 0;resize:vertical}`;
@@ -18,7 +18,7 @@ document.head.append(style);
 // alone is not a cross-browser clipboard target.
 const pasteTarget = document.createElement('textarea');
 pasteTarget.id = 'cage-native-paste';
-pasteTarget.setAttribute('aria-label', 'Cage 原生粘贴接收区');
+pasteTarget.setAttribute('aria-label', 'SuperCage 原生粘贴接收区');
 pasteTarget.style.cssText = 'position:fixed;left:-10000px;top:0;width:1px;height:1px';
 document.body.append(pasteTarget);
 const status = document.getElementById('cage-clipboard-status');
@@ -64,32 +64,32 @@ new MutationObserver(bind).observe(document.documentElement, {attributes:true, a
 bind();
 function connected() {
     bind();
-    if (!UI.connected || !UI.rfb) { say('请先连接 Cage 浏览器'); return false; }
+    if (!UI.connected || !UI.rfb) { say('请先连接 SuperCage 浏览器'); return false; }
     return true;
 }
 function copy(key = 'c') {
     if (!connected()) return;
     copyRequested = true;
     shortcut(key);
-    say('正在复制 Cage 中选中的文本…');
+    say('正在复制 SuperCage 中选中的文本…');
     clearTimeout(copyTimer);
     copyTimer = setTimeout(() => {
         copyRequested = false;
         // Do not copy an older value when the remote selection did not change.
         field.value = lastRemoteText;
         panel.hidden = false;
-        say('如未选中文本，请先选择；也可在文本框中复制现有 Cage 剪贴板');
+        say('如未选中文本，请先选择；也可在文本框中复制现有 SuperCage 剪贴板');
     }, 1800);
 }
 function paste(text) {
     if (!connected()) return;
-    console.debug("Cage paste accepted", ++pasteSequence);
+    console.debug("SuperCage paste accepted", ++pasteSequence);
     pendingPastes++;
     const done = UI.rfb.cagePasteText(text);
     UI.rfb.focus();
     panel.hidden = true;
     say('正在粘贴…');
-    done.then(() => { pendingPastes--; say(pendingPastes ? '正在粘贴…' : '已粘贴到 Cage'); }, () => { pendingPastes--; say('剪贴板未就绪，请重新连接后重试'); });
+    done.then(() => { pendingPastes--; say(pendingPastes ? '正在粘贴…' : '已粘贴到 SuperCage'); }, () => { pendingPastes--; say('剪贴板未就绪，请重新连接后重试'); });
 }
 async function readAndPaste() {
     if (!connected()) return;
@@ -98,7 +98,7 @@ async function readAndPaste() {
         field.value = '';
         panel.hidden = false;
         field.focus();
-        say('请在文本框中粘贴，再点击“粘贴到 Cage”');
+        say('请在文本框中粘贴，再点击“粘贴到 SuperCage”');
     }
 }
 document.getElementById('cage-copy').onclick = () => copy();

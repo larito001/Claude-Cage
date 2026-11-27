@@ -17,7 +17,7 @@ func isolatedGitConfig(t *testing.T) string {
 	t.Setenv("GIT_CONFIG_COUNT", "0")
 	t.Setenv("GIT_CONFIG_PARAMETERS", "")
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	if err := os.WriteFile(path, []byte("[user]\n\tname = Cage Test\n"), 0600); err != nil {
+	if err := os.WriteFile(path, []byte("[user]\n\tname = SuperCage Test\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	return path

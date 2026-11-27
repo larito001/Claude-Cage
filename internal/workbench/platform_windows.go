@@ -17,7 +17,7 @@ func unlockController(f *os.File) error {
 }
 func controllerLockContended(err error) bool { return errors.Is(err, windows.ERROR_LOCK_VIOLATION) }
 
-// The PIDs checked here are Cage's own processes, which the same user can
+// The PIDs checked here are SuperCage's own processes, which the same user can
 // always open for limited queries. Access denied means the PID was reused by
 // another account or a protected system process. Unknown failures stay
 // conservative.

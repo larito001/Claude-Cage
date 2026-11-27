@@ -79,7 +79,7 @@ func TestSubscriptionNodeDNSPersistsAndRefreshes(t *testing.T) {
 	// Mixed real-world subscription resolvers ignore non-HTTP, local, or fragmented entries and keep valid HTTPS DoH.
 	importSource(sourceDNSInput("node.example.test", "119.29.29.29", "https://223.5.5.5/dns-query#skip-cert-verify=true", "https://third.example.test/dns-query", "tls://223.5.5.5#skip-cert-verify=true", "udp://127.0.0.1:7874", "system"))
 	check([]string{"https://third.example.test/dns-query"})
-	// Refreshing with only fragmented/unsafe entries ignores them instead of failing import/refresh and falls back to Cage's default node DNS.
+	// Refreshing with only fragmented/unsafe entries ignores them instead of failing import/refresh and falls back to SuperCage's default node DNS.
 	importSource(sourceDNSInput("node.example.test", "https://resolver.example.test/dns-query#private-route", "https://223.5.5.5/dns-query#skip-cert-verify=true", "tls://223.5.5.5#skip-cert-verify=true"))
 	if len(s.Sources[0].NodeDNS) != 0 {
 		t.Fatalf("unsafe fragmented resolvers were adopted: %v", s.Sources[0].NodeDNS)

@@ -47,7 +47,7 @@ try {
       await dialog.getByRole("button", { name: "确认移除项目" }).click();
       await dialog.getByRole("radio", { name: /beta/ }).waitFor({ state: "detached" });
       assert.deepEqual(state.status.projects, [defaultProject]);
-      await dialog.getByRole("button", { name: "移除 .claude-cage-workspace", exact: true }).click();
+      await dialog.getByRole("button", { name: "移除 .super-cage-workspace", exact: true }).click();
       await dialog.getByRole("button", { name: "确认移除项目" }).click();
       await dialog.getByRole("radio").waitFor({ state: "detached" });
       assert.deepEqual(state.status.projects, []);

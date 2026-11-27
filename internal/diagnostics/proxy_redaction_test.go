@@ -19,12 +19,12 @@ func TestRedactBacktickQuotedLimaSocketPaths(t *testing.T) {
 	const prefix = "Error: instance name `base-building` too long: `"
 	const suffix = "` must be less than UNIX_PATH_MAX=108 characters, but is 175"
 	for _, path := range []string{
-		`C:\Users\Test User\Cage\state\lima\base-building\ssh.sock.1234`,
-		`C:/Users/Test User/Cage/state/lima/base-building/ssh.sock.1234`,
-		`\\example\share\Test User\Cage\state\lima\base-building\ssh.sock.1234`,
-		"/Users/alice/Cage Data/state/lima/base-building/ssh.sock.1234",
-		"/home/alice/Cage Data/state/lima/base-building/ssh.sock.1234",
-		"/data/alice's Cage:work/state/lima/base-building/ssh.sock.1234",
+		`C:\Users\Test User\SuperCage\state\lima\base-building\ssh.sock.1234`,
+		`C:/Users/Test User/SuperCage/state/lima/base-building/ssh.sock.1234`,
+		`\\example\share\Test User\SuperCage\state\lima\base-building\ssh.sock.1234`,
+		"/Users/alice/SuperCage Data/state/lima/base-building/ssh.sock.1234",
+		"/home/alice/SuperCage Data/state/lima/base-building/ssh.sock.1234",
+		"/data/alice's SuperCage:work/state/lima/base-building/ssh.sock.1234",
 	} {
 		got := Redact(prefix + path + suffix)
 		if want := prefix + "[home path]" + suffix; got != want || Redact(got) != want {

@@ -157,7 +157,7 @@ func (r *Runtime) PrepareFresh(ctx context.Context, profile *guestprofile.Profil
 		return err
 	}
 	if !rootless {
-		return errors.New("Cage 只允许使用独立 rootless 容器引擎")
+		return errors.New("SuperCage 只允许使用独立 rootless 容器引擎")
 	}
 	if err := r.ensureResourceSlice(ctx); err != nil {
 		return err
@@ -202,7 +202,7 @@ func (r *Runtime) PrepareFresh(ctx context.Context, profile *guestprofile.Profil
 		return err
 	}
 	if log != nil {
-		fmt.Fprintln(log, "Fresh Cage container prepared with a new identity.")
+		fmt.Fprintln(log, "Fresh SuperCage container prepared with a new identity.")
 	}
 	return nil
 }
@@ -218,7 +218,7 @@ func (r *Runtime) inspectNamed(ctx context.Context, name string) (*engineContain
 	}
 	var found []engineContainer
 	if json.Unmarshal(output, &found) != nil || len(found) != 1 || found[0].Config.Labels[profileLabel] != r.identity {
-		return nil, errors.New("容器归档与当前 Cage 配置不匹配")
+		return nil, errors.New("容器归档与当前 SuperCage 配置不匹配")
 	}
 	return &found[0], nil
 }

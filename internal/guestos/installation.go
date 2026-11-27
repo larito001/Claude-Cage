@@ -17,7 +17,7 @@ import (
 
 // Installation persists the media choice and private instance identity.
 // macOS recovery state is stored separately so it cannot enable the workbench.
-// macOS secrets live separately in the Cage account's encrypted vault.
+// macOS secrets live separately in the SuperCage account's encrypted vault.
 type Installation struct {
 	Version     int            `json:"version"`
 	System      string         `json:"system"`

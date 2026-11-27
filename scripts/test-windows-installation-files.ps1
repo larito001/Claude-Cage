@@ -35,7 +35,7 @@ function Remove-TestTree([string]$Path) {
     }
 }
 function App([string]$Path, [string]$Version) {
-    Write-File (Join-Path $Path 'Cage.install-id') 'io.github.lee-xeo.claude-cage'
+    Write-File (Join-Path $Path 'Cage.install-id') 'io.github.lee-xeo.super-cage'
     Write-File (Join-Path $Path 'program.txt') $Version
     Write-File (Join-Path $Path 'resources/customizable.txt') ('default-' + $Version)
     Write-File (Join-Path $Path 'Uninstall.exe') ('uninstaller-' + $Version)
@@ -75,10 +75,10 @@ function Commit([string]$Old, [string]$Stage, [string]$Receipt) {
 }
 function Test-InstallerTransaction {
     if (!$windows -or $PSVersionTable.PSVersion.Major -lt 7) { throw 'The optional NSIS fixture requires PowerShell 7 on a disposable Windows user.' }
-    $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\ClaudeCage'
-    $desktop = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Cage.lnk'
-    $menu = Join-Path ([Environment]::GetFolderPath('Programs')) 'Cage'
-    if ((Test-Path $key) -or (Test-Path -LiteralPath $desktop) -or (Test-Path -LiteralPath $menu)) { throw 'The NSIS fixture refuses an existing Cage registration or shortcuts.' }
+    $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\SuperCage'
+    $desktop = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'SuperCage.lnk'
+    $menu = Join-Path ([Environment]::GetFolderPath('Programs')) 'SuperCage'
+    if ((Test-Path $key) -or (Test-Path -LiteralPath $desktop) -or (Test-Path -LiteralPath $menu)) { throw 'The NSIS fixture refuses an existing SuperCage registration or shortcuts.' }
     $runtime = $false
     foreach ($hive in @([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryHive]::CurrentUser)) {
         $base = [Microsoft.Win32.RegistryKey]::OpenBaseKey($hive, [Microsoft.Win32.RegistryView]::Registry32)
@@ -91,7 +91,7 @@ function Test-InstallerTransaction {
     $setup = Join-Path $scenario 'fixture-setup.exe'
     $reportBase = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [IO.Path]::GetTempPath() }
     $report = Join-Path $reportBase ('cage-smoke-installation-fixture-' + [guid]::NewGuid().ToString('N') + '.json')
-    Write-File (Join-Path $app 'LICENSE.txt') 'Compile-only text payload; no Cage application or VM.'
+    Write-File (Join-Path $app 'LICENSE.txt') 'Compile-only text payload; no SuperCage application or VM.'
     App $app 'fixture'
     $version = (Get-Content (Join-Path $PSScriptRoot '../VERSION') -Raw).Trim()
     & (Get-Command makensis.exe -ErrorAction Stop).Source /V2 /INPUTCHARSET UTF8 "/DAPP_DIR=$app" "/DVERSION=$version" "/DVERSION_NUMERIC=$(($version -split '-')[0]).0" "/DFILE_MANIFEST=$app\Cage.install-files.json" "/DOUTPUT_FILE=$setup" (Join-Path $PSScriptRoot '../packaging/windows/Cage.nsi')

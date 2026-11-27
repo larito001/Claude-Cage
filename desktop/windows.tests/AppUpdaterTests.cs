@@ -25,13 +25,13 @@ internal static class AppUpdaterTests
         var root = Path.Combine(Path.GetTempPath(), "cage-updater-test-" + Guid.NewGuid());
         var resources = Path.Combine(AppContext.BaseDirectory, "resources");
         if (Directory.Exists(resources)) throw new IOException("updater fixture requires an unused resources directory");
-        var savedProfile = Environment.GetEnvironmentVariable("CLAUDE_CAGE_CONFIG");
+        var savedProfile = Environment.GetEnvironmentVariable("SUPER_CAGE_CONFIG");
         var savedPhase = Environment.GetEnvironmentVariable("CAGE_UPDATER_TEST_PHASE");
         Directory.CreateDirectory(root);
         Directory.CreateDirectory(resources);
         try
         {
-            Environment.SetEnvironmentVariable("CLAUDE_CAGE_CONFIG", Path.Combine(root, "config.json"));
+            Environment.SetEnvironmentVariable("SUPER_CAGE_CONFIG", Path.Combine(root, "config.json"));
             foreach (var file in Directory.EnumerateFiles(AppContext.BaseDirectory))
                 File.Copy(file, Path.Combine(resources, Path.GetFileName(file)));
             File.Copy(Environment.ProcessPath!, Backend.Executable, true);
@@ -95,7 +95,7 @@ internal static class AppUpdaterTests
         }
         finally
         {
-            Environment.SetEnvironmentVariable("CLAUDE_CAGE_CONFIG", savedProfile);
+            Environment.SetEnvironmentVariable("SUPER_CAGE_CONFIG", savedProfile);
             Environment.SetEnvironmentVariable("CAGE_UPDATER_TEST_PHASE", savedPhase);
             Directory.Delete(resources, true);
             Directory.Delete(root, true);

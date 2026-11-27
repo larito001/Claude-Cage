@@ -19,7 +19,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Cage 版本号
+      label: SuperCage 版本号
       description: 填写发生问题时使用的完整版本号，包括预发行或开发版本后缀。
       placeholder: 例如 v0.1.7 或 v0.1.7-rc.1
     validations:
@@ -44,7 +44,7 @@ body:
     id: host-system
     attributes:
       label: 主机系统
-      description: 主机是运行 Cage 的电脑。Issue 会按所选系统添加标签，交给对应平台的维护者。
+      description: 主机是运行 SuperCage 的电脑。Issue 会按所选系统添加标签，交给对应平台的维护者。
       options:
         - macOS
         - Windows
@@ -63,9 +63,9 @@ body:
     id: steps
     attributes:
       label: 复现步骤
-      description: 从打开 Cage 开始按顺序说明，包含相关设置和必要前提；环境尚未装好或无法启动时，注明停在哪一步。偶发问题请说明已知触发条件与出现频率。
+      description: 从打开 SuperCage 开始按顺序说明，包含相关设置和必要前提；环境尚未装好或无法启动时，注明停在哪一步。偶发问题请说明已知触发条件与出现频率。
       placeholder: |
-        1. 打开 Cage，选择……
+        1. 打开 SuperCage，选择……
         2. 设置……
         3. 点击……
         4. 出现……（每次出现 / 偶尔出现）

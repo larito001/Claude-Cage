@@ -11,7 +11,7 @@ import { request as httpRequest } from 'node:http';
 import { setTimeout } from 'node:timers/promises';
 
 const binary = process.argv[2];
-assert.ok(binary && isAbsolute(binary), 'Pass an absolute newly built Cage CLI binary path.');
+assert.ok(binary && isAbsolute(binary), 'Pass an absolute newly built SuperCage CLI binary path.');
 const { chromium } = createRequire(import.meta.url)(process.env.CAGE_PLAYWRIGHT_MODULE || 'playwright');
 const profile = await mkdtemp(join(tmpdir(), 'cage-agent-native-browser-'));
 const config = join(profile, 'profile', 'config.json');
@@ -174,7 +174,7 @@ try {
   for (const ticket of refreshTickets) assert.ok(!persistedClientState.includes(ticket), 'A native registration ticket was persisted by the UI.');
   assert.equal(claims.filter(id => id === preference).length, 1, 'A native request was claimed more than once.');
   assert.deepEqual(errors, []);
-  console.log('PASS: real Cage CLI + HTTP + compiled UI native queue, private window registration, ordinary-session claim/completion rejection, single claim, bidirectional sidebar preference, persistence/reload, OS verification failure, private refresh result and no VM startup. OS bridge was a fixture; no physical Touch ID or app installation was tested.');
+  console.log('PASS: real SuperCage CLI + HTTP + compiled UI native queue, private window registration, ordinary-session claim/completion rejection, single claim, bidirectional sidebar preference, persistence/reload, OS verification failure, private refresh result and no VM startup. OS bridge was a fixture; no physical Touch ID or app installation was tested.');
 } finally {
   await browser?.close();
   if (pid) {

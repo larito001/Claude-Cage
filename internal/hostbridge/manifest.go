@@ -14,7 +14,7 @@ import (
 
 // Engines is the application version a plugin needs.
 type Engines struct {
-	// Cage is a range: >=X.Y.Z, or ^X.Y.Z for that version up to the next
+	// SuperCage is a range: >=X.Y.Z, or ^X.Y.Z for that version up to the next
 	// incompatible one.
 	Cage string `json:"cage"`
 }

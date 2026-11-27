@@ -76,7 +76,7 @@ export function useDownloadNotifications(
   }, [downloads, uploading]);
 }
 
-// With the Cage window hidden nobody can answer a file request, and every poll
+// With the SuperCage window hidden nobody can answer a file request, and every poll
 // makes the guest inspect its application windows. Downloads still arrive.
 function desktopFilesPollDelay(failures, windowVisible) {
   return Math.min((windowVisible ? 1500 : 4500) * 2 ** Math.min(failures, 4), 15000);
@@ -147,10 +147,10 @@ export function useDesktopFiles(ready, onStatus, desktopVisible, windowVisible =
               await api("/input/files/desktop/open", {
                 id: request.id,
                 stage: "complete",
-                error: "请在 Cage 桌面应用中打开文件",
+                error: "请在 SuperCage 桌面应用中打开文件",
               });
               throw new Error(
-                "请在 Cage 桌面应用中打开文件，或从下载列表保存文件",
+                "请在 SuperCage 桌面应用中打开文件，或从下载列表保存文件",
               );
             }
             await native("desktopFileAction", { id: request.id });

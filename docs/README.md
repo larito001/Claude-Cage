@@ -1,6 +1,6 @@
-# Cage 文档入口
+# SuperCage 文档入口
 
-Cage 为 Claude 及相关程序提供轻量化的本地 Debian 13 隔离环境，并通过开放插件市场（**插件 = MCP + 扩展**）让 Claude 安全、受控地调用本机能力、定制工作台页面。首次使用 Cage，从安装与代理配置开始；已有环境遇到问题时，直接查故障恢复。公开安装包与版本验收范围见 [GitHub Releases](https://github.com/Lee-xeo/Claude-Cage/releases)，产品介绍见[项目主页](https://claude-cage.com/)。
+SuperCage 为 Claude 及相关程序提供轻量化的本地 Debian 13 隔离环境，并通过开放插件市场（**插件 = MCP + 扩展**）让 Claude 安全、受控地调用本机能力、定制工作台页面。首次使用 SuperCage，从安装与代理配置开始；已有环境遇到问题时，直接查故障恢复。公开安装包与版本验收范围见 [GitHub Releases](https://github.com/larito001/Super-Cage/releases)，产品介绍见[项目主页](https://claude-cage.com/)。
 
 ## 使用与反馈
 
@@ -8,7 +8,7 @@ Cage 为 Claude 及相关程序提供轻量化的本地 Debian 13 隔离环境�
 
 | 你要做什么 | 从这里开始 |
 |---|---|
-| 让自己的 Agent 下载、安装、配置 Cage，跟踪任务并排查故障 | [Agent 使用指南](guide/agent.md) |
+| 让自己的 Agent 下载、安装、配置 SuperCage，跟踪任务并排查故障 | [Agent 使用指南](guide/agent.md) |
 | 选择 macOS、Windows、Linux 安装包，配置代理并打开第一个项目 | [开始使用](getting-started.md) |
 | 了解 Debian 环境的要求、空间占用与数据保留 | [Debian 环境](guide/guest-systems.md) |
 | 从插件市场安装插件、管理主机授权与权限边界 | [插件与插件市场](guide/plugins.md) |

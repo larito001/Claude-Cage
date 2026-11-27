@@ -68,7 +68,7 @@ func (e *app) inVM(ctx context.Context, opts VMOpts, tty bool, fn session) int {
 		return e.scratch(ctx, cleanup, opts, dir, tty, fn)
 	}
 	s := &start{app: e, ctx: ctx, opts: opts, dir: dir, name: e.instanceName(dir)}
-	if os.Getenv("CLAUDE_CAGE_CONFIG") != "" {
+	if os.Getenv("SUPER_CAGE_CONFIG") != "" {
 		b, err := s.backend()
 		if err != nil {
 			fmt.Fprintln(e.io.Stderr, err)
@@ -81,7 +81,7 @@ func (e *app) inVM(ctx context.Context, opts VMOpts, tty bool, fn session) int {
 		}
 		for _, inst := range instances {
 			if inst.Status == vm.Running && inst.Name != s.name {
-				fmt.Fprintf(e.io.Stderr, "Cage uses one persistent environment per profile; stop legacy VM %s before connecting it.\n", inst.Name)
+				fmt.Fprintf(e.io.Stderr, "SuperCage uses one persistent environment per profile; stop legacy VM %s before connecting it.\n", inst.Name)
 				return 1
 			}
 		}

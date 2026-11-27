@@ -1,4 +1,4 @@
-// Package managedproxy owns Cage's private proxy sources and generated core configuration.
+// Package managedproxy owns SuperCage's private proxy sources and generated core configuration.
 package managedproxy
 
 import (
@@ -55,7 +55,7 @@ type Store struct {
 	Chain        []string                     `json:"chain,omitempty"`
 	Sources      []Source                     `json:"sources"`
 	ExitPolicies map[string]exitpolicy.Policy `json:"exit_policies,omitempty"`
-	// GuestDNS and BootstrapDNS copy the Cage DNS settings when a route is
+	// GuestDNS and BootstrapDNS copy the SuperCage DNS settings when a route is
 	// applied, so a core restarted from this store keeps using them.
 	GuestDNS     []string `json:"guest_dns,omitempty"`
 	BootstrapDNS []string `json:"bootstrap_dns,omitempty"`
@@ -164,7 +164,7 @@ func parseStore(b []byte, missing bool) (Store, error) {
 		return Store{Version: 1, Port: 17896, Auth: Token(), Sources: []Source{}}, nil
 	}
 	if len(b) > maxStoreSize || json.Unmarshal(b, &s) != nil || s.Version != 1 || s.Port < 1024 || s.Port > 65535 || len(s.Auth) != 48 {
-		return s, errors.New("Cage 代理配置无效，请恢复私有配置备份")
+		return s, errors.New("SuperCage 代理配置无效，请恢复私有配置备份")
 	}
 	return s, nil
 }
@@ -400,13 +400,13 @@ func (s Store) runtimeWithSocket(socketPath string) ([]byte, error) {
 		}
 	}
 	// Infrastructure DNS bootstraps only the core's server domains. Guest DNS
-	// remains behind Cage Egress, and there is no host-system resolver fallback.
+	// remains behind SuperCage Egress, and there is no host-system resolver fallback.
 	// Top-level ipv6 (mihomo v1.19.33: resolver.DisableIPv6 = !ipv6, global to
 	// the core) also makes every proxy server domain resolve AAAA and dial over
 	// IPv6. It is enabled only when a node on the selected route uses a
 	// literal IPv6 server address, so the core can dial that hop; other loaded
 	// nodes never turn it on. dns.ipv6 only controls AAAA answers of the core's
-	// own DNS listener (none is configured) and stays false. Cage Egress keeps
+	// own DNS listener (none is configured) and stays false. SuperCage Egress keeps
 	// blocking all guest IPv6 and enforcing IPv4 exits.
 	dns := map[string]any{"enable": true, "ipv6": false, "use-hosts": false, "use-system-hosts": false, "default-nameserver": s.NodeResolvers(), "proxy-server-nameserver": s.NodeResolvers(), "nameserver": s.coreNameservers()}
 	policies, err := s.sourceDNSPolicies(blocked)

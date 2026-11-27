@@ -23,7 +23,7 @@ await page.addInitScript(() => {
 await page.route("**/audio-test", async route => route.fulfill({ contentType: "text/html", body: await vite.transformIndexHtml("/audio-test", '<div id="root"></div><script type="module" src="/scripts/audio-fixture.jsx"></script>') }));
 const format = { format: "s16le", sample_rate: 48000, channels: 2 };
 let permissionMissing = false;
-const permissionMessage = "请在虚拟 Mac 的系统设置中允许 Cage Guest Window 录制屏幕和系统声音";
+const permissionMessage = "请在虚拟 Mac 的系统设置中允许 SuperCage Guest Window 录制屏幕和系统声音";
 await page.route("**/api/audio", route => route.fulfill(permissionMissing
   ? { status: 409, contentType: "text/plain", body: permissionMessage }
   : { json: format }));

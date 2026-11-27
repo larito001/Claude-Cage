@@ -158,7 +158,7 @@ func (s *Server) terminalLoginLink(w http.ResponseWriter, r *http.Request) {
 		ID string `json:"id"`
 	}
 	if err != nil || json.Unmarshal(data, &tab) != nil || tab.ID == "" {
-		http.Error(w, "Cage 浏览器未能打开授权页，请检查浏览器连接并重试", 502)
+		http.Error(w, "SuperCage 浏览器未能打开授权页，请检查浏览器连接并重试", 502)
 		return
 	}
 	terminal.mu.Lock()

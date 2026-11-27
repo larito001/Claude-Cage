@@ -24,7 +24,7 @@ func TestProjectAuthorizationProtectsCageStateAndAllowsCredentialDirectories(t *
 	awsDir := filepath.Join(home, ".aws")
 	configDir := filepath.Join(home, ".config", "demo")
 	appDataDir := filepath.Join(home, "AppData", "Local", "demo")
-	siblingState := filepath.Join(home, ".claude-cage", "state")
+	siblingState := filepath.Join(home, ".super-cage", "state")
 	for _, directory := range []string{sshDir, awsDir, configDir, appDataDir, siblingState} {
 		if err := os.MkdirAll(directory, 0700); err != nil {
 			t.Fatal(err)
@@ -33,7 +33,7 @@ func TestProjectAuthorizationProtectsCageStateAndAllowsCredentialDirectories(t *
 	s := testServer(t)
 	s.ready = true
 
-	// Cage's own configuration/state directory remains protected.
+	// SuperCage's own configuration/state directory remains protected.
 	body, _ := json.Marshal(map[string]any{"workspace": siblingState, "add": true})
 	response := desktopRequestForTest(s, http.MethodPost, "/api/projects/open", body)
 	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "共享") {
@@ -47,7 +47,7 @@ func TestProjectAuthorizationProtectsCageStateAndAllowsCredentialDirectories(t *
 	if response.Code == http.StatusOK {
 		var listing struct{ Selectable bool }
 		if json.Unmarshal(response.Body.Bytes(), &listing) != nil || listing.Selectable {
-			t.Fatal("directory browser offered a protected Cage state directory")
+			t.Fatal("directory browser offered a protected SuperCage state directory")
 		}
 	}
 
@@ -92,7 +92,7 @@ func TestProjectRestoreRevalidatesExistingPrivateStateGrant(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	s := testServer(t)
-	siblingState := filepath.Join(home, ".claude-cage", "state")
+	siblingState := filepath.Join(home, ".super-cage", "state")
 	if err := os.MkdirAll(siblingState, 0700); err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-// Run `npm run prepare-vnc` in ui first. No Cage server or user session is used:
+// Run `npm run prepare-vnc` in ui first. No SuperCage server or user session is used:
 // every browser request is fulfilled from local UI modules or rejected.
 // CAGE_PLAYWRIGHT_MODULE and CAGE_TEST_BROWSER_PATH select the test runtime.
 import assert from "node:assert/strict";

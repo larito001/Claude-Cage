@@ -64,9 +64,9 @@ fi
 export PATH="$HOME/.local/bin:$PATH"
 for cage_cli_tool in claude agy codex; do
   if ! PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" DISABLE_AUTOUPDATER=1 "$cage_cli_tool" --version </dev/null >/dev/null 2>&1; then
-    printf 'Detected missing or broken %s CLI; installing via Cage maintenance channel...\n' "$cage_cli_tool"
+    printf 'Detected missing or broken %s CLI; installing via SuperCage maintenance channel...\n' "$cage_cli_tool"
     if ! CAGE_SETUP_PROGRESS=1 cage_install_tool "$cage_cli_tool"; then
-      printf 'Warning: could not install %s CLI during startup; Cage will retry when opening its terminal.\n' "$cage_cli_tool" >&2
+      printf 'Warning: could not install %s CLI during startup; SuperCage will retry when opening its terminal.\n' "$cage_cli_tool" >&2
     fi
   fi
 done
@@ -215,4 +215,4 @@ if ! systemctl is-active --quiet cage-editor.service; then
   sudo systemctl start cage-editor.service
 fi
 sudo python3 /usr/local/lib/cage-wait-services.py
-printf 'Cage services ready. Timezone=%s Locale=%s Browser=%s\n' "$CAGE_TZ" "$CAGE_LOCALE" "$CAGE_LANGUAGE"
+printf 'SuperCage services ready. Timezone=%s Locale=%s Browser=%s\n' "$CAGE_TZ" "$CAGE_LOCALE" "$CAGE_LANGUAGE"

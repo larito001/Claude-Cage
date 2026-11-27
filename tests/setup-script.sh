@@ -64,7 +64,7 @@ fi
 # Exercise the real package transaction without installing on the host.
 chromium_block="$(awk '/^if \[\[ "\$INSTALL_CHROMIUM" == "1" \]\]; then/,/^fi$/' "$SETUP_SH")"
 chromium_install="$(
-  INSTALL_CHROMIUM=1 CLAUDE_CAGE=1
+  INSTALL_CHROMIUM=1 SUPER_CAGE=1
   sudo() { :; }
   apt_get() { printf 'install: %s\n' "$*"; }
   cage_cache_chromium() { printf 'cache: %s\n' "$*"; }

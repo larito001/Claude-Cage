@@ -67,14 +67,14 @@ func stopWindowsCore(profile string) error {
 	}
 	var record windowsCoreRecord
 	if len(b) > 4096 || json.Unmarshal(b, &record) != nil || record.PID == 0 || record.Created == 0 {
-		return errors.New("Cage 代理进程记录无效")
+		return errors.New("SuperCage 代理进程记录无效")
 	}
 	core, err := CorePath()
 	if err != nil {
 		return err
 	}
 	if !strings.EqualFold(filepath.Clean(core), filepath.Clean(record.Executable)) {
-		return errors.New("Cage 代理进程不属于当前安装目录")
+		return errors.New("SuperCage 代理进程不属于当前安装目录")
 	}
 	handle, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION|windows.PROCESS_TERMINATE|windows.SYNCHRONIZE, false, record.PID)
 	if errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
@@ -117,7 +117,7 @@ func stopWindowsCore(profile string) error {
 			return err
 		}
 		if state != windows.WAIT_OBJECT_0 {
-			return errors.New("Cage 代理进程未能及时停止")
+			return errors.New("SuperCage 代理进程未能及时停止")
 		}
 	}
 	return removeStaleCore(profile, path)
@@ -184,7 +184,7 @@ func startWindowsCore(ctx context.Context, profile string, s Store) error {
 	}
 	l, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", s.Port))
 	if err != nil {
-		return errors.New("Cage 代理端口已被占用，请更换独立端口")
+		return errors.New("SuperCage 代理端口已被占用，请更换独立端口")
 	}
 	l.Close()
 	core, err := CorePath()

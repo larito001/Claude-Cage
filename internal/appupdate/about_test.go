@@ -15,7 +15,7 @@ import (
 func aboutClient(t *testing.T, handle func(*http.Request) (int, any)) *http.Client {
 	t.Helper()
 	return &http.Client{Transport: roundTrip(func(r *http.Request) (*http.Response, error) {
-		if strings.Contains(r.UserAgent(), "Cage") {
+		if strings.Contains(r.UserAgent(), "SuperCage") {
 			t.Errorf("product identity in user agent: %q", r.UserAgent())
 		}
 		status, value := handle(r)

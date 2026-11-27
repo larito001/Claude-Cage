@@ -206,7 +206,7 @@ func TestMieruMixedSubscription(t *testing.T) {
 	}
 	node, ok := loaded.Find(s.Selected)
 	if !ok || node.Type != "mieru" || node.Config["transport"] != "TCP" || node.Config["username"] != "test-user" || node.Config["password"] != "test-password" || node.Config["udp"] != false {
-		t.Fatal("Mieru options or Cage UDP boundary lost during persistence")
+		t.Fatal("Mieru options or SuperCage UDP boundary lost during persistence")
 	}
 	other, err := Parse([]byte(data.String()), "source")
 	if err != nil || other[113].ID != node.ID {

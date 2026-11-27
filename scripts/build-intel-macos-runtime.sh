@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Pinned pure-Python wheels used only by QEMU's mkvenv bootstrap (MIT /
-# Apache-2.0 OR BSD-2-Clause licensed, never bundled into Cage.app). Kept in
+# Apache-2.0 OR BSD-2-Clause licensed, never bundled into SuperCage.app). Kept in
 # sync with packaging/windows/dependencies.json.
 QEMU_PYTHON_WHEELS=(
     "pip-26.3-py3-none-any.whl|https://files.pythonhosted.org/packages/07/25/ee8c38ae72d66b844ce8eb9711ba905dba21ca1a8a0c960057c41cd23337/pip-26.3-py3-none-any.whl|f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13"

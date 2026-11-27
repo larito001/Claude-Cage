@@ -29,7 +29,7 @@ try {
             }
         }
     }
-    $inputFile = Join-Path $stage 'Cage 空格.exe'
+    $inputFile = Join-Path $stage 'SuperCage 空格.exe'
     foreach ($script:mode in @('valid', 'untrusted', 'no-timestamp', 'wrong-serial', 'wrong-key')) {
         [IO.File]::WriteAllText($inputFile, 'original fixture')
         $env:CAGE_WINDOWS_CERT_SHA1 = 'a' * 40

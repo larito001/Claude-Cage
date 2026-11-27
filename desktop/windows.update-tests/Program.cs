@@ -46,7 +46,7 @@ if (args is ["app-update", "download"])
 {
     var job = Path.Combine(root, "updates", "download-" + Guid.NewGuid());
     Directory.CreateDirectory(job);
-    var archive = Path.Combine(job, "Cage-setup.exe");
+    var archive = Path.Combine(job, "SuperCage-setup.exe");
     File.Copy(settings.GetProperty("installer").GetString()!, archive);
     using var input = File.OpenRead(archive);
     var digest = Convert.ToHexString(SHA256.HashData(input)).ToLowerInvariant();

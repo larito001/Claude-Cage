@@ -929,7 +929,7 @@ func TestImportAndResumeDesktopConversation(t *testing.T) {
 
 func TestSharedTerminalUntrustedProject(t *testing.T) {
 	s, project, _ := sharedCLIWorkbench(t)
-	// Start without a CLI trust entry; Cage's project grant is sufficient for
+	// Start without a CLI trust entry; SuperCage's project grant is sufficient for
 	// its own startup, without granting any tools or external MCP servers.
 	id := uuid.NewString()
 	body, _ := json.Marshal(map[string]any{"id": id, "workspace": project, "shared": true})

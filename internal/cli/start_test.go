@@ -102,7 +102,7 @@ func (se *startEnv) base() {
 func TestCageRefusesSecondActiveEnvironment(t *testing.T) {
 	se := newStartEnv(t)
 	se.base()
-	t.Setenv("CLAUDE_CAGE_CONFIG", "/unused-by-rejected-command")
+	t.Setenv("SUPER_CAGE_CONFIG", "/unused-by-rejected-command")
 	se.fake.VMs["other-workspace"] = &vm.Instance{Name: "other-workspace", Status: vm.Running}
 	if code := se.run("run", "true"); code != 1 || !strings.Contains(se.out(), "one persistent environment") {
 		t.Fatalf("second workspace was not refused: %d %s", code, se.out())
@@ -132,21 +132,21 @@ func TestCageProjectGitWritesAndStoppedMountMigration(t *testing.T) {
 	if err = os.WriteFile(configPath, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("CLAUDE_CAGE_CONFIG", configPath)
+	t.Setenv("SUPER_CAGE_CONFIG", configPath)
 	if code := se.run("run", "true"); code != 0 {
-		t.Fatalf("Cage migration: %d %s", code, se.out())
+		t.Fatalf("SuperCage migration: %d %s", code, se.out())
 	}
 	inst = se.fake.VMs[name]
 	if len(inst.Mounts) != 1 || !inst.Mounts[0].Writable || vm.Confined(inst) != nil {
-		t.Fatal("Cage lost the writable, confined project mount")
+		t.Fatal("SuperCage lost the writable, confined project mount")
 	}
 	for _, n := range inst.Mounts[0].SSHFS.ReadonlyNames {
 		if n == ".git" {
-			t.Fatal("Cage retained Git write protection")
+			t.Fatal("SuperCage retained Git write protection")
 		}
 	}
 	if code := se.run("run", "true"); code != 0 {
-		t.Fatalf("Cage reuse required confirmation: %d %s", code, se.out())
+		t.Fatalf("SuperCage reuse required confirmation: %d %s", code, se.out())
 	}
 }
 

@@ -5,8 +5,8 @@ import "./about-settings.css";
 import { activeInterfaceLanguage, useTranslation } from "./interface-language.mjs";
 import { localizeBackendMessage } from "./backend-message.mjs";
 
-const repository = "https://github.com/larito001/Claude-Cage";
-const sourceBranch = "allcage";
+const repository = "https://github.com/larito001/Super-Cage";
+const sourceBranch = "supercage";
 const sourceMessages = {
   current: "已与主分支同步",
   available: "主分支有新提交",
@@ -88,8 +88,8 @@ export function AboutSettings() {
       if (!controller.signal.aborted) setBusy(false);
     }
   };
-  return <section className="about-settings" aria-label={tr("关于 Cage")}>
-    <div className="section-title"><h3>{tr("关于")}</h3><p>{tr("Cage 的版本与更新信息")}</p></div>
+  return <section className="about-settings" aria-label={tr("关于 SuperCage")}>
+    <div className="section-title"><h3>{tr("关于")}</h3><p>{tr("SuperCage 的版本与更新信息")}</p></div>
     <dl className="about-build">
       <div><dt>{tr("软件版本")}</dt><dd>{loading ? tr("正在读取…") : build?.version || tr("未知")}</dd></div>
       <div><dt>{tr("构建提交")}</dt><dd>{build?.commit ? <code title={build.commit}>{build.commit.slice(0, 12)}</code> : loading ? tr("正在读取…") : tr("未记录")}</dd></div>
@@ -102,7 +102,7 @@ export function AboutSettings() {
       </button>
       {result?.checkedAt && <span className="footnote">{tr("检查时间：")}{new Date(result.checkedAt).toLocaleString(activeInterfaceLanguage())}</span>}
     </div>
-    <p className="footnote">{tr("优先通过主机网络与系统代理检查主分支提交和最新发行版，包含预发行版；主机连接失败时尝试 Cage 所选代理。检查后可前往发布页下载。")}</p>
+    <p className="footnote">{tr("优先通过主机网络与系统代理检查主分支提交和最新发行版，包含预发行版；主机连接失败时尝试 SuperCage 所选代理。检查后可前往发布页下载。")}</p>
     {busy && <p role="status">{tr("正在核对源码提交与发行版…")}</p>}
     {error && <p className="error-message" role="alert">{localizeBackendMessage(error, tr)}</p>}
     <div className="about-results" aria-live="polite" aria-busy={busy}>

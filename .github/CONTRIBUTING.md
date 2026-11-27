@@ -1,13 +1,13 @@
 # 贡献指南
 
-Cage 采用与开放插件市场解耦的协作方式：
+SuperCage 采用与开放插件市场解耦的协作方式：
 
-- **为 Claude 新增 MCP 能力，或为 Cage 制作自定义扩展页面**：请直接前往开放插件市场仓库 [cage-plugins](https://github.com/larito001/cage-plugins) 提交插件（开发规范见 [docs/plugins.md](../docs/plugins.md)），无需在 Cage 主仓库提 Issue。
-- **改进 Cage 本体（隔离环境、网络、工作台、跨平台桌面端与文档）**：采用“贡献 Issue 审核 → 邀请成为协作者 → 提交 PR → 审查合入”的流程。仓库仅允许协作者创建 PR；修复代码、改进功能和修改文档都从明确的贡献方案开始。
+- **为 Claude 新增 MCP 能力，或为 SuperCage 制作自定义扩展页面**：请直接前往开放插件市场仓库 [cage-plugins](https://github.com/larito001/cage-plugins) 提交插件（开发规范见 [docs/plugins.md](../docs/plugins.md)），无需在 SuperCage 主仓库提 Issue。
+- **改进 SuperCage 本体（隔离环境、网络、工作台、跨平台桌面端与文档）**：采用“贡献 Issue 审核 → 邀请成为协作者 → 提交 PR → 审查合入”的流程。仓库仅允许协作者创建 PR；修复代码、改进功能和修改文档都从明确的贡献方案开始。
 
 ## 提交方案并等待审核
 
-在[新建 Issue 页面](https://github.com/Lee-xeo/Claude-Cage/issues/new/choose)选择“方案贡献（Contribution）”。说明要解决的问题、基于的版本或提交、适用系统、解决思路、验证结果和影响范围。有代码时附上 Fork 分支、具体提交、diff 或补丁；尚未验证的部分请明确注明。
+在[新建 Issue 页面](https://github.com/larito001/Super-Cage/issues/new/choose)选择“方案贡献（Contribution）”。说明要解决的问题、基于的版本或提交、适用系统、解决思路、验证结果和影响范围。有代码时附上 Fork 分支、具体提交、diff 或补丁；尚未验证的部分请明确注明。
 
 只有问题描述时使用“问题反馈”；尚无具体方案的功能需求使用“功能建议”。提交前先搜索已有 Issue，已有相关讨论时在贡献 Issue 中关联它。
 
@@ -17,7 +17,7 @@ Cage 采用与开放插件市场解耦的协作方式：
 
 ## 系统标签
 
-Issue 按涉及的主机系统带有三个标签：`macOS 主机`、`Windows 主机`、`Linux 主机`。主机是运行 Cage 的电脑；Cage 内的环境固定为 Debian 13，不单独打标签。一条 Issue 可以同时带多个标签。各平台的维护者按标签筛选并认领自己负责的 Issue。
+Issue 按涉及的主机系统带有三个标签：`macOS 主机`、`Windows 主机`、`Linux 主机`。主机是运行 SuperCage 的电脑；SuperCage 内的环境固定为 Debian 13，不单独打标签。一条 Issue 可以同时带多个标签。各平台的维护者按标签筛选并认领自己负责的 Issue。
 
 新建 Issue 时，**Label issues by system** 工作流读取正文里标题含“主机”的字段并添加对应标签。通过 GitHub CLI 或 API 创建时沿用表单的字段标题即可，例如 `### 主机系统` 下写 `macOS`。
 
@@ -27,9 +27,9 @@ Issue 按涉及的主机系统带有三个标签：`macOS 主机`、`Windows 主
 
 添加 `accepted` 标签会触发 **Invite approved contributors** 工作流，向该 Issue 的作者发送协作者邀请，并在 Issue 中说明后续步骤。已有写权限的协作者可直接提交 PR；待接受的邀请会被复用。
 
-贡献者需要通过 GitHub 通知或[仓库邀请页面](https://github.com/Lee-xeo/Claude-Cage/invitations)接受邀请。邀请过期或流程失败时，请在原 Issue 中联系维护者处理。
+贡献者需要通过 GitHub 通知或[仓库邀请页面](https://github.com/larito001/Super-Cage/invitations)接受邀请。邀请过期或流程失败时，请在原 Issue 中联系维护者处理。
 
-协作者拥有整个仓库的写权限，该权限不限于这一条 Issue。`main` 受分支保护，协作者通过独立分支和 PR 交付变更，由代码所有者 `@Lee-xeo` 审核后合入；新增提交后需要重新审核。关闭 Issue 或移除 `accepted` 标签不会自动取消邀请或撤销已有权限；权限调整由仓库管理员在仓库设置中处理。
+协作者拥有整个仓库的写权限，该权限不限于这一条 Issue。`main` 受分支保护，协作者通过独立分支和 PR 交付变更，由代码所有者 `@larito001` 审核后合入；新增提交后需要重新审核。关闭 Issue 或移除 `accepted` 标签不会自动取消邀请或撤销已有权限；权限调整由仓库管理员在仓库设置中处理。
 
 ## 提交 PR
 
@@ -84,11 +84,11 @@ bash scripts/build-app.sh
 
 ## 维护者：配置自动邀请
 
-自动邀请使用 `contribution-invites` Environment 中的 Secret `CONTRIBUTION_INVITE_TOKEN`。使用只授权 `Lee-xeo/Claude-Cage` 的 fine-grained personal access token，并授予仓库权限 **Administration: Read and write**；其余权限保持最小范围。令牌应设置有效期，并在到期前更新。
+自动邀请使用 `contribution-invites` Environment 中的 Secret `CONTRIBUTION_INVITE_TOKEN`。使用只授权 `larito001/Super-Cage` 的 fine-grained personal access token，并授予仓库权限 **Administration: Read and write**；其余权限保持最小范围。令牌应设置有效期，并在到期前更新。
 
 在仓库 **Settings → Environments → contribution-invites** 中，只允许 `main` 分支部署，并将该令牌保存为 Environment Secret。邀请令牌不得放进普通仓库 Secret，否则具有写权限的协作者可以在其他分支的工作流中使用它。GitHub Actions 自带的 `GITHUB_TOKEN` 用于检查审核者权限和写入提醒，无法单独完成协作者邀请。
 
-`main` 的分支保护要求 PR、至少一次代码所有者审核及新提交后的重新审核，禁止强制推送和删除；`.github/CODEOWNERS` 将所有路径的代码所有者设为 `@Lee-xeo`。管理员保留处理自有改动的权限。这些保护与仅限 `main` 的 Environment 共同阻止普通协作者在未审核的分支中取得邀请令牌。
+`main` 的分支保护要求 PR、至少一次代码所有者审核及新提交后的重新审核，禁止强制推送和删除；`.github/CODEOWNERS` 将所有路径的代码所有者设为 `@larito001`。管理员保留处理自有改动的权限。这些保护与仅限 `main` 的 Environment 共同阻止普通协作者在未审核的分支中取得邀请令牌。
 
 日常审核步骤：
 

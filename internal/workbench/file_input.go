@@ -296,7 +296,7 @@ func (s *Server) pollAllDesktopFiles(ctx context.Context) (map[string]any, error
 			return nil, pipeErr
 		}
 		if err = cmd.Start(); err != nil {
-			return nil, usererror.Wrap("连接文件传递服务", err, "请确认 Cage 安装完整，环境已经启动；持续失败时在设置中导出诊断包。")
+			return nil, usererror.Wrap("连接文件传递服务", err, "请确认 SuperCage 安装完整，环境已经启动；持续失败时在设置中导出诊断包。")
 		}
 		data, readErr = io.ReadAll(io.LimitReader(pipe, limit+64))
 		if readErr != nil || len(data) > limit+64 {
@@ -374,7 +374,7 @@ func (s *Server) guestFilesForDesktop(ctx context.Context, desktopID, target, me
 			return nil, pipeErr
 		}
 		if err = cmd.Start(); err != nil {
-			return nil, usererror.Wrap("连接文件传递服务", err, "请确认 Cage 安装完整，环境已经启动；持续失败时在设置中导出诊断包。")
+			return nil, usererror.Wrap("连接文件传递服务", err, "请确认 SuperCage 安装完整，环境已经启动；持续失败时在设置中导出诊断包。")
 		}
 		data, readErr = io.ReadAll(io.LimitReader(pipe, 65537+64))
 		if readErr != nil || len(data) > 65536+64 {

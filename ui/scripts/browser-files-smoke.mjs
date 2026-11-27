@@ -85,7 +85,7 @@ try {
   await page.getByRole("dialog", { name: "上传本机文件" }).waitFor();
   Object.assign(download, {
     state: "saved",
-    path: "/Users/test/Cage/Downloads/video.mp4",
+    path: "/Users/test/SuperCage/Downloads/video.mp4",
   });
   await page.getByRole("button", { name: "选择本机文件", exact: true }).click();
   await page.getByRole("dialog", { name: "上传本机文件" }).waitFor({ state: "hidden" });
@@ -96,7 +96,7 @@ try {
   assert.equal(saved.length, 0, "cancel must not invent a save destination");
   await page.getByRole("button", { name: "浏览器下载", exact: true }).click();
   await page
-    .getByText("/Users/test/Cage/Downloads/video.mp4", { exact: true })
+    .getByText("/Users/test/SuperCage/Downloads/video.mp4", { exact: true })
     .waitFor();
   cancelSave = false;
   await page.getByRole("button", { name: "另存为…", exact: true }).click();

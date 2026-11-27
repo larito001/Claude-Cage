@@ -8,7 +8,7 @@ const downloads = [
     id: "report",
     name: "产品需求与界面验收报告.pdf",
     state: "saved",
-    path: "/Users/test/Cage/Downloads/产品需求与界面验收报告.pdf",
+    path: "/Users/test/SuperCage/Downloads/产品需求与界面验收报告.pdf",
   },
   {
     id: "video",
@@ -29,7 +29,7 @@ const downloads = [
     id: `history-${index}`,
     name: `历史文件 ${index + 1}.txt`,
     state: "saved",
-    path: `/Users/test/Cage/Downloads/历史文件 ${index + 1}.txt`,
+    path: `/Users/test/SuperCage/Downloads/历史文件 ${index + 1}.txt`,
   })),
 ];
 let records = downloads;

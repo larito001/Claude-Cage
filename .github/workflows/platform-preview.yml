@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    if: github.repository == 'Lee-xeo/Claude-Cage' && github.ref == 'refs/heads/main' && inputs.unsigned_windows
+    if: github.repository == 'larito001/Super-Cage' && github.ref == 'refs/heads/main' && inputs.unsigned_windows
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

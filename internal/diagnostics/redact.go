@@ -1,4 +1,4 @@
-// Package diagnostics owns Cage's local, bounded diagnostic record. Never pass
+// Package diagnostics owns SuperCage's local, bounded diagnostic record. Never pass
 // terminal traffic, user files, request bodies or credential objects to it.
 package diagnostics
 

@@ -50,23 +50,23 @@ function readCopy(language: typeof languages[number]) {
   }
   const setup = stepHeadings.map((heading, i): [string,string] => [heading[1], plain(steps.body.slice(heading.index! + heading[0].length, stepHeadings[i+1]?.index ?? steps.body.length))]);
   const docs = [...contribution.body.matchAll(/^\|\s*([^|]+)\s*\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|/gm)].map(match => ({
-    title: plain(match[1]), label: match[2], href: match[3].startsWith('https://') ? match[3] : `https://github.com/Lee-xeo/Claude-Cage/blob/main/${match[3]}`,
+    title: plain(match[1]), label: match[2], href: match[3].startsWith('https://') ? match[3] : `https://github.com/larito001/Super-Cage/blob/main/${match[3]}`,
   }));
-  const slogan = source.slice(0, headings[0].index).match(/^\*\*(.+?)\*\*$/m)?.[1] || 'Claude Cage';
+  const slogan = source.slice(0, headings[0].index).match(/^\*\*(.+?)\*\*$/m)?.[1] || 'SuperCage';
   const isChinese = language.code === 'zh' || language.code === 'zh-TW';
   const limit = plain(bullets(boundaries.body).at(-1)!);
   return {
-    ...language, title: `Claude Cage — ${plain(slogan)}`, description: reasonParagraphs[1],
-    home: 'Claude Cage', start: quick.title, boundary: boundaries.title,
-    hero: isChinese ? '把 Claude 大小姐' : 'Claude Cage',
+    ...language, title: `SuperCage — ${plain(slogan)}`, description: reasonParagraphs[1],
+    home: 'SuperCage', start: quick.title, boundary: boundaries.title,
+    hero: isChinese ? '把 Claude 大小姐' : 'SuperCage',
     heroAccent: language.code === 'zh' ? '关起来。' : language.code === 'zh-TW' ? '關起來。' : '',
     tagline: isChinese ? plain(slogan).split(/[，,]/).slice(1).join('，') : plain(slogan),
-    intro: reasonParagraphs[1], requirements: 'macOS · Windows · Linux · Android · iOS', artAlt: 'Claude Cage',
+    intro: reasonParagraphs[1], requirements: 'macOS · Windows · Linux · Android · iOS', artAlt: 'SuperCage',
     philosophyTitle: philosophy.title, philosophyPremises, philosophyLead, philosophyGoals,
     why: reason.title, whyText: reasonParagraphs[0], whyNote: limit,
     keyFeatures: bullets(reason.body).map(plain),
     featureTitle: uses.title, features: bullets(uses.body).map(pair),
-    workbench: captions[1] || 'Claude Cage',
+    workbench: captions[1] || 'SuperCage',
     evidenceTitle: captions[0] || language.checksLabel, evidenceNote: limit,
     quickTitle: quick.title, quickText: paragraphs(quick.body)[0],
     prompt: quick.body.match(/```[^\n]*\n([\s\S]*?)```/)?.[1]?.trim() || '',

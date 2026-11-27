@@ -42,10 +42,10 @@ func windowsApplicationDataDirectory(app, platform string) string {
 		return ""
 	}
 	marker, err := os.ReadFile(filepath.Join(app, "Cage.install-id"))
-	if err != nil || string(marker) != "io.github.lee-xeo.claude-cage" {
+	if err != nil || string(marker) != "io.github.lee-xeo.super-cage" {
 		return ""
 	}
-	if info, err := os.Stat(filepath.Join(app, "Cage.exe")); err != nil || !info.Mode().IsRegular() {
+	if info, err := os.Stat(filepath.Join(app, "SuperCage.exe")); err != nil || !info.Mode().IsRegular() {
 		return ""
 	}
 	return filepath.Join(app, "CageData")

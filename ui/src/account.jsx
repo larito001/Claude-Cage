@@ -84,7 +84,7 @@ export function AccountProvider({ children }) {
     return () => { live = false; };
   }, [Boolean(account), deviceKey, deviceSupport]);
   const deviceAction = async (operation, kind) => {
-    if (!deviceSupport?.device_status) throw new Error("当前应用启动器需要更新，请重新安装完整的 Cage 应用后再设置快捷登录。");
+    if (!deviceSupport?.device_status) throw new Error("当前应用启动器需要更新，请重新安装完整的 SuperCage 应用后再设置快捷登录。");
     try {
       await native("accountDevice", { operation, kind });
     } finally {
@@ -277,13 +277,13 @@ export function AccountGate({ children }) {
       <header className="account-gate-header">
         <div className="account-brand">
           <img src={logo} alt="" />
-          Cage
+          SuperCage
         </div>
         <div className="startup-language-slot"><LanguageSettings compact /></div>
       </header>
       <section
         className="account-entry"
-        aria-label={creating ? isRemoteClient() ? tr("创建云端账户") : tr("创建本地账户") : tr("解锁 Cage")}
+        aria-label={creating ? isRemoteClient() ? tr("创建云端账户") : tr("创建本地账户") : tr("解锁 SuperCage")}
       >
         {creating ? (
           <img className="account-welcome-logo" src={logo} alt="" />
@@ -292,10 +292,10 @@ export function AccountGate({ children }) {
         )}
         <h1>
           {creating
-            ? tr("注册 Cage 账户")
+            ? tr("注册 SuperCage 账户")
             : account
               ? tr("欢迎回来，{0}", (account.username))
-              : tr("正在连接 Cage")}
+              : tr("正在连接 SuperCage")}
         </h1>
         <p className="account-entry-intro">
           {creating
@@ -358,7 +358,7 @@ export function AccountGate({ children }) {
                 <p className="field-help" role="status">{tr("暂时无法检查系统钥匙串，请先用密码解锁。快捷登录授权记录已保留。")}</p>
               )}
               {deviceSupport?.supported && !deviceSupport.device_status && (
-                <p className="field-help" role="status">{tr("当前应用启动器需要更新，暂时无法检查快捷登录状态。请先用密码进入，并重新安装完整的 Cage 应用。")}</p>
+                <p className="field-help" role="status">{tr("当前应用启动器需要更新，暂时无法检查快捷登录状态。请先用密码进入，并重新安装完整的 SuperCage 应用。")}</p>
               )}
               {(localDesktop() || (creating && deviceSupport?.supported && deviceSupport.device_status)) && (
                 <label className="account-device-option check-line">
@@ -381,7 +381,7 @@ export function AccountGate({ children }) {
                 className="primary account-submit"
                 disabled={busy || !password || (creating && (!username.trim() || (!localDesktop() && nativeAvailable() && deviceSupport === null)))}
               >
-                {busy ? tr("正在解锁…") : creating ? isRemoteClient() ? tr("创建云端账户") : tr("创建本地账户") : tr("解锁 Cage")}
+                {busy ? tr("正在解锁…") : creating ? isRemoteClient() ? tr("创建云端账户") : tr("创建本地账户") : tr("解锁 SuperCage")}
               </button>
               {!creating && <button type="button" className="text-button" onClick={() => { setPassword(""); setError(""); setRecovering(true); }}>{tr("忘记密码？")}</button>}
             </fieldset>
@@ -410,7 +410,7 @@ export function AccountGate({ children }) {
           className="text-button account-exit-app"
           onClick={() => native("quitNow").catch((e) => setError(e.message))}
         >
-          {account?.background_running ? tr("退出应用，后台继续运行") : tr("退出 Cage")}
+          {account?.background_running ? tr("退出应用，后台继续运行") : tr("退出 SuperCage")}
         </button>
       )}
     </main>
@@ -446,9 +446,9 @@ function RecoveryKeyScreen() {
         }}>{tr("下载密钥文件")}</button>
       </div>
       {notice && <p className="field-help" role="status">{tr(notice)}</p>}
-      <p className="field-help">{tr("完整密钥仅在此处显示。关闭或刷新后，可验证账户密码重新生成；重新生成后旧密钥失效。")}{recovery.reset && tr("原来的资料和 Claude 登录状态已保留，Cage 的记住我和快捷解锁已关闭，请用新密码登录后重新设置。")}</p>
+      <p className="field-help">{tr("完整密钥仅在此处显示。关闭或刷新后，可验证账户密码重新生成；重新生成后旧密钥失效。")}{recovery.reset && tr("原来的资料和 Claude 登录状态已保留，SuperCage 的记住我和快捷解锁已关闭，请用新密码登录后重新设置。")}</p>
       <label className="account-device-option check-line"><input type="checkbox" checked={saved} onChange={(event) => setSaved(event.target.checked)} /><span>{tr("我已安全保存完整恢复密钥")}</span></label>
-      <button className="primary account-submit" disabled={!saved} onClick={dismissRecovery}>{recovery.reset ? tr("返回登录") : tr("继续使用 Cage")}</button>
+      <button className="primary account-submit" disabled={!saved} onClick={dismissRecovery}>{recovery.reset ? tr("返回登录") : tr("继续使用 SuperCage")}</button>
     </section>
   </main>;
 }
@@ -477,7 +477,7 @@ function AccountRecovery({ onBack, onReset }) {
         <label className="account-field">{tr("已保存的恢复密钥")}<textarea aria-label={tr("已保存的恢复密钥")} autoFocus required value={code} onChange={(event) => setCode(event.target.value)} rows={4} maxLength={256} autoComplete="off" spellCheck={false} /></label>
         <PasswordField label={tr("新密码")} value={password} onChange={setPassword} autoComplete="new-password" />
         <PasswordField label={tr("确认新密码")} value={confirmation} onChange={setConfirmation} autoComplete="new-password" />
-        <p className="field-help">{tr("重置后会换发恢复密钥，旧密钥失效。Cage 的记住我和快捷解锁会关闭。")}</p>
+        <p className="field-help">{tr("重置后会换发恢复密钥，旧密钥失效。SuperCage 的记住我和快捷解锁会关闭。")}</p>
         {error && <p className="account-error" role="alert">{tr(error)}</p>}
         <button className="primary account-submit" disabled={!code.trim() || !password || !confirmation}>{busy ? tr("正在重置…") : tr("重置密码")}</button>
       </fieldset></form> : <p className="field-help" role="status">{tr("此账户尚未设置恢复密钥。请使用原密码或已开启的快捷登录进入，再到「设置 → 账户」补设。若所有解锁方式均不可用，当前无法恢复加密资料；现有数据会保留。")}</p>}
@@ -577,7 +577,7 @@ export function AccountMenu({ onSettings, onConfirm, onStatus, busy }) {
       action === "logout" &&
       !(await onConfirm({
         title: isRemoteClient() ? "退出云端账户？" : "退出本地账户？",
-        body: "这会停止 Cage 环境与后台任务，并锁定登录凭据。请先保存文件。",
+        body: "这会停止 SuperCage 环境与后台任务，并锁定登录凭据。请先保存文件。",
         confirm: "停止环境并退出账户",
       }))
     )
@@ -614,7 +614,7 @@ export function AccountMenu({ onSettings, onConfirm, onStatus, busy }) {
             items[(items.indexOf(event.target) + step + items.length) % items.length].focus();
           }}
         >
-          <div className="account-menu-label">{tr("你的 Cage")}</div>
+          <div className="account-menu-label">{tr("你的 SuperCage")}</div>
           <button
             role="menuitem"
             onClick={() => {
@@ -631,7 +631,7 @@ export function AccountMenu({ onSettings, onConfirm, onStatus, busy }) {
           <div className="account-menu-divider" />
           <button role="menuitem" onClick={() => perform("lock")}>
             <LockKeyhole size={16} />
-            {tr("锁定 Cage")}<small>{tr("任务继续运行")}</small>
+            {tr("锁定 SuperCage")}<small>{tr("任务继续运行")}</small>
           </button>
           <button
             role="menuitem"
@@ -711,7 +711,7 @@ export function AccountSettings({ busy: environmentBusy, onDirty, onConfirm }) {
         await trustedLogin("protect", password);
         await refresh();
         setPassword(""); setConfirmation("");
-        setMessage("已设置密码，下次打开 Cage 时使用密码登录。");
+        setMessage("已设置密码，下次打开 SuperCage 时使用密码登录。");
         setPasswordOpen(false);
         return;
       }
@@ -924,7 +924,7 @@ function AccountDeviceSettings({ onOpenPassword, passwordDisabled, recoveryDisab
       {!account.trusted_local && <AccountRecoveryRow disabled={recoveryDisabled} onDirty={onRecoveryDirty} />}
     </div>
     {legacyLauncher && (
-      <p className="field-help" role="status">{tr("当前应用启动器需要更新，无法检查快捷登录状态。请重新安装完整的 Cage 应用后再设置；现有授权已保留。")}</p>
+      <p className="field-help" role="status">{tr("当前应用启动器需要更新，无法检查快捷登录状态。请重新安装完整的 SuperCage 应用后再设置；现有授权已保留。")}</p>
     )}
     {showDevice && !legacyLauncher && Object.values(states).includes("unavailable") && (
       <button type="button" className="quiet-button" disabled={busy} onClick={recheckDevices}>{tr("重新检查快捷登录")}</button>

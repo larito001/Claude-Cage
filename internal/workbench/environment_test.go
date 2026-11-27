@@ -22,7 +22,7 @@ func TestEnvironmentUpgradeSeparatesPrivateLegacyWorkspaceFromVMIdentity(t *test
 	for _, system := range []string{"linux"} {
 		t.Run(system, func(t *testing.T) {
 			s := testServer(t)
-			s.profile = filepath.Join(home, ".claude-cage", system)
+			s.profile = filepath.Join(home, ".super-cage", system)
 			legacy := s.profile + "-workspace"
 			selected := filepath.Join(home, "projects", system)
 			for _, path := range []string{s.profile, legacy, selected} {

@@ -11,7 +11,7 @@ const runFile = promisify(execFile);
 const [legacy, current, next] = process.argv.slice(2).map((file) => path.resolve(file));
 assert(legacy && current && next, "Pass three cage executables");
 const profile = await mkdtemp(path.join(tmpdir(), "cage-control-upgrade-"));
-const env = { ...process.env, CLAUDE_CAGE_CONFIG: path.join(profile, "config.json") };
+const env = { ...process.env, SUPER_CAGE_CONFIG: path.join(profile, "config.json") };
 const call = async (binary, ...args) => {
   const { stdout } = await runFile(binary, [...args, "--json"], { env, timeout: 150_000, maxBuffer: 512 * 1024 });
   return JSON.parse(stdout);

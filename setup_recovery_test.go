@@ -98,7 +98,7 @@ exit 99
 		}
 	}
 	cmd := exec.Command("bash", "-c", "set -euo pipefail\n"+setupFunction(t, "apt_get", "}")+"apt_get install package")
-	cmd.Env = append(os.Environ(), "HOME="+dir, "PATH="+dir+":"+os.Getenv("PATH"), "CLAUDE_CAGE=1")
+	cmd.Env = append(os.Environ(), "HOME="+dir, "PATH="+dir+":"+os.Getenv("PATH"), "SUPER_CAGE=1")
 	out, err := cmd.CombinedOutput()
 	if err == nil || cmd.ProcessState.ExitCode() != 137 || !strings.Contains(string(out), "oom_kill before=3") || !strings.Contains(string(out), "Killed process") {
 		t.Fatalf("lost failure evidence: %v %s", err, out)

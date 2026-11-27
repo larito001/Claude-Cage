@@ -99,7 +99,7 @@ func TestImportBoundaryRecognizesCoreKeyVariants(t *testing.T) {
 		t.Fatal("valid key variants rejected", err)
 	}
 	if nodes[0].Config["udp"] != false || nodes[0].Config["UDP"] != nil || nodes[1].Config["dialer-proxy"] != nodes[0].ID || nodes[1].Config["DIALER_PROXY"] != nil {
-		t.Fatal("key variants escaped Cage's UDP policy or chain namespacing")
+		t.Fatal("key variants escaped SuperCage's UDP policy or chain namespacing")
 	}
 }
 

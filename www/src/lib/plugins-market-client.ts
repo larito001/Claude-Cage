@@ -133,7 +133,7 @@ function buildCard(plugin: MarketPlugin, onOpen: (plugin: MarketPlugin) => void)
   if (plugin.source?.project) {
     parts.push(plugin.source.license ? `${plugin.source.project} · ${plugin.source.license}` : plugin.source.project);
   } else if (plugin.author?.official) {
-    parts.push('Cage 官方');
+    parts.push('SuperCage 官方');
   } else if (plugin.author?.name) {
     parts.push(plugin.author.name);
   } else if (plugin.minBytes > 0) {
@@ -222,7 +222,7 @@ function initMarketplace() {
     idRow.append(el('code', 'pm-slug', plugin.name));
     idRow.append(el('span', 'pm-version', `v${plugin.version}`));
     if (plugin.minBytes > 0) idRow.append(el('span', 'pm-meta-chip', formatBytes(plugin.minBytes)));
-    if (plugin.cageEngine) idRow.append(el('span', 'pm-meta-chip', `Cage ${plugin.cageEngine}`));
+    if (plugin.cageEngine) idRow.append(el('span', 'pm-meta-chip', `SuperCage ${plugin.cageEngine}`));
     if (plugin.runtime) {
       idRow.append(el('span', 'pm-meta-chip', `运行依赖：${RUNTIME_LABELS[plugin.runtime] || plugin.runtime}`));
     }
@@ -248,7 +248,7 @@ function initMarketplace() {
         el(
           'p',
           'pm-detail-author',
-          plugin.author.official ? 'Cage 官方' : plugin.author.name,
+          plugin.author.official ? 'SuperCage 官方' : plugin.author.name,
         ),
       );
     }
@@ -266,10 +266,10 @@ function initMarketplace() {
 
     // Install guide box
     const installSection = el('section', 'pm-detail-install');
-    installSection.append(el('h3', undefined, '在 Cage 中一键安装'));
+    installSection.append(el('h3', undefined, '在 SuperCage 中一键安装'));
     const steps = el('ol', 'pm-install-steps');
     const step1 = el('li');
-    step1.append('打开 Cage 应用，在左侧栏进入 ');
+    step1.append('打开 SuperCage 应用，在左侧栏进入 ');
     step1.append(el('strong', undefined, '插件'));
     step1.append(' 并开启总开关。');
     const step2 = el('li');
@@ -277,7 +277,7 @@ function initMarketplace() {
     step2.append(el('strong', undefined, '插件市场'));
     step2.append('，搜索 ');
     step2.append(el('code', undefined, plugin.name));
-    step2.append(' 点击安装，Cage 会自动下载并校验 SHA-256。');
+    step2.append(' 点击安装，SuperCage 会自动下载并校验 SHA-256。');
     const step3 = el('li');
     step3.textContent =
       plugin.kind === 'host'

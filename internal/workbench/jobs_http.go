@@ -36,7 +36,7 @@ func (s *Server) launchFrom(w http.ResponseWriter, initiator, kind string, run f
 	job, err := s.submitJobWithInitiator(initiator, kind, run)
 	switch {
 	case errors.Is(err, errJobsClosed):
-		http.Error(w, "后台正在更新，请重新打开 Cage。", http.StatusServiceUnavailable)
+		http.Error(w, "后台正在更新，请重新打开 SuperCage。", http.StatusServiceUnavailable)
 	case errors.Is(err, errJobBusy):
 		http.Error(w, "另一个操作仍在进行，请稍候", http.StatusConflict)
 	case err != nil:

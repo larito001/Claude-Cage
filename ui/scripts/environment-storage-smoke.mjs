@@ -9,17 +9,17 @@ const { browser, page, state, errors } = await createWorkbench({
 try {
   state.status.local_vm_storage = true;
   const windows = platform === "windows";
-  let location = { directory: windows ? "C:\\Users\\demo\\.claude-cage\\state" : "/home/demo/.claude-cage/state", has_environment: false };
+  let location = { directory: windows ? "C:\\Users\\demo\\.super-cage\\state" : "/home/demo/.super-cage/state", has_environment: false };
   const writes = [];
-  const destination = windows ? "D:\\开发工具\\Cage 环境" : "/Volumes/开发工具/Cage 环境";
+  const destination = windows ? "D:\\开发工具\\SuperCage 环境" : "/Volumes/开发工具/SuperCage 环境";
   const occupied = windows ? "E:\\occupied" : "/mnt/occupied";
-  const migrated = windows ? "E:\\Cage 环境" : "/mnt/Cage 环境";
+  const migrated = windows ? "E:\\SuperCage 环境" : "/mnt/SuperCage 环境";
   await page.route("**/api/environment/storage", (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: location });
     const input = route.request().postDataJSON();
     writes.push(input);
     const rejected = input.directory.endsWith("occupied");
-    const job = { kind: "storage", id: String(writes.length), running: !rejected && input.migrate, error: rejected ? "目录必须为空" : "", message: "正在复制并校验虚拟磁盘，请保持 Cage 开启。" };
+    const job = { kind: "storage", id: String(writes.length), running: !rejected && input.migrate, error: rejected ? "目录必须为空" : "", message: "正在复制并校验虚拟磁盘，请保持 SuperCage 开启。" };
     state.status.job = job;
     if (!rejected && !job.running) location = { ...location, directory: input.directory, backup: location.has_environment ? location.directory : "" };
     return route.fulfill({ json: job });

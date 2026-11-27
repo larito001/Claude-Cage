@@ -319,7 +319,7 @@ func (d *desktopLocal) releaseStaleSession(ctx context.Context, expected Desktop
 // releaseIdleStandalone releases an idle controller that was started outside
 // the desktop app (empty LaunchID, e.g. by CLI or an agent), so Connect can
 // start a fresh controller under the desktop app's process hierarchy (required
-// on macOS for host plugins to inherit Cage.app's TCC permissions). Active or
+// on macOS for host plugins to inherit SuperCage.app's TCC permissions). Active or
 // desktop-launched controllers are never disturbed.
 func (d *desktopLocal) releaseIdleStandalone(ctx context.Context, expected DesktopLocalStatus) (bool, error) {
 	c, err := openController(d.profile)

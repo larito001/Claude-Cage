@@ -205,7 +205,7 @@ export function ProxyYAMLInput({
         />
       </label>
       <p className="field-help">
-        {tr("只导入节点和明确的代理链，Cage 自行管理 DNS、监听端口及出站规则。")}
+        {tr("只导入节点和明确的代理链，SuperCage 自行管理 DNS、监听端口及出站规则。")}
       </p>
     </div>
   );

@@ -24,7 +24,7 @@ const service = spawn(executable, ["serve"], {
   env: {
     ...process.env,
     ...(windows ? { USERPROFILE: userProfile, USERNAME: "fixture-user" } : { HOME: userProfile }),
-    CLAUDE_CAGE_CONFIG: join(profile, "config.json"),
+    SUPER_CAGE_CONFIG: join(profile, "config.json"),
   },
   stdio: "ignore",
   windowsHide: true,

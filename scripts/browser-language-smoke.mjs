@@ -7,7 +7,7 @@ assert.equal(process.platform, 'linux');
 const languages = process.env.CAGE_TEST_LANGUAGES?.split(',') || ['en-US', 'zh-TW', 'zh-CN', 'ja-JP', 'de-DE', 'fr-FR'];
 for (const language of languages) {
   process.env.CAGE_LANGUAGE = language;
-  // Cage applies both the guest locale and the browser language at startup.
+  // SuperCage applies both the guest locale and the browser language at startup.
   process.env.LANG = process.env.LC_ALL = process.env.CAGE_TEST_SYSTEM_LOCALE || language.replace('-', '_') + '.UTF-8';
   const fixture = await createPrivacyController({
     preferences: { intl: { accept_languages: 'en-US', selected_languages: 'en-US' } },

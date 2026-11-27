@@ -9,7 +9,7 @@ import (
 // The application's own settings, and the variables the system adds when it
 // launches the application, describe the application rather than the user's
 // session. Programs run on the user's behalf receive the rest.
-var appEnvPrefixes = []string{"CAGE_", "CLAUDE_CAGE_", "AGENT_VM_", "LIMA_"}
+var appEnvPrefixes = []string{"CAGE_", "SUPER_CAGE_", "CLAUDE_CAGE_", "AGENT_VM_", "LIMA_"}
 
 var appEnvNames = []string{"__CFBundleIdentifier", "XPC_SERVICE_NAME"}
 

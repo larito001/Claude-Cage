@@ -176,7 +176,7 @@ func checkProxyInput(action string, in proxyInput) error {
 	switch action {
 	case "import":
 		if in.ID != "" {
-			return errors.New("proxy.import 不按 id 导入：GET /api/proxy/local-configs 列出的配置只能在本机 Cage 窗口中导入；请在 content 中提供整份配置，或在 url 中提供订阅链接")
+			return errors.New("proxy.import 不按 id 导入：GET /api/proxy/local-configs 列出的配置只能在本机 SuperCage 窗口中导入；请在 content 中提供整份配置，或在 url 中提供订阅链接")
 		}
 		if name := strings.TrimSpace(in.Name); name == "" || len(name) > 100 {
 			return errors.New("请填写 1–100 字节的来源名称")
@@ -612,7 +612,7 @@ func (s *Server) applyProxy(p managedproxy.Store, old cage.Config, resumeVersion
 	if restartVM {
 		return s.startEnvironment(false)
 	}
-	s.setMessage("节点已应用；启动 Cage 环境后完成联网检查")
+	s.setMessage("节点已应用；启动 SuperCage 环境后完成联网检查")
 	return nil
 }
 

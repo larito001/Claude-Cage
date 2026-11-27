@@ -23,7 +23,7 @@ import (
 
 func TestEntryDropsInheritedUnsafeSwitchesBeforeDispatch(t *testing.T) {
 	// A benign early-return command exercises the entry boundary without a VM,
-	// Git configuration changes, or access to the user's Cage profile.
+	// Git configuration changes, or access to the user's SuperCage profile.
 	unsafe := []string{
 		"AGENT_VM_UNSAFE_OPEN_NETWORK",
 		"AGENT_VM_UNSAFE_WRITABLE_GIT",
@@ -32,7 +32,7 @@ func TestEntryDropsInheritedUnsafeSwitchesBeforeDispatch(t *testing.T) {
 	for _, name := range unsafe {
 		t.Setenv(name, "1")
 	}
-	t.Setenv("CLAUDE_CAGE_CONFIG", "/not-accessed-by-help/config.json")
+	t.Setenv("SUPER_CAGE_CONFIG", "/not-accessed-by-help/config.json")
 	previous := os.Args
 	os.Args = []string{"cage", "help"}
 	t.Cleanup(func() { os.Args = previous })
@@ -41,10 +41,10 @@ func TestEntryDropsInheritedUnsafeSwitchesBeforeDispatch(t *testing.T) {
 	}
 	for _, name := range unsafe {
 		if _, exists := os.LookupEnv(name); exists {
-			t.Errorf("%s survived the Cage entry point", name)
+			t.Errorf("%s survived the SuperCage entry point", name)
 		}
 	}
-	if got := os.Getenv("CLAUDE_CAGE_CONFIG"); got != "/not-accessed-by-help/config.json" {
+	if got := os.Getenv("SUPER_CAGE_CONFIG"); got != "/not-accessed-by-help/config.json" {
 		t.Errorf("profile selection changed: %q", got)
 	}
 }
@@ -100,7 +100,7 @@ func TestGuestServiceScriptCaptureProcess(t *testing.T) {
 
 // TestStatelessCommandsNeedNoProfile covers what an installer or a packaging
 // script runs before a profile exists: these commands must answer without
-// reading, creating or logging into the Cage profile.
+// reading, creating or logging into the SuperCage profile.
 func TestStatelessCommandsNeedNoProfile(t *testing.T) {
 	if version.Version == "" {
 		t.Fatal("this test build has no version")
@@ -112,21 +112,21 @@ func TestStatelessCommandsNeedNoProfile(t *testing.T) {
 		wantStdout string
 		wantStderr string
 	}{
-		{name: "help", args: []string{"help"}, wantStdout: "Claude Cage"},
-		{name: "short help", args: []string{"-h"}, wantStdout: "Claude Cage"},
+		{name: "help", args: []string{"help"}, wantStdout: "SuperCage"},
+		{name: "short help", args: []string{"-h"}, wantStdout: "SuperCage"},
 		{name: "version", args: []string{"version"}, wantStdout: version.Version},
 		{name: "long version", args: []string{"--version"}, wantStdout: version.Version},
 		{name: "short version", args: []string{"-V"}, wantStdout: version.Version},
 		{name: "version gate met", args: []string{"version", "--min", "0.0.0"}},
-		{name: "version gate missed", args: []string{"version", "--min", "99.0.0"}, wantCode: 1, wantStderr: "Update it:  update Cage"},
+		{name: "version gate missed", args: []string{"version", "--min", "99.0.0"}, wantCode: 1, wantStderr: "Update it:  update SuperCage"},
 		{name: "licenses", args: []string{"licenses"}, wantStdout: "MIT License"},
-		{name: "licenses usage", args: []string{"licenses", "x"}, wantCode: 2, wantStderr: "Usage: claude-cage licenses"},
+		{name: "licenses usage", args: []string{"licenses", "x"}, wantCode: 2, wantStderr: "Usage: super-cage licenses"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			profileDir := filepath.Join(t.TempDir(), "profile")
 			home := t.TempDir()
-			t.Setenv("CLAUDE_CAGE_CONFIG", filepath.Join(profileDir, "config.json"))
+			t.Setenv("SUPER_CAGE_CONFIG", filepath.Join(profileDir, "config.json"))
 			t.Setenv("HOME", home)
 
 			previous := os.Args
@@ -145,12 +145,12 @@ func TestStatelessCommandsNeedNoProfile(t *testing.T) {
 			}
 			// The license texts name agent-vm as an upstream; messages must not.
 			if strings.Contains(stderr, "agent-vm") {
-				t.Errorf("a Cage message names agent-vm: %q", stderr)
+				t.Errorf("a SuperCage message names agent-vm: %q", stderr)
 			}
 			if _, err := os.Stat(profileDir); !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("profile directory was created: %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(home, ".claude-cage")); !errors.Is(err, os.ErrNotExist) {
+			if _, err := os.Stat(filepath.Join(home, ".super-cage")); !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("home profile was created")
 			}
 		})

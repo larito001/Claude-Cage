@@ -73,7 +73,7 @@ export async function startDisplay(upstream, { frameInterval = 50, sharedClipboa
       if (phase === 2 && rfb.length >= 1) {
         rfb = rfb.subarray(1);
         phase = 3;
-        const name = Buffer.from("Cage test display");
+        const name = Buffer.from("SuperCage test display");
         const init = Buffer.alloc(24 + name.length);
         init.writeUInt16BE(width, 0); init.writeUInt16BE(height, 2);
         init.set([32, 24, 0, 1], 4);

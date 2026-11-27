@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// Cage records only its own processes, which the same user can always open
+// SuperCage records only its own processes, which the same user can always open
 // for limited queries. Access denied means the PID now belongs to another
 // account or a protected system process, not to a recorded VM.
 func profileProcessAlive(pid int) bool {

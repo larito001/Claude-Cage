@@ -61,7 +61,7 @@ func validateHostProjectData(root, profile string) error {
 	if err != nil {
 		return err
 	}
-	defaultProfile := filepath.Join(home, ".claude-cage")
+	defaultProfile := filepath.Join(home, ".super-cage")
 	// Independent profiles also protect disks and backups of the default workload.
 	if !paths.Equal(profile, defaultProfile) {
 		private, err := privateProjectDirectories(defaultProfile)
@@ -70,13 +70,13 @@ func validateHostProjectData(root, profile string) error {
 		}
 		for _, dir := range private {
 			if cage.StoragePathsOverlap(root, dir) {
-				return errors.New("Cage 配置、环境存储及备份不能共享")
+				return errors.New("SuperCage 配置、环境存储及备份不能共享")
 			}
 		}
 	}
 	refs := mounts.Refs(paths.Host(home), "", paths.Host(defaultProfile))
 	if _, unsafe := mounts.UnsafeLocation(paths.Host(root), refs); unsafe {
-		return errors.New("请选择具体项目，不要共享主目录、Cage 配置或包含配置的上级目录")
+		return errors.New("请选择具体项目，不要共享主目录、SuperCage 配置或包含配置的上级目录")
 	}
 	if _, unsafe := mounts.GitDirShare(paths.Host(root)); unsafe {
 		return errors.New("请选择项目根目录，不要共享 Git 等版本控制元数据目录")

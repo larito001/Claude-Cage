@@ -15,11 +15,11 @@ const native = resolve(nativeArgument);
 const backend = join(dirname(native), 'cage');
 const output = resolve(outputArgument);
 const root = await mkdtemp(join(tmpdir(), 'cage-linux-smoke-'));
-// Cage places the default workspace beside the profile; both stay in this
+// SuperCage places the default workspace beside the profile; both stay in this
 // fixture directory so cleanup also removes the temporary workspace.
 // Keep the selected gateway alive for the two native storage phases. The
 // native windows register their own owners in addition to this test process.
-const env = { ...process.env, CLAUDE_CAGE_CONFIG: join(root, 'profile', 'config.json'), CAGE_DESKTOP_OWNER_PID: String(process.pid) };
+const env = { ...process.env, SUPER_CAGE_CONFIG: join(root, 'profile', 'config.json'), CAGE_DESKTOP_OWNER_PID: String(process.pid) };
 let clean = false;
 let result = 1;
 
@@ -92,7 +92,7 @@ try {
     return response.json();
   }
   let current = await api('client/context');
-  if (!current.desktop_gateway || current.mode !== 'none') throw new Error('A fresh full Cage must start at the environment picker.');
+  if (!current.desktop_gateway || current.mode !== 'none') throw new Error('A fresh full SuperCage must start at the environment picker.');
   const idle = await api('client/local-status');
   if (!idle.known || idle.service_running || idle.running) throw new Error('The desktop picker started a local workload.');
   const original = current.connection_id;

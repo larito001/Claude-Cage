@@ -449,7 +449,7 @@ def has_status_line(base):
 
 
 def user_status_line():
-    """The shared command status line, if any, that Cage's status line delegates to."""
+    """The shared command status line, if any, that SuperCage's status line delegates to."""
     try:
         line = json_file(Path.home() / ".claude/settings.json").get("statusLine")
     except (OSError, ValueError, AttributeError):
@@ -500,7 +500,7 @@ def file_digest(path):
 
 
 def read_record(base):
-    """Cage's private bookkeeping for one profile, outside its configuration."""
+    """SuperCage's private bookkeeping for one profile, outside its configuration."""
     try:
         record = json_file(base / "shared-settings.json")
     except (ValueError, OSError):
@@ -1601,7 +1601,7 @@ def legacy_settings_intent(intent, current, common):
     """An interrupted write's intent from a version that recorded no digest.
 
     Its additions are claimed only where the account still holds exactly the
-    shared value: then Cage most likely wrote them before the upgrade, and
+    shared value: then SuperCage most likely wrote them before the upgrade, and
     claiming them lets them follow later shared changes again.
     """
     if not isinstance(intent, dict) or "digest" in intent or not isinstance(current, dict) or not isinstance(common, dict):
@@ -2354,7 +2354,7 @@ def memory_notice(notices, key, own, memory, error=None, merged=False):
 
 
 def shared_project_memory(base, directory, notices=None):
-    """Locate the shared memory of a project, folding in older Cage locations.
+    """Locate the shared memory of a project, folding in older SuperCage locations.
 
     Returns (key, memory) or (key, None) when the account's own memory for the
     project could not be merged and stays in use this time.

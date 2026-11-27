@@ -89,7 +89,7 @@ func IdentityFromSigner(signer crypto.Signer) (*Identity, error) {
 	now := time.Now()
 	template := &x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: "Cage temporary remote identity"},
+		Subject:      pkix.Name{CommonName: "SuperCage temporary remote identity"},
 		NotBefore:    now.Add(-time.Minute), NotAfter: now.Add(24 * time.Hour),
 		KeyUsage:    x509.KeyUsageDigitalSignature,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},

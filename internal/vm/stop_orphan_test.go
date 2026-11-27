@@ -250,10 +250,10 @@ func TestStopOrphanedWithHooksGracefulFallbackAndCleanup(t *testing.T) {
 }
 
 func TestPIDFileMatchesResolvedHandlesAliasesAndJunctions(t *testing.T) {
-	realDir := `D:\Cage\CageData\state\lima\test`
-	junctionDir := `C:\Users\alice\.claude-cage\state\lima\test`
+	realDir := `D:\SuperCage\CageData\state\lima\test`
+	junctionDir := `C:\Users\alice\.super-cage\state\lima\test`
 	shortDir := `C:\Users\ALICE~1\.CLAUDE~1\state\lima\test`
-	otherDir := `D:\Cage\CageData\state\lima\other`
+	otherDir := `D:\SuperCage\CageData\state\lima\other`
 
 	resolve := func(p string) (string, error) {
 		switch p {
@@ -271,7 +271,7 @@ func TestPIDFileMatchesResolvedHandlesAliasesAndJunctions(t *testing.T) {
 	if !pidFileMatchesResolved(realDir+`\qemu.pid`, realDir, resolve) {
 		t.Fatal("exact path did not match")
 	}
-	if !pidFileMatchesResolved(`D:/Cage/CageData/state/lima/test/qemu.pid`, realDir, nil) {
+	if !pidFileMatchesResolved(`D:/SuperCage/CageData/state/lima/test/qemu.pid`, realDir, nil) {
 		t.Fatal("forward-slash path did not match")
 	}
 	if !pidFileMatchesResolved(realDir+`\qemu.pid`, junctionDir, resolve) {

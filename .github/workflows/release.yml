@@ -1,4 +1,4 @@
-name: Publish Cage after an explicit release request
+name: Publish SuperCage after an explicit release request
 on:
   workflow_dispatch:
     inputs:
@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   readiness:
-    if: github.repository == 'Lee-xeo/Claude-Cage' && github.ref == 'refs/heads/main'
+    if: github.repository == 'larito001/Super-Cage' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: cage-release

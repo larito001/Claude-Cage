@@ -341,7 +341,7 @@ export function WorkspaceSidebar({
           title={tr("工作台")}
         >
           <img className="brand-logo" src={logo} alt="" />
-          <span>Cage</span>
+          <span>SuperCage</span>
         </button>
         <button
           className="icon-button"

@@ -536,7 +536,7 @@ func (s *Server) getHostPluginDrafts(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getHostPluginDraftFile(w http.ResponseWriter, r *http.Request) {
 	if !s.hasPluginControlView(r) {
-		http.Error(w, "请在受信任的 Cage 窗口查看插件草稿", http.StatusForbidden)
+		http.Error(w, "请在受信任的 SuperCage 窗口查看插件草稿", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {
@@ -601,7 +601,7 @@ func (s *Server) installHostPluginDraft(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if !s.hasPluginControlView(r) {
-		http.Error(w, "请在受信任的 Cage 窗口安装插件草稿", http.StatusForbidden)
+		http.Error(w, "请在受信任的 SuperCage 窗口安装插件草稿", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {
@@ -741,7 +741,7 @@ func (s *Server) discardHostPluginDraft(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if !s.hasPluginControlView(r) {
-		http.Error(w, "请在受信任的 Cage 窗口管理插件草稿", http.StatusForbidden)
+		http.Error(w, "请在受信任的 SuperCage 窗口管理插件草稿", http.StatusForbidden)
 		return
 	}
 	if s.clientOnly {

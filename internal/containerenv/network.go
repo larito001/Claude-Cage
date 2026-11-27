@@ -1,4 +1,4 @@
-// Package containerenv runs the Linux Cage environment without a nested VM.
+// Package containerenv runs the Linux SuperCage environment without a nested VM.
 // The host owns the network stack and its policy; a container only exchanges
 // Ethernet frames over a process pipe and receives no host network interface.
 package containerenv

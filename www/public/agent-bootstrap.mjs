@@ -8,7 +8,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 
-const repo = 'Lee-xeo/Claude-Cage';
+const repo = 'larito001/Super-Cage';
 const protocol = 1;
 export class BootstrapError extends Error {
   constructor(code, message, nextAction) { super(message); this.code = code; this.next_action = nextAction; }
@@ -68,10 +68,10 @@ export function selectAsset(release, options) {
   if (!/^v\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/.test(tag) || release.draft || (options.version && tag !== options.version)) fail('invalid_release', 'Release tag does not match the requested published release.');
   const version = tag.slice(1);
   const suffix = { 'darwin-arm64': 'macos-arm64.dmg', 'darwin-amd64': 'macos-amd64.dmg', 'linux-amd64': 'linux-amd64.deb', 'win32-amd64': 'windows-amd64-setup.exe' }[options.platform];
-  let asset = release.assets?.find(a => a.name === `Cage-${version}-${suffix}`);
+  let asset = release.assets?.find(a => a.name === `SuperCage-${version}-${suffix}`);
   let unsigned = false;
   if (!asset && options.platform === 'win32-amd64') {
-    asset = release.assets?.find(a => a.name === `Cage-${version}-windows-amd64-setup-unsigned.exe`);
+    asset = release.assets?.find(a => a.name === `SuperCage-${version}-windows-amd64-setup-unsigned.exe`);
     if (asset && !options.allowUnsigned) fail('unsigned_package_requires_consent', 'Only an unsigned Windows preview is available. Ask the user before selecting it with --allow-unsigned.', 'user_decision');
     unsigned = !!asset;
   }
@@ -101,11 +101,11 @@ export function selectStaticAsset(tag, manifest, options) {
   const version = tag.slice(1);
   const names = new Set(manifest.split(/\r?\n/).map(line => line.match(/^[a-fA-F0-9]{64} [ *](\S+)\s*$/)?.[1]).filter(Boolean));
   const listed = name => names.has(name);
-  let name = `Cage-${version}-${suffixes[options.platform]}`;
+  let name = `SuperCage-${version}-${suffixes[options.platform]}`;
   let unsigned = false;
-  if (!listed(name) && options.platform === 'win32-amd64' && listed(`Cage-${version}-windows-amd64-setup-unsigned.exe`)) {
+  if (!listed(name) && options.platform === 'win32-amd64' && listed(`SuperCage-${version}-windows-amd64-setup-unsigned.exe`)) {
     if (!options.allowUnsigned) fail('unsigned_package_requires_consent', 'Only an unsigned Windows preview is available. Ask the user before selecting it with --allow-unsigned.', 'user_decision');
-    name = `Cage-${version}-windows-amd64-setup-unsigned.exe`;
+    name = `SuperCage-${version}-windows-amd64-setup-unsigned.exe`;
     unsigned = true;
   }
   if (!listed(name)) fail('asset_unavailable', 'This release has no matching package and checksum manifest. Choose a published release containing both.');
@@ -163,13 +163,13 @@ export async function makePlan(options, fetchImpl = fetch) {
       selected = await staticSelection(tag, options, fetchImpl);
     }
   }
-  const cli = { 'darwin-arm64': '/Applications/Cage.app/Contents/Resources/cage', 'darwin-amd64': '/Applications/Cage.app/Contents/Resources/cage', 'linux-amd64': '/usr/bin/claude-cage', 'win32-amd64': '<install_directory>\\resources\\cage.exe' }[options.platform];
+  const cli = { 'darwin-arm64': '/Applications/SuperCage.app/Contents/Resources/cage', 'darwin-amd64': '/Applications/SuperCage.app/Contents/Resources/cage', 'linux-amd64': '/usr/bin/super-cage', 'win32-amd64': '<install_directory>\\resources\\cage.exe' }[options.platform];
   const installation = {
-    'darwin-arm64': { guide: 'https://claude-cage.com/docs/installation/', steps: ['Check codesign and spctl on the mounted Cage.app. Preserve macOS Gatekeeper checks.', 'For an update, save work and stop Cage through its existing UI before replacing app files.', 'Mount the verified DMG read-only with hdiutil attach -readonly -nobrowse. Copy Cage.app to /Applications using the existing installation guide; eject the mounted volume.', 'Run the installed CLI agent capabilities. If agent is unknown, this release predates Agent support; use its documented UI or an authorized newer build.'] },
-    'linux-amd64': { guide: 'https://claude-cage.com/docs/installation/', argv: ['sudo', 'apt-get', 'install', '--', '<downloaded_absolute_path>'], steps: ['Save work and stop Cage before an update. Run the package manager in the user-approved privilege context.', 'Run /usr/bin/claude-cage agent capabilities. The name cage belongs to a different Linux program.'] },
-    'win32-amd64': { guide: 'https://claude-cage.com/docs/installation/', argv: ['<downloaded_absolute_path>', '/S'], steps: ['Save work and stop Cage before an update. Inspect Get-AuthenticodeSignature on signed packages.', 'Run the installer in the user-approved context; system security prompts require the user.', 'The CLI is resources\\cage.exe in the install directory: D:\\Cage when a local fixed D: drive exists, otherwise $env:LOCALAPPDATA\\Programs\\Cage. Read InstallLocation under HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ClaudeCage for the actual one; then run agent capabilities.'] },
+    'darwin-arm64': { guide: 'https://claude-cage.com/docs/installation/', steps: ['Check codesign and spctl on the mounted SuperCage.app. Preserve macOS Gatekeeper checks.', 'For an update, save work and stop SuperCage through its existing UI before replacing app files.', 'Mount the verified DMG read-only with hdiutil attach -readonly -nobrowse. Copy SuperCage.app to /Applications using the existing installation guide; eject the mounted volume.', 'Run the installed CLI agent capabilities. If agent is unknown, this release predates Agent support; use its documented UI or an authorized newer build.'] },
+    'linux-amd64': { guide: 'https://claude-cage.com/docs/installation/', argv: ['sudo', 'apt-get', 'install', '--', '<downloaded_absolute_path>'], steps: ['Save work and stop SuperCage before an update. Run the package manager in the user-approved privilege context.', 'Run /usr/bin/super-cage agent capabilities. The name cage belongs to a different Linux program.'] },
+    'win32-amd64': { guide: 'https://claude-cage.com/docs/installation/', argv: ['<downloaded_absolute_path>', '/S'], steps: ['Save work and stop SuperCage before an update. Inspect Get-AuthenticodeSignature on signed packages.', 'Run the installer in the user-approved context; system security prompts require the user.', 'The CLI is resources\\cage.exe in the install directory: D:\\SuperCage when a local fixed D: drive exists, otherwise $env:LOCALAPPDATA\\Programs\\Cage. Read InstallLocation under HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\ClaudeCage for the actual one; then run agent capabilities.'] },
   }[options.platform === 'darwin-amd64' ? 'darwin-arm64' : options.platform]; // Both Mac packages install the same way.
-  return { protocol, status: 'planned', release: selected.tag, release_url: `https://github.com/${repo}/releases/tag/${selected.tag}`, platform: options.platform, asset: selected.asset, url: selected.url, size: selected.size, sha256: selected.sha256, unsigned: selected.unsigned, cli, installation, data_policy: 'Preserve ~/.claude-cage, user projects and persistent VM disks. Downloads and application files are separate from profile data.' };
+  return { protocol, status: 'planned', release: selected.tag, release_url: `https://github.com/${repo}/releases/tag/${selected.tag}`, platform: options.platform, asset: selected.asset, url: selected.url, size: selected.size, sha256: selected.sha256, unsigned: selected.unsigned, cli, installation, data_policy: 'Preserve ~/.super-cage, user projects and persistent VM disks. Downloads and application files are separate from profile data.' };
 }
 
 export async function downloadPlan(plan, destination, fetchImpl = fetch) {

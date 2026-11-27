@@ -187,12 +187,12 @@ class Factory(IBus.Factory):
 
 
 factory = Factory(connection=bus.get_connection(), object_path=IBus.PATH_FACTORY)
-component = IBus.Component(name='org.freedesktop.IBus.Cage', description='Cage host input',
-                           version='1', license='MIT', author='Cage', homepage='',
+component = IBus.Component(name='org.freedesktop.IBus.Cage', description='SuperCage host input',
+                           version='1', license='MIT', author='SuperCage', homepage='',
                            command_line='', textdomain='')
-component.add_engine(IBus.EngineDesc(name='cage-host', longname='Cage Host Input',
+component.add_engine(IBus.EngineDesc(name='cage-host', longname='SuperCage Host Input',
                                    description='Host input transport', language='en',
-                                   license='MIT', author='Cage', icon='', layout='us'))
+                                   license='MIT', author='SuperCage', icon='', layout='us'))
 if not bus.register_component(component):
     raise RuntimeError('Private input engine unavailable')
 

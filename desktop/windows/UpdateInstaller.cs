@@ -18,7 +18,7 @@ internal static class UpdateInstaller
             throw new IOException("安装包下载后发生变化，请重新下载");
         Authenticode.SamePublisher(path, publisher);
         var metadata = FileVersionInfo.GetVersionInfo(path);
-        if (metadata.ProductName != "Cage" || metadata.ProductVersion != version)
+        if (metadata.ProductName != "SuperCage" || metadata.ProductVersion != version)
             throw new IOException("安装包产品身份或版本不匹配");
     }
 
@@ -44,9 +44,9 @@ internal static class UpdateInstaller
             // Also release an inherited install-directory lock when this helper
             // is invoked by a launcher that did not choose a safe directory.
             Directory.SetCurrentDirectory(AppUpdater.Root);
-            if (File.ReadAllText(Path.Combine(plan.Target, "Cage.install-id")).Trim() != "io.github.lee-xeo.claude-cage")
-                throw new IOException("请先使用 Cage 安装程序安装应用，再自动更新");
-            var original = Path.Combine(plan.Target, "Cage.exe");
+            if (File.ReadAllText(Path.Combine(plan.Target, "Cage.install-id")).Trim() != "io.github.lee-xeo.super-cage")
+                throw new IOException("请先使用 SuperCage 安装程序安装应用，再自动更新");
+            var original = Path.Combine(plan.Target, "SuperCage.exe");
             string targetPublisher;
             if (plan.UnsignedSource)
             {
@@ -113,7 +113,7 @@ internal static class UpdateInstaller
             if (File.Exists(marker)) File.Delete(marker);
             var launch = new ProcessStartInfo(original) { UseShellExecute = false, WorkingDirectory = plan.Target };
             launch.Environment["CAGE_UPDATE_CONFIRMATION"] = plan.Confirmation;
-            launched = Process.Start(launch) ?? throw new IOException("新版 Cage 无法启动");
+            launched = Process.Start(launch) ?? throw new IOException("新版 SuperCage 无法启动");
             var deadline = DateTime.UtcNow.AddSeconds(120);
             var ready = false;
             while (DateTime.UtcNow < deadline && !launched.HasExited)
@@ -133,7 +133,7 @@ internal static class UpdateInstaller
             }
             if (!ready) throw new IOException("新版工作台未能完成启动确认");
             succeeded = true;
-            Result(true, "Cage 已更新至 " + plan.Version);
+            Result(true, "SuperCage 已更新至 " + plan.Version);
             // The currently executing helper cannot delete itself on Windows.
             // Keep this small signed file; the next successful update may remove it.
             return 0;
@@ -154,15 +154,15 @@ internal static class UpdateInstaller
                     EnsureInstallationComplete(plan.Target);
                     if (UpdateRecovery.OriginalIntact(plan.Target, backup))
                     {
-                        if (!plan.UnsignedSource) Authenticode.SamePublisher(Path.Combine(plan.Target, "Cage.exe"), plan.Publisher);
+                        if (!plan.UnsignedSource) Authenticode.SamePublisher(Path.Combine(plan.Target, "SuperCage.exe"), plan.Publisher);
                         Result(false, "更新未完成，原应用已保留：" + detail);
-                        Process.Start(new ProcessStartInfo(Path.Combine(plan.Target, "Cage.exe")) { UseShellExecute = false, WorkingDirectory = plan.Target });
+                        Process.Start(new ProcessStartInfo(Path.Combine(plan.Target, "SuperCage.exe")) { UseShellExecute = false, WorkingDirectory = plan.Target });
                         UpdateRecovery.CleanupDirectory(backup); backup = null;
                         return 1;
                     }
                     if (!installerStarted) throw new IOException("原应用在安装前发生变化，备份已保留，请核对安装目录后重试。");
                     // Stop the exact new controller through its lifecycle API before
-                    // restoring files. Never kill other Cage instances by name.
+                    // restoring files. Never kill other SuperCage instances by name.
                     if (!plan.UnsignedSource) Authenticode.SamePublisher(UpdateRecovery.BackendPath(backup), plan.Publisher);
                     await UpdateRecovery.PrepareRollback(backup);
                     var appStopped = false;
@@ -195,7 +195,7 @@ internal static class UpdateInstaller
                     EnsureInstallationComplete(plan.Target);
                     UpdateRecovery.CleanupDirectory(backup); backup = null;
                     Result(false, "更新未完成，已恢复原应用：" + detail);
-                    Process.Start(new ProcessStartInfo(Path.Combine(plan.Target, "Cage.exe")) { UseShellExecute = false, WorkingDirectory = plan.Target });
+                    Process.Start(new ProcessStartInfo(Path.Combine(plan.Target, "SuperCage.exe")) { UseShellExecute = false, WorkingDirectory = plan.Target });
                     return 1;
                 }
                 catch (Exception recovery)
@@ -208,7 +208,7 @@ internal static class UpdateInstaller
                 }
             }
             Result(false, "更新未完成：" + detail);
-            if (recoveryIncomplete && OperatingSystem.IsWindows()) MessageBoxW(IntPtr.Zero, detail, "Cage 更新需要恢复", 0x00010010);
+            if (recoveryIncomplete && OperatingSystem.IsWindows()) MessageBoxW(IntPtr.Zero, detail, "SuperCage 更新需要恢复", 0x00010010);
             return 1;
         }
         finally

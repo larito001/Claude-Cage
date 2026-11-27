@@ -62,7 +62,7 @@ if [[ "$platform" == ios ]]; then
     test -s "$app/embedded.mobileprovision"
     codesign --verify --deep --strict "$app"
     rm -r "$output/check"
-    printf 'Cage iPhone development IPA: %s\n' "$ipa"
+    printf 'SuperCage iPhone development IPA: %s\n' "$ipa"
   else
     xcodebuild -project ios/CageMobile.xcodeproj -target CageMobile -sdk iphoneos -configuration Debug \
       CODE_SIGNING_ALLOWED=NO SYMROOT="$mobile_dir/.build/ios/products" OBJROOT="$mobile_dir/.build/ios/obj" build

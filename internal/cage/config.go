@@ -1,4 +1,4 @@
-// Package cage supplies the configuration and network boundary of Claude Cage.
+// Package cage supplies the configuration and network boundary of SuperCage.
 package cage
 
 import (
@@ -18,7 +18,7 @@ import (
 	"github.com/sylvinus/agent-vm/internal/guestprofile"
 )
 
-const ConfigEnv = "CLAUDE_CAGE_CONFIG"
+const ConfigEnv = "SUPER_CAGE_CONFIG"
 
 type Config struct {
 	GuestProfile    *guestprofile.Profile `json:"-"`

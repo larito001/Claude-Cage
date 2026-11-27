@@ -29,13 +29,13 @@ test("favorites, history and open tabs merge and outrank generic sites", () => {
     activeTabId: "tab-current",
     tabs: [
       { id: "tab-current", kind: "web", url: "https://github.com/current", title: "Current" },
-      { id: "tab-other", kind: "web", url: "https://github.com/Lee-xeo/Claude-Cage", title: "Claude Cage" },
+      { id: "tab-other", kind: "web", url: "https://github.com/larito001/Super-Cage", title: "SuperCage" },
     ],
     favorites: [
       { id: "f1", url: "https://github.com/", title: "My GitHub" },
     ],
     history: [
-      { id: "h1", url: "https://github.com/Lee-xeo/Claude-Cage/issues/774", title: "Issue 774", lastVisitTime: now - 60_000, visitCount: 5 },
+      { id: "h1", url: "https://github.com/larito001/Super-Cage/issues/774", title: "Issue 774", lastVisitTime: now - 60_000, visitCount: 5 },
       { id: "h2", url: "http://127.0.0.1:18080/?folder=/work", title: "Editor", lastVisitTime: now, visitCount: 99 },
     ],
   });

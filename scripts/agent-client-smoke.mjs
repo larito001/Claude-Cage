@@ -14,7 +14,7 @@ const invoke = (args) => {
   const result = spawnSync(binary, args, {
     encoding: "utf8",
     timeout: 30000,
-    env: { ...process.env, CLAUDE_CAGE_CONFIG: config },
+    env: { ...process.env, SUPER_CAGE_CONFIG: config },
   });
   assert.ifError(result.error);
   assert.equal(

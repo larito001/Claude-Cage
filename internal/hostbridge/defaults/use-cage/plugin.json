@@ -1,6 +1,6 @@
 {
   "name": "use-cage",
-  "displayName": "Use Cage",
+  "displayName": "Use SuperCage",
   "version": "0.1.0",
   "description": "Reads workspace status and adjusts appearance, display preferences, and plugins within safe boundaries.",
   "icon": "icon.svg",

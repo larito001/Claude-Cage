@@ -790,7 +790,7 @@ export function AppearanceSettings() {
                 fontSize: appearance.codeFontSize,
               }}
             >
-              const workspace = "Cage";
+              const workspace = "SuperCage";
             </code>
           </div>
         </div>

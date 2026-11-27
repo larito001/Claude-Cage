@@ -106,7 +106,7 @@ for (const platform of ["darwin", "windows", "linux"]) {
   const system = "debian-13";
   let starts = 0, rejectComplete = true;
   let directory = "/preview/cage-state";
-  const initialDirectory = platform === "windows" ? "/preview/Cage/CageData" : directory;
+  const initialDirectory = platform === "windows" ? "/preview/SuperCage/CageData" : directory;
   const fixture = await createWorkbench({
     initialization: { required: true, tracked: true, started: false },
     clientContext: { mode: "local", connection_id: "local", client_platform: platform, server_platform: platform },
@@ -147,7 +147,7 @@ for (const platform of ["darwin", "windows", "linux"]) {
     const storage = page.getByRole("region", { name: "环境存储目录" });
     await storage.getByLabel("存储目录", { exact: true }).waitFor();
     assert.equal(await storage.getByLabel("存储目录", { exact: true }).inputValue(), initialDirectory);
-    await storage.getByText("这是 Cage 的环境数据目录。更新、重装或卸载应用会保留这里的数据；请勿手动删除。").waitFor();
+    await storage.getByText("这是 SuperCage 的环境数据目录。更新、重装或卸载应用会保留这里的数据；请勿手动删除。").waitFor();
     assert.equal(await storage.getByText("当前环境目录", { exact: true }).count(), 0);
     assert.equal(await storage.getByText("新存储位置", { exact: true }).count(), 0);
     await page.locator(".initialization-content").evaluate(async element => {
@@ -207,9 +207,9 @@ for (const platform of ["darwin", "windows", "linux"]) {
     await page.reload();
     await page.getByRole("complementary", { name: "项目与终端" }).waitFor();
     await page.evaluate(() => window.cageNativeAction("quit"));
-    const quitDialog = page.getByRole("dialog", { name: "退出 Cage", exact: true });
+    const quitDialog = page.getByRole("dialog", { name: "退出 SuperCage", exact: true });
     await quitDialog.getByRole("button", { name: "取消", exact: true }).click();
-    assert.equal(await page.getByRole("heading", { name: "为 Cage 准备独立环境" }).count(), 0);
+    assert.equal(await page.getByRole("heading", { name: "为 SuperCage 准备独立环境" }).count(), 0);
     assert.deepEqual(errors, []);
     console.log(`PASS ${platform}: independent initialization without a system choice, back navigation, progress, refresh, retry, completion gate and reopen`);
   } finally { await browser.close(); }

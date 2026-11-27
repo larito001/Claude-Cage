@@ -480,7 +480,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
             <CircleHelp size={17} aria-hidden="true" />
           </button>
         </div>
-        {!initializing && <p>{tr("导入具体节点。使用代理链时，在 Cage 中依次选择中转和最终出口。")}</p>}
+        {!initializing && <p>{tr("导入具体节点。使用代理链时，在 SuperCage 中依次选择中转和最终出口。")}</p>}
       </div>
       {getClientContext().mode === "local" && <LocalConfigImport busy={busy} onImport={id => mutate("import-local", { id })} />}
       {helpOpen && (
@@ -491,7 +491,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
         >
           <h4 id="proxy-help-title">{tr("代理使用说明")}</h4>
           <p className="proxy-help-intro">
-            {tr("Cage 自带代理核心，无需另外安装 Clash。请先准备你已有的代理订阅或节点信息，Cage 不提供代理节点。")}
+            {tr("SuperCage 自带代理核心，无需另外安装 Clash。请先准备你已有的代理订阅或节点信息，SuperCage 不提供代理节点。")}
           </p>
           <ol className="proxy-help-steps">
             <li>
@@ -518,7 +518,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
             <li>
               <strong>{tr("确认可以联网")}</strong>
               <p>
-                {initializing ? tr("点击“开始安装”，等待客机安装和网络检查完成。以初始化界面的检查结果为准；") : tr("回到工作台启动环境，等待网络检查通过。以工作台的联网状态为准；")}{tr("「测速」只检测节点延迟。Cage 内的浏览器、终端和开发工具会共用所选节点，无需分别配置代理。")}
+                {initializing ? tr("点击“开始安装”，等待客机安装和网络检查完成。以初始化界面的检查结果为准；") : tr("回到工作台启动环境，等待网络检查通过。以工作台的联网状态为准；")}{tr("「测速」只检测节点延迟。SuperCage 内的浏览器、终端和开发工具会共用所选节点，无需分别配置代理。")}
               </p>
             </li>
           </ol>
@@ -551,7 +551,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
               ? tr("旧配置使用本机代理端口。请导入原代理链中的节点，再按原顺序应用。")
               : active
               ? proxy.running
-                ? tr("Cage 自带核心运行中")
+                ? tr("SuperCage 自带核心运行中")
                 : tr("核心未就绪")
               : tr("请选择节点后应用，未配置时无法联网")}{" "}
             {!needsMigration && "· " + tr("独立端口 {0}", proxy.port)}
@@ -570,7 +570,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
       )}
       {!proxy.core_available && (
         <div role="alert" className="error-message">
-          {tr("安装包缺少随附代理核心，请重新构建或安装完整 Cage 应用。")}
+          {tr("安装包缺少随附代理核心，请重新构建或安装完整 SuperCage 应用。")}
         </div>
       )}
       <p className="field-help">
@@ -714,7 +714,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
               )}
               {routeValid && <div className="proxy-route-preview" aria-label={tr("待应用链路")}>
                 <Route size={16} aria-hidden="true" />
-                <span>Cage</span>
+                <span>SuperCage</span>
                 {route.map((id, index) => (
                   <React.Fragment key={index}>
                     <ArrowRight size={13} aria-hidden="true" />
@@ -1023,7 +1023,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
                       await onConfirm({
                         title: tr("删除来源“{0}”？", s.name),
                         body: s.nodes.some((n) => n.id === proxy.selected)
-                          ? tr("当前节点来自此来源。删除后 Cage 会保持离线，直到你选择其他节点。")
+                          ? tr("当前节点来自此来源。删除后 SuperCage 会保持离线，直到你选择其他节点。")
                           : tr("将移除此来源及其节点，本地项目文件不受影响。"),
                         confirm: "删除来源",
                       })
@@ -1373,7 +1373,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
             </span>
           </div>
           <p className="field-help">
-            {tr("显示当前核心的连接与流量，包含 Cage 自身检测请求；重启核心后累计值重置。")}
+            {tr("显示当前核心的连接与流量，包含 SuperCage 自身检测请求；重启核心后累计值重置。")}
           </p>
           <div className="proxy-node-list">
             {connections.connections.map((c) => (
@@ -1396,7 +1396,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
       {tab === "diagnostics" && (
         <>
           <p className="field-help">
-            {tr("随附核心 {0}。以下为 Cage 状态摘要；含凭据风险的核心原始日志不向页面公开。", proxy.version || tr("未运行"))}
+            {tr("随附核心 {0}。以下为 SuperCage 状态摘要；含凭据风险的核心原始日志不向页面公开。", proxy.version || tr("未运行"))}
           </p>
           <div className="proxy-diagnostics" role="log">
             {logs.map((line, i) => (
@@ -1445,7 +1445,7 @@ export function ProxySettings({ status, onApplied, onConfirm, onDirty, initializ
             </button>
           </div>
           <p className="field-help">
-            {tr("Cage 不设置系统代理或主机 TUN。本机其他代理的 TUN 仍可能影响核心出站，需要结合实际路由验证。")}
+            {tr("SuperCage 不设置系统代理或主机 TUN。本机其他代理的 TUN 仍可能影响核心出站，需要结合实际路由验证。")}
           </p>
         </>
       )}

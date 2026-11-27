@@ -142,13 +142,13 @@ func (r *Runtime) inspectContainer(ctx context.Context) (*engineContainer, error
 	}
 	var found []engineContainer
 	if json.Unmarshal(data, &found) != nil || len(found) == 0 {
-		return nil, errors.New("容器身份与当前 Cage 配置不匹配")
+		return nil, errors.New("容器身份与当前 SuperCage 配置不匹配")
 	}
 	archivePrefix := r.Name() + "-archive-"
 	var active []engineContainer
 	for _, entry := range found {
 		if entry.Config.Labels[profileLabel] != r.identity {
-			return nil, errors.New("容器身份与当前 Cage 配置不匹配")
+			return nil, errors.New("容器身份与当前 SuperCage 配置不匹配")
 		}
 		trimmed := strings.TrimPrefix(entry.Name, "/")
 		if strings.HasPrefix(trimmed, archivePrefix) {
@@ -301,7 +301,7 @@ func checkContainerConfiguration(container *engineContainer) error {
 	}
 	for _, mount := range container.Mounts {
 		if mount.Type == "bind" || mount.Type == "volume" {
-			return errors.New("容器存在未经 Cage 文件共享授权的挂载")
+			return errors.New("容器存在未经 SuperCage 文件共享授权的挂载")
 		}
 	}
 	for _, device := range config.Devices {
@@ -340,7 +340,7 @@ func (r *Runtime) Inspect(ctx context.Context) (Inspection, error) {
 		return Inspection{}, err
 	}
 	if !rootless {
-		return Inspection{}, errors.New("Cage 容器必须由独立 rootless 引擎运行")
+		return Inspection{}, errors.New("SuperCage 容器必须由独立 rootless 引擎运行")
 	}
 	container, err := r.inspectContainer(ctx)
 	if err != nil {

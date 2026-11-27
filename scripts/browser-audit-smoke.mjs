@@ -87,7 +87,7 @@ try {
     "Runtime.evaluate",
     {
       expression:
-        "document.title = 'Cage test page'; document.body.innerHTML = '<input value=unsaved-text>'; window.cageTestState = 42;",
+        "document.title = 'SuperCage test page'; document.body.innerHTML = '<input value=unsaved-text>'; window.cageTestState = 42;",
     },
     sessionId,
   );

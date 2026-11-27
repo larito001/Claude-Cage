@@ -743,7 +743,7 @@ func TestGuestStartRecoversFromTruncatedGuestFiles(t *testing.T) {
 	for name, badYAML := range map[string]string{"empty": "", "truncated": "auth: password\n"} {
 		t.Run("credentials-"+name, func(t *testing.T) {
 			home := t.TempDir()
-			cfgDir := filepath.Join(home, ".config", "claude-cage")
+			cfgDir := filepath.Join(home, ".config", "super-cage")
 			if err := os.MkdirAll(cfgDir, 0700); err != nil {
 				t.Fatal(err)
 			}
@@ -808,13 +808,13 @@ func TestGuestStartRecoversFromTruncatedGuestFiles(t *testing.T) {
 			dir := t.TempDir()
 			home := filepath.Join(dir, "home")
 			etcDir := filepath.Join(dir, "etc")
-			if err := os.MkdirAll(filepath.Join(home, ".config", "claude-cage"), 0700); err != nil {
+			if err := os.MkdirAll(filepath.Join(home, ".config", "super-cage"), 0700); err != nil {
 				t.Fatal(err)
 			}
 			if err := os.MkdirAll(etcDir, 0700); err != nil {
 				t.Fatal(err)
 			}
-			if err := os.WriteFile(filepath.Join(home, ".config", "claude-cage", "code-server.yaml"), []byte("auth: password\npassword: editor-secret\n"), 0600); err != nil {
+			if err := os.WriteFile(filepath.Join(home, ".config", "super-cage", "code-server.yaml"), []byte("auth: password\npassword: editor-secret\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			ctrlPath := filepath.Join(etcDir, "browser-control.json")

@@ -25,7 +25,7 @@ def wait(config_path='/etc/claude-cage/browser-control.json', endpoints=None, ti
             return
         except (OSError, ValueError, urllib.error.URLError):
             time.sleep(1)
-    raise SystemExit('Cage browser, editor or display service did not become ready. Inspect the guest service logs and retry.')
+    raise SystemExit('SuperCage browser, editor or display service did not become ready. Inspect the guest service logs and retry.')
 
 
 if __name__ == '__main__':

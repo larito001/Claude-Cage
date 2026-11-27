@@ -10,7 +10,7 @@ import (
 
 func TestSubcommandHelpDoesNotRunTheCommand(t *testing.T) {
 	config := filepath.Join(t.TempDir(), "profile", "config.json")
-	t.Setenv("CLAUDE_CAGE_CONFIG", config)
+	t.Setenv("SUPER_CAGE_CONFIG", config)
 	previous := os.Args
 	t.Cleanup(func() { os.Args = previous })
 	for _, flag := range []string{"--help", "-h"} {
@@ -39,7 +39,7 @@ func TestStartHelpDocumentsReset(t *testing.T) {
 		}
 		for _, unwanted := range []string{"--cpus", "--memory", "--ram", "--ssh-port"} {
 			if strings.Contains(text, unwanted) {
-				t.Errorf("%s help offers %q, which Cage does not apply: %s", command, unwanted, text)
+				t.Errorf("%s help offers %q, which SuperCage does not apply: %s", command, unwanted, text)
 			}
 		}
 	}
@@ -57,7 +57,7 @@ func TestSubcommandHelpText(t *testing.T) {
 	// command answers --help itself.
 	for _, args := range [][]string{{"run", "--help"}, {"claude", "-h"}, {"agy", "-h"}, {"codex", "-h"}, {"agent", "--help"}, {"run", "ls", "-h"}, {"init"}, {"init", "--force", "--help"}} {
 		if _, ok := subcommandHelp(args); ok {
-			t.Fatalf("%v must not be answered as Cage help", args)
+			t.Fatalf("%v must not be answered as SuperCage help", args)
 		}
 	}
 }

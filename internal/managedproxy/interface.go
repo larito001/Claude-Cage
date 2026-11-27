@@ -56,7 +56,7 @@ func darwinPhysicalInterface(ctx context.Context) (string, error) {
 	route, _ := runDarwinRoute(ctx)
 	nwi, err := runDarwinScutilNWI(ctx)
 	if err != nil {
-		return "", errors.New("无法读取系统网络状态，请检查主机网络或重启 Cage 后重试")
+		return "", errors.New("无法读取系统网络状态，请检查主机网络或重启 SuperCage 后重试")
 	}
 	usable := map[string]bool{}
 	interfaces, err := listNetInterfaces()
@@ -89,7 +89,7 @@ func isVirtualMACInterface(name string) bool {
 
 func selectPhysicalInterface(route, hardware, nwi string, usable map[string]bool) (string, error) {
 	if strings.TrimSpace(nwi) == "" {
-		return "", errors.New("无法读取系统网络状态，请检查主机网络或重启 Cage 后重试")
+		return "", errors.New("无法读取系统网络状态，请检查主机网络或重启 SuperCage 后重试")
 	}
 	physical := map[string]bool{}
 	for _, line := range strings.Split(hardware, "\n") {
@@ -133,7 +133,7 @@ func selectPhysicalInterface(route, hardware, nwi string, usable map[string]bool
 	if len(reachable) > 0 {
 		return reachable[0], nil
 	}
-	return "", errors.New("未找到可用的物理 IPv4 网卡；Cage 外网保持关闭，请连接网络后重试")
+	return "", errors.New("未找到可用的物理 IPv4 网卡；SuperCage 外网保持关闭，请连接网络后重试")
 }
 
 // BindInterface changes only the core's host transport. MATCH routing and

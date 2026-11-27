@@ -445,9 +445,9 @@ def production(request):
             profile = request.get("profile", "")
             if not re.fullmatch(r"[0-9a-f]{16}", profile):
                 raise Refused("invalid_profile")
-            browser = Path(os.environ.get("LOCALAPPDATA", str(home / "AppData/Local"))) / "Cage/Browser/Profile/Default"
+            browser = Path(os.environ.get("LOCALAPPDATA", str(home / "AppData/Local"))) / "SuperCage/Browser/Profile/Default"
             desktop = Path(os.environ.get("APPDATA", str(home / "AppData/Roaming"))) / "Claude"
-            accounts = home / "Cage/CLI" / profile / "accounts"
+            accounts = home / "SuperCage/CLI" / profile / "accounts"
     return Maintenance(home, system, browser, desktop, accounts)
 
 

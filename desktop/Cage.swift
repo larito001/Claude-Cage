@@ -115,7 +115,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
         NSApp.appearance = mode == "system" ? nil : NSAppearance(named: mode == "dark" ? .darkAqua : .aqua)
         makeMenus()
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 850), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Cage"
+        window.title = "SuperCage"
         window.titlebarAppearsTransparent = false
         window.backgroundColor = NSColor(srgbRed: 247.0/255, green: 247.0/255, blue: 247.0/255, alpha: 1)
         window.minSize = NSSize(width: 820, height: 580)
@@ -134,7 +134,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
         nativeInput = CageNativeInput(frame: .zero)
         nativeInput.configure(web: webView)
         content.addSubview(nativeInput)
-        loading = NSTextField(labelWithString: CageLanguage.text("正在启动 Cage 工作台…"))
+        loading = NSTextField(labelWithString: CageLanguage.text("正在启动 SuperCage 工作台…"))
         loading.font = NSFont.systemFont(ofSize: 16, weight: .medium)
         loading.textColor = NSColor(srgbRed: 54.0/255, green: 54.0/255, blue: 54.0/255, alpha: 1)
         loading.alignment = .center
@@ -175,19 +175,19 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
         let main = NSMenu()
         let appItem = NSMenuItem()
         main.addItem(appItem)
-        let appMenu = NSMenu(title: "Cage")
+        let appMenu = NSMenu(title: "SuperCage")
         appItem.submenu = appMenu
-        appMenu.addItem(withTitle: CageLanguage.text("关于 Cage"), action: #selector(about), keyEquivalent: "")
+        appMenu.addItem(withTitle: CageLanguage.text("关于 SuperCage"), action: #selector(about), keyEquivalent: "")
         appMenu.addItem(withTitle: CageLanguage.text("检查应用更新…"), action: #selector(checkApplicationUpdate), keyEquivalent: "")
         completeUpdateMenu = appMenu.addItem(withTitle: CageLanguage.text("完成待安装更新…"), action: #selector(completePendingUpdate), keyEquivalent: "")
         completeUpdateMenu.isHidden = !controllerNeedsUpdate
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: CageLanguage.text("设置…"), action: #selector(settings), keyEquivalent: ",")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: CageLanguage.text("隐藏 Cage"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: CageLanguage.text("隐藏 SuperCage"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(withTitle: CageLanguage.text("显示全部"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: CageLanguage.text("退出 Cage…"), action: #selector(requestQuit), keyEquivalent: "q")
+        appMenu.addItem(withTitle: CageLanguage.text("退出 SuperCage…"), action: #selector(requestQuit), keyEquivalent: "q")
         let file = NSMenu(title: CageLanguage.text("文件"))
         file.addItem(withTitle: CageLanguage.text("打开项目…"), action: #selector(openProject), keyEquivalent: "o")
         file.addItem(.separator())
@@ -234,7 +234,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
     @objc private func about() {
         let version = Bundle.main.object(forInfoDictionaryKey: "CageVersion") as? String ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? CageLanguage.text("开发版本")
         let status = controllerNeedsUpdate ? "\n" + CageLanguage.text("当前连接旧后台；更新尚未完成。") : ""
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName:"Cage", .applicationVersion:version, .credits:NSAttributedString(string:CageLanguage.text("本机隔离编码工作区") + "\n" + CageLanguage.text("基于 agent-vm、Lima、Chromium、noVNC 与 xterm.js") + status)])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName:"SuperCage", .applicationVersion:version, .credits:NSAttributedString(string:CageLanguage.text("本机隔离编码工作区") + "\n" + CageLanguage.text("基于 agent-vm、Lima、Chromium、noVNC 与 xterm.js") + status)])
     }
     @objc private func settings() { action("settings") }
     @objc private func openProject() { action("openProject") }
@@ -301,7 +301,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
     private func action(_ name: String) { webView.evaluateJavaScript("window.cageNativeAction?.('\(name)')", completionHandler: nil) }
     private func requestEntry(options: [String] = [], _ completion: @escaping (Result<DesktopEntry, Error>) -> Void) {
         guard let executable = Bundle.main.url(forResource: "cage", withExtension: nil) else {
-            completion(.failure(NSError(domain: "Cage", code: 1))); return
+            completion(.failure(NSError(domain: "SuperCage", code: 1))); return
         }
         DispatchQueue.global(qos: .userInitiated).async {
             let process = Process(); process.executableURL = executable; process.arguments = ["desktop", "--json"] + options
@@ -315,12 +315,12 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
                 process.waitUntilExit()
                 let result = try JSONSerialization.jsonObject(with: data) as? [String:Any]
                 let message = result?["message"] as? String ?? "工作台未能启动，请重试连接。"
-                guard process.terminationStatus == 0, let status = result?["status"] as? String else { throw NSError(domain:"Cage", code:1, userInfo:[NSLocalizedDescriptionKey:message]) }
+                guard process.terminationStatus == 0, let status = result?["status"] as? String else { throw NSError(domain:"SuperCage", code:1, userInfo:[NSLocalizedDescriptionKey:message]) }
                 if status == "upgrade_pending" {
                     DispatchQueue.main.async { completion(.success(DesktopEntry(status:status, url:nil, message:message))) }
                     return
                 }
-                guard let raw = result?["url"] as? String, let url = URL(string: raw), url.scheme == "http", url.host == "localhost", url.port != nil, url.fragment?.isEmpty == false else { throw NSError(domain:"Cage", code:1, userInfo:[NSLocalizedDescriptionKey:message]) }
+                guard let raw = result?["url"] as? String, let url = URL(string: raw), url.scheme == "http", url.host == "localhost", url.port != nil, url.fragment?.isEmpty == false else { throw NSError(domain:"SuperCage", code:1, userInfo:[NSLocalizedDescriptionKey:message]) }
                 DispatchQueue.main.async { completion(.success(DesktopEntry(status:status, url:url, message:""))) }
             } catch { DispatchQueue.main.async { completion(.failure(error)) } }
         }
@@ -328,7 +328,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
     private func bootstrap(options: [String] = []) {
         bootstrapGeneration += 1
         let generation = bootstrapGeneration
-        loading.stringValue = options.contains("--complete-update") ? CageLanguage.text("正在停止环境并切换到新版后台…") : CageLanguage.text("正在启动 Cage 工作台…")
+        loading.stringValue = options.contains("--complete-update") ? CageLanguage.text("正在停止环境并切换到新版后台…") : CageLanguage.text("正在启动 SuperCage 工作台…")
         loading.isHidden = false; retry.isHidden = true; webView.isHidden = true
         completeUpdateButton.isHidden = true; existingEnvironmentButton.isHidden = true
         requestEntry(options: options) { result in
@@ -337,8 +337,8 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
             case .success(let entry):
                 self.controllerNeedsUpdate = entry.status != "ready"
                 self.completeUpdateMenu.isHidden = !self.controllerNeedsUpdate
-                let appTitle = "Cage"
-                self.window.title = self.controllerNeedsUpdate ? CageLanguage.text("Cage（更新待完成）") : appTitle
+                let appTitle = "SuperCage"
+                self.window.title = self.controllerNeedsUpdate ? CageLanguage.text("SuperCage（更新待完成）") : appTitle
                 if let url = entry.url { self.expectedPort = url.port!; self.webView.load(URLRequest(url: url)) }
                 else { self.showError(entry.message); self.completeUpdateButton.isHidden = false; self.existingEnvironmentButton.isHidden = false }
             case .failure(let error):
@@ -523,7 +523,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
             let connection = body["connection_id"] as? String ?? "local"
             requestEntry { result in
                 guard case .success(let entry) = result, let url = entry.url else {
-                    self.accountDeviceBusy = false; replyHandler(nil,"无法连接本地账户，请重新打开 Cage"); return
+                    self.accountDeviceBusy = false; replyHandler(nil,"无法连接本地账户，请重新打开 SuperCage"); return
                 }
                 Task.detached {
                     do {
@@ -551,11 +551,11 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
         case "appReference":
             let path: String
             switch body["kind"] as? String {
-            case "source": path = "commits/allcage"
+            case "source": path = "commits/supercage"
             case "releases": path = "releases"
             default: replyHandler(nil,"未知的项目页面"); return
             }
-            let opened = NSWorkspace.shared.open(URL(string: "https://github.com/larito001/Claude-Cage/" + path)!)
+            let opened = NSWorkspace.shared.open(URL(string: "https://github.com/larito001/Super-Cage/" + path)!)
             replyHandler(opened ? true : nil, opened ? nil : "无法打开项目页面，请检查默认浏览器")
         case "appUpdate":
             guard let operation = body["operation"] as? String, ["status", "check", "install", "complete", "cancel"].contains(operation) else { replyHandler(nil,"更新操作无效"); return }
@@ -566,7 +566,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
             retry.title = CageLanguage.text("重试连接")
             existingEnvironmentButton.title = CageLanguage.text("打开现有环境保存文件")
             completeUpdateButton.title = CageLanguage.text("保存后停止环境并完成更新")
-            window.title = controllerNeedsUpdate ? CageLanguage.text("Cage（更新待完成）") : "Cage"
+            window.title = controllerNeedsUpdate ? CageLanguage.text("SuperCage（更新待完成）") : "SuperCage"
             replyHandler(true, nil)
         case "appearance":
             guard let mode = body["mode"] as? String, ["system", "light", "dark"].contains(mode), let background = body["background"] as? String, background.range(of: "^#[0-9a-fA-F]{6}$", options: .regularExpression) != nil else { replyHandler(nil,"外观参数无效"); return }
@@ -762,7 +762,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
             panel.canChooseDirectories = true; panel.canChooseFiles = false
             panel.canCreateDirectories = false; panel.allowsMultipleSelection = false
             panel.prompt = CageLanguage.text(mode == "write" ? "允许云端读写" : "允许云端读取")
-            panel.message = CageLanguage.text(mode == "write" ? "云端 Cage 可以读取、修改和删除所选项目中的文件。" : "云端 Cage 可以读取所选项目中的文件。")
+            panel.message = CageLanguage.text(mode == "write" ? "云端 SuperCage 可以读取、修改和删除所选项目中的文件。" : "云端 SuperCage 可以读取所选项目中的文件。")
             nativeFilePanelOpen = true
             panel.beginSheetModal(for: window) { response in
                 self.nativeFilePanelOpen = false
@@ -773,7 +773,7 @@ final class CageApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNaviga
             let panel = NSOpenPanel(); panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.canCreateDirectories = true; panel.allowsMultipleSelection = false
             let storage = (body["purpose"] as? String) == "environmentStorage"
             panel.prompt = CageLanguage.text(storage ? "选择文件夹" : "共享此项目")
-            panel.message = CageLanguage.text(storage ? "请选择用于保存镜像和虚拟磁盘的空文件夹。" : "仅此文件夹会与 Cage 共享。请选择具体项目。")
+            panel.message = CageLanguage.text(storage ? "请选择用于保存镜像和虚拟磁盘的空文件夹。" : "仅此文件夹会与 SuperCage 共享。请选择具体项目。")
             nativeFilePanelOpen = true
             panel.beginSheetModal(for:window) { response in self.nativeFilePanelOpen = false; replyHandler(response == .OK ? panel.url?.path : "",nil) }
         case "notificationStatus":

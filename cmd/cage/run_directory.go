@@ -16,7 +16,7 @@ import (
 
 // followRunDirectory picks where `cage run` runs. Inside a shared project it
 // runs from the same place in the environment. Anywhere else, or when that
-// cannot be determined (Cage closed, environment not ready, project busy), it
+// cannot be determined (SuperCage closed, environment not ready, project busy), it
 // runs from the environment directory as it always did, after a one-line
 // notice on stderr: scripts that call cage run from any directory keep
 // working. An explicit --workdir is kept as given. --here asks for the strict
@@ -42,7 +42,7 @@ func followRunDirectory(configPath string, args []string, hostDir string, hostEr
 	fallback := func(reason string, unshared bool) ([]string, error) {
 		fmt.Fprintf(stderr, "cage run：%s，改在环境目录中运行。\n", reason)
 		if unshared && confirm != nil {
-			fmt.Fprintln(stderr, "  如需在当前目录运行：在 Cage 的“项目”中添加该文件夹，或使用 cage run --here 确认共享。")
+			fmt.Fprintln(stderr, "  如需在当前目录运行：在 SuperCage 的“项目”中添加该文件夹，或使用 cage run --here 确认共享。")
 		}
 		return plain, nil
 	}
@@ -89,7 +89,7 @@ func terminalConfirm(stdin *os.File, stderr *os.File) workbench.RunDirectoryConf
 }
 
 func askShare(in io.Reader, out io.Writer, folder string) (bool, error) {
-	fmt.Fprintf(out, "当前目录尚未共享给 Cage：\n  %s\n共享后，环境中的程序可以读取和修改这个文件夹，包括其中的隐藏文件和 Git 仓库。\n是否共享并在其中运行？[y/N] ", folder)
+	fmt.Fprintf(out, "当前目录尚未共享给 SuperCage：\n  %s\n共享后，环境中的程序可以读取和修改这个文件夹，包括其中的隐藏文件和 Git 仓库。\n是否共享并在其中运行？[y/N] ", folder)
 	// Read one byte at a time: what follows the answer is the command's input.
 	var line []byte
 	buf := make([]byte, 1)

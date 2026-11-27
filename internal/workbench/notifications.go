@@ -336,7 +336,7 @@ func (s *Server) notificationEvents(w http.ResponseWriter, r *http.Request) {
 	// Terminal titles and project names go only to this computer's own desktop
 	// window, never to a browser, phone or remote client view.
 	if !s.hasTrustedView(r) {
-		http.Error(w, "通知仅发送到本机 Cage 窗口", http.StatusForbidden)
+		http.Error(w, "通知仅发送到本机 SuperCage 窗口", http.StatusForbidden)
 		return
 	}
 	controller := http.NewResponseController(w)

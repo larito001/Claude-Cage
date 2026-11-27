@@ -151,7 +151,7 @@ export function AppUpdateDialog({ updates, onStatus }) {
     </button>
   </>}>
     <div className="modal-body">
-      <p>{tr("更新已下载并验证。请先保存文件，点击下方按钮停止环境后安装并重启 Cage。当前终端任务会结束，项目、账户和登录状态会保留。")}</p>
+      <p>{tr("更新已下载并验证。请先保存文件，点击下方按钮停止环境后安装并重启 SuperCage。当前终端任务会结束，项目、账户和登录状态会保留。")}</p>
       {state.officialUpgrade && <p>{tr("当前运行的是本地未签名构建。继续安装将切换为官方签名发行版，本地源码改动不会保留；配置、账户、项目和虚拟机磁盘会保留，后续将持续接收官方自动更新。")}</p>}
       <p>{tr("取消可稍后安装，已下载的更新会保留。停止开始后，取消只推迟安装，环境仍会停止。")}</p>
       {stopping && <p role="status"><LoaderCircle size={16} className="spin" />{" " + tr("正在等待环境停止，完成后继续安装…")}</p>}

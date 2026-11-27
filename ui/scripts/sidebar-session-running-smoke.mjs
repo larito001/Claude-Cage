@@ -7,7 +7,7 @@ await mkdir(output, {recursive:true});
 for (const platform of ["darwin", "windows", "linux"]) {
   const sessions = [
     {id:"external",title:"其他窗口中的会话",running:true},
-    {id:"owned",title:"Cage 中已打开的会话",running:true,active:true},
+    {id:"owned",title:"SuperCage 中已打开的会话",running:true,active:true},
     {id:"waiting",title:"等待打开的会话"},
     {id:"available",title:"可以接续的会话"},
     {id:"desktop",title:"设置界面字体和设计，保留长标题的省略显示",running:true,claude_desktop:true,pinned:true},

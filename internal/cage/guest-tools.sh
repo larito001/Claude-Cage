@@ -147,7 +147,7 @@ cage_install_tool() (
   set -euo pipefail
   local tool="$1" arch current='' wanted url checksum artifact mirror=''
   arch="$(dpkg --print-architecture)"
-  case "$arch" in arm64|amd64) ;; *) echo 'Cage tool packages support arm64 and amd64.' >&2; exit 1 ;; esac
+  case "$arch" in arm64|amd64) ;; *) echo 'SuperCage tool packages support arm64 and amd64.' >&2; exit 1 ;; esac
   case "$tool" in
     gh)
       wanted="$CAGE_GH_VERSION"
@@ -198,7 +198,7 @@ cage_install_tool() (
       wanted="$(npm view --registry=https://registry.npmjs.org @anthropic-ai/claude-code@latest version --json </dev/null | jq -er 'select(type == "string") | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))')"
       if command -v claude >/dev/null; then current="$(DISABLE_AUTOUPDATER=1 claude --version | cage_tool_version)" || current=''; fi
       ;;
-    *) echo 'Unknown Cage tool.' >&2; exit 2 ;;
+    *) echo 'Unknown SuperCage tool.' >&2; exit 2 ;;
   esac
   if [ -n "$current" ] && dpkg --compare-versions "${current#v}" ge "$wanted"; then
     # Repair existing Cage npm installs even when no package upgrade is needed.

@@ -8,7 +8,7 @@ import (
 	"github.com/sylvinus/agent-vm/internal/hostimage"
 )
 
-// abandonedGuestData lists, per guest system Cage no longer runs, the profile
+// abandonedGuestData lists, per guest system SuperCage no longer runs, the profile
 // entries such a guest left behind. Entries are glob patterns relative to the
 // profile directory.
 var abandonedGuestData = []struct {
@@ -33,7 +33,7 @@ func abandonedGuestName(system string) string {
 	return ""
 }
 
-// abandonedGuestSystem reports whether a requested guest system is one Cage
+// abandonedGuestSystem reports whether a requested guest system is one SuperCage
 // no longer installs or starts.
 func abandonedGuestSystem(system string) bool {
 	return abandonedGuestName(system) != ""
@@ -57,7 +57,7 @@ func abandonedGuests(profile string) []string {
 
 // abandonedGuestList also names the system of an installation that an earlier
 // version recorded but can no longer continue, and of an existing environment
-// that was created from a system Cage no longer runs.
+// that was created from a system SuperCage no longer runs.
 func (s *Server) abandonedGuestList() []string {
 	found := abandonedGuests(s.profile)
 	systems := []string{hostimage.AbandonedEnvironment(filepath.Join(s.profile, "state"))}
@@ -83,9 +83,9 @@ func abandonedGuestMessage(system string) string {
 	case "ubuntu", "ubuntu-22.04", "ubuntu-24.04":
 		name = "Ubuntu"
 	}
-	message := "Cage 已不再支持 " + name + " 客机，现在只提供 Debian 环境；原有客机数据仍保留在数据目录中，未被改动。"
+	message := "SuperCage 已不再支持 " + name + " 客机，现在只提供 Debian 环境；原有客机数据仍保留在数据目录中，未被改动。"
 	if name == "Ubuntu" {
-		message += "可在 Cage 窗口选择“保留旧 Ubuntu 环境并新建 Debian”。"
+		message += "可在 SuperCage 窗口选择“保留旧 Ubuntu 环境并新建 Debian”。"
 	}
 	return message
 }

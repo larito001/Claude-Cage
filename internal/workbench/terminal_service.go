@@ -39,7 +39,7 @@ func usesOfficialProviderBinary(command, binary string) bool {
 const terminalLimit = 12
 
 var (
-	errTerminalsClosed  = errors.New("后台正在退出，请重新打开 Cage。")
+	errTerminalsClosed  = errors.New("后台正在退出，请重新打开 SuperCage。")
 	errTerminalBusy     = errors.New("环境正在执行其他操作")
 	errTerminalNotReady = errors.New("环境尚未就绪或正在重启")
 	errTerminalLimit    = fmt.Errorf("最多同时运行 %d 个终端，请先关闭或归档不用的会话", terminalLimit)
@@ -831,7 +831,7 @@ func (s *Server) selectTerminalClaudeAccount(command, requested string, login bo
 	parts, valid := mobileLaunchArgs(command, claudeSelection{})
 	if !login && valid == nil && len(parts) == 2 && parts[0] == "ccs" {
 		if requested != "" && requested != "auto" {
-			return claudeSelection{}, errors.New("CCS 使用自己的配置，不能指定 Cage 账号")
+			return claudeSelection{}, errors.New("CCS 使用自己的配置，不能指定 SuperCage 账号")
 		}
 		return claudeSelection{}, nil
 	}

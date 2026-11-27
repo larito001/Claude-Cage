@@ -13,18 +13,18 @@ import (
 
 const (
 	LimaSocketPathReason = "Lima 虚拟机套接字路径过长"
-	LimaSocketPathHelp   = "请将 Cage 配置放在路径更短的本地目录后重试。若手动链接了环境存储，请使用路径更短的本地存储目录。"
+	LimaSocketPathHelp   = "请将 SuperCage 配置放在路径更短的本地目录后重试。若手动链接了环境存储，请使用路径更短的本地存储目录。"
 )
 
 var ErrLimaSocketPathTooLong = errors.New(LimaSocketPathReason)
 
-// ProfileLimaHome is the home Cage passes to its embedded Lima. A managed
+// ProfileLimaHome is the home SuperCage passes to its embedded Lima. A managed
 // move preserves the logical state link, anchored under the resolved profile.
 func ProfileLimaHome(profile string, custom bool) (string, error) {
 	if custom {
 		real, err := paths.Resolve(profile)
 		if err != nil {
-			return "", errors.New("无法解析 Cage 配置目录，请检查配置目录及其链接。")
+			return "", errors.New("无法解析 SuperCage 配置目录，请检查配置目录及其链接。")
 		}
 		return filepath.Join(real, "state", "lima"), nil
 	}
@@ -52,7 +52,7 @@ func ValidateLimaSocketPath(instanceDir string) error {
 func ValidateProfileLimaSocketPaths(profile string) error {
 	record, err := readStorageRecord(profile)
 	if err != nil {
-		return errors.New("无法读取 Cage 环境存储配置，请在设置中检查环境存储。")
+		return errors.New("无法读取 SuperCage 环境存储配置，请在设置中检查环境存储。")
 	}
 	home, err := ProfileLimaHome(profile, record.Directory != "")
 	if err != nil {

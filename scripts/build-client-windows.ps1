@@ -41,7 +41,7 @@ try {
         '-p:EnableWindowsTargeting=true', '-p:PublishSingleFile=true', '-p:RestoreLockedMode=true', "-p:Version=$version", "-p:InformationalVersion=$version", '-o', $app)
     Get-ChildItem -LiteralPath $app -File | Where-Object { $_.Extension -in @('.pdb', '.xml') } | Remove-Item -Force
     [IO.File]::WriteAllText((Join-Path $resources 'client-only'), '')
-    [IO.File]::WriteAllText((Join-Path $app 'Cage.client-id'), 'io.github.lee-xeo.claude-cage-client')
+    [IO.File]::WriteAllText((Join-Path $app 'Cage.client-id'), 'io.github.lee-xeo.super-cage-client')
     [IO.File]::WriteAllText((Join-Path $app 'version.txt'), $version)
     Invoke-BuildTool $node @('scripts/bundle-cloud-kit.mjs', $resources)
     Invoke-BuildTool $node @('scripts/collect-app-licenses.mjs', (Join-Path $resources 'licenses'))
@@ -68,10 +68,10 @@ try {
     [IO.File]::WriteAllText((Join-Path $app 'README.txt'), @'
 Cage 轻量远程客户端（未签名开发构建）
 
-运行 Cage.exe。需要 Windows 10/11 x64 与 Microsoft Edge WebView2 Runtime。
+运行 SuperCage.exe。需要 Windows 10/11 x64 与 Microsoft Edge WebView2 Runtime。
 .NET 运行时已随应用提供。没有 WebView2 时，可使用 -IncludeWebViewRuntime 构建包含已校验安装程序的包；构建不会安装该程序。
 本机只提供窗口、SSH 连接、输入和文件传递；项目、浏览器、终端与网络在云端 Cage 运行。
-默认连接配置目录为用户目录下的 .claude-cage/client；显式 CLAUDE_CAGE_CONFIG 配置保持有效。
+默认连接配置目录为用户目录下的 .super-cage/client；显式 SUPER_CAGE_CONFIG 配置保持有效。
 此目录为独立构建产物，不会安装、替换完整 Cage 或自动下载完整 Cage 更新。
 本构建未签名或发布。Windows 原生运行验收范围以项目测试报告为准。
 '@)
@@ -79,7 +79,7 @@ Cage 轻量远程客户端（未签名开发构建）
         Invoke-BuildTool (Join-Path $resources 'cage.exe') @('verify-web-assets')
         Assert-WindowsWorkbench $app
     }
-    Compress-Archive -Path $app -DestinationPath (Join-Path $result 'Cage-Client-windows-amd64.zip') -CompressionLevel Optimal
+    Compress-Archive -Path $app -DestinationPath (Join-Path $result 'SuperCage-Client-windows-amd64.zip') -CompressionLevel Optimal
     if (Test-Path -LiteralPath $destination) { throw 'Client output already exists; no files were replaced.' }
     Move-Item -LiteralPath $result -Destination $destination
     Write-Host "Built standalone client: $destination"

@@ -23,7 +23,7 @@ func (s *Server) proxyLocalConfigs(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) requireLocalConfigAccess(w http.ResponseWriter, r *http.Request) bool {
 	if !s.hasTrustedView(r) {
-		http.Error(w, "请在这台电脑的 Cage 窗口中导入本机代理配置；其他连接可手动上传配置文件", http.StatusForbidden)
+		http.Error(w, "请在这台电脑的 SuperCage 窗口中导入本机代理配置；其他连接可手动上传配置文件", http.StatusForbidden)
 		return false
 	}
 	return true

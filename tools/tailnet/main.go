@@ -1,4 +1,4 @@
-// Cage's unprivileged Tailscale node. Run only inside the guest: its normal
+// SuperCage's unprivileged Tailscale node. Run only inside the guest: its normal
 // packet path enforces the selected proxy, public UDP denial and network pause.
 package main
 

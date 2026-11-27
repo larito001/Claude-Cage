@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory(prefix=unit, dir='/home/cage/.cache') as direct
 from pathlib import Path
 gi.require_version('Gtk','3.0')
 from gi.repository import Gtk,Gdk,GLib
-window=Gtk.Window(title='Cage IME QA')
+window=Gtk.Window(title='SuperCage IME QA')
 entry=Gtk.Entry()
 window.add(entry)
 window.set_default_size(400,100)
@@ -39,7 +39,7 @@ Gtk.main()
         assert ready.exists(), 'IBus did not become ready'
         pid = subprocess.check_output(['systemctl', 'show', unit, '--property=MainPID', '--value'], text=True).strip()
         subprocess.run(['nsenter', '--target', pid, '--mount', '--net', 'runuser', '-u', 'cage', '--',
-                        'env', 'DISPLAY=:196', 'xdotool', 'search', '--sync', '--name', 'Cage IME QA', 'windowfocus', '--sync'], check=True, timeout=5)
+                        'env', 'DISPLAY=:196', 'xdotool', 'search', '--sync', '--name', 'SuperCage IME QA', 'windowfocus', '--sync'], check=True, timeout=5)
 
         def request(value):
             result = subprocess.check_output(['runuser', '-u', 'cage', '--', 'env', 'HOME=' + str(root),

@@ -36,7 +36,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" {
-		fmt.Println("Cage remote client " + version.Version + "\nCommands: desktop --json, serve, prepare-update. Workloads run on the selected remote host.")
+		fmt.Println("SuperCage remote client " + version.Version + "\nCommands: desktop --json, serve, prepare-update. Workloads run on the selected remote host.")
 		return nil
 	}
 	if args[0] == "verify-web-assets" {
@@ -51,7 +51,7 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		config = filepath.Join(home, ".claude-cage", "client", "config.json")
+		config = filepath.Join(home, ".super-cage", "client", "config.json")
 	}
 	config, err := filepath.Abs(config)
 	if err != nil {

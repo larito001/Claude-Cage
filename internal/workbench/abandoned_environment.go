@@ -17,7 +17,7 @@ import (
 	"github.com/sylvinus/agent-vm/internal/vm"
 )
 
-// removedGuestsDir, in state, holds environments of systems Cage no longer
+// removedGuestsDir, in state, holds environments of systems SuperCage no longer
 // runs that the user chose to keep while starting a new Debian environment.
 // It is on the same disk as the environment, so setting one aside only
 // renames its files.

@@ -29,7 +29,7 @@ function InitializationFrame({ children }) {
   const tr = useTranslation();
   return <main className="initialization">
     <header className="initialization-brand">
-      <img src={logo} alt="" /><strong>Cage</strong><span>{tr("首次设置")}</span>
+      <img src={logo} alt="" /><strong>SuperCage</strong><span>{tr("首次设置")}</span>
       <div className="startup-language-slot"><LanguageSettings compact /></div>
     </header>
     {children}
@@ -57,7 +57,7 @@ export function InitializationGate({ children }) {
     return () => { live = false; };
   }, [remote, attempt]);
   if (remote) return children;
-  if (error) return <InitializationFrame><section className="initialization-content"><h1>{tr("继续准备 Cage")}</h1><p role="alert"><SafetyMessage message={error} /></p><button className="primary" onClick={() => retry(value => value + 1)}>{tr("重新连接")}</button><DiagnosticSettings /></section></InitializationFrame>;
+  if (error) return <InitializationFrame><section className="initialization-content"><h1>{tr("继续准备 SuperCage")}</h1><p role="alert"><SafetyMessage message={error} /></p><button className="primary" onClick={() => retry(value => value + 1)}>{tr("重新连接")}</button><DiagnosticSettings /></section></InitializationFrame>;
   if (!state) return <InitializationFrame><section className="initialization-content"><h1>{tr("正在读取环境状态")}</h1><p role="status"><LoaderCircle size={18} className="spin" />{tr("正在检查已有配置和安装进度…")}</p></section></InitializationFrame>;
   return state.required ? <Initialization initial={state} onComplete={() => setState({ required: false })} /> : children;
 }
@@ -271,18 +271,18 @@ function Initialization({ initial, onComplete }) {
   const stopped = !busy && !status?.ready && (job.kind === "stop" || job.canceled);
   const networkPending = Boolean(status?.ready && status.vm_running && network.mode !== "open");
   const progress = !status?.ready && job.setup_progress ? { ...job, setup_progress: job.setup_progress } : null;
-  const title = step === "system" ? "为 Cage 准备独立环境" : step === "proxy" ? "连接你的网络代理" : showReady ? "Cage 已准备就绪" : !busy && networkPending ? "系统已安装，完成使用检查" : stopped ? "安装已停止，可以继续" : failed ? "继续完成环境安装" : busy ? "正在准备你的环境" : "安装并检查客机环境";
+  const title = step === "system" ? "为 SuperCage 准备独立环境" : step === "proxy" ? "连接你的网络代理" : showReady ? "SuperCage 已准备就绪" : !busy && networkPending ? "系统已安装，完成使用检查" : stopped ? "安装已停止，可以继续" : failed ? "继续完成环境安装" : busy ? "正在准备你的环境" : "安装并检查客机环境";
   const index = steps.findIndex(([key]) => key === step);
   return <InitializationFrame>
     <section className="initialization-content">
       <ol className="initialization-steps" aria-label={tr("初始化步骤")}>{steps.map(([key, label], position) => <li key={key} aria-current={step === key ? "step" : undefined}><span>{position < index ? <Check size={14} /> : position + 1}</span>{tr(label)}</li>)}</ol>
-      <div className="initialization-title"><h1>{tr(title)}</h1><p>{step === "system" ? tr("Cage 会在这台电脑里创建一套独立的 Debian 系统，供终端、浏览器和编辑器使用。不需要更换磁盘时，可以保留默认存储位置。") : step === "proxy" ? tr("导入具体节点。使用代理链时，在 Cage 中依次选择中转和最终出口。") : showReady ? tr("系统、开发组件和网络检查均已完成，可以进入工作台开始使用。") : networkPending ? tr("系统已经装好，无需重新安装。按下方指引完成检查，就能进入工作台。") : tr("Cage 会自动下载系统、安装工具，再引导你完成授权。需要你操作时会显示具体步骤；中断后可以继续原任务。")}</p></div>
+      <div className="initialization-title"><h1>{tr(title)}</h1><p>{step === "system" ? tr("SuperCage 会在这台电脑里创建一套独立的 Debian 系统，供终端、浏览器和编辑器使用。不需要更换磁盘时，可以保留默认存储位置。") : step === "proxy" ? tr("导入具体节点。使用代理链时，在 SuperCage 中依次选择中转和最终出口。") : showReady ? tr("系统、开发组件和网络检查均已完成，可以进入工作台开始使用。") : networkPending ? tr("系统已经装好，无需重新安装。按下方指引完成检查，就能进入工作台。") : tr("SuperCage 会自动下载系统、安装工具，再引导你完成授权。需要你操作时会显示具体步骤；中断后可以继续原任务。")}</p></div>
       {connectionError && <div className="initialization-notice" role="alert"><SafetyMessage message={connectionError} /><button onClick={() => pollNow.current?.()}>{tr("重新连接")}</button></div>}
       {!status ? <p role="status"><LoaderCircle size={18} className="spin" />{tr("正在读取安装状态…")}</p> : <>
         <div className="initialization-stage" key={step}>
           {step === "system" && <>
             <GuestSystemPicker system={choice} onChange={setChoice} onReselect={() => { setPending(null); setCanReselect(false); }} preserveOnUnmount />
-            {pending ? <p className="field-help">{tr("撤销原安装选择后，Cage 会改为安装 Debian 13；已下载的镜像和已保存的代理配置会保留。")}</p> : <>
+            {pending ? <p className="field-help">{tr("撤销原安装选择后，SuperCage 会改为安装 Debian 13；已下载的镜像和已保存的代理配置会保留。")}</p> : <>
               <InitializationStorage value={storage} onChange={setStorage} disabled={busy} />
               <GuestProfileOptions value={guestProfile} onChange={setGuestProfile} disabled={busy} system={choice?.guest_system} />
             </>}
@@ -291,15 +291,15 @@ function Initialization({ initial, onComplete }) {
             <ProxySettings initializing status={status} onConfirm={confirm} onDirty={setProxyDirty} onApplied={async () => { setProxy(await api("/proxy")); pollNow.current?.(); }} />
             <InitializationDNS proxy={proxy} busy={busy} defaultOpen={dnsOpen || dnsFailed} focusNonce={dnsFocusNonce} onDirty={setDnsDirty} onSaved={() => pollNow.current?.()} apiClient={setupApi} />
           </>}
-          {step === "install" && (showReady ? <div className="initialization-ready"><ShieldCheck size={36} /><h2>{tr(entering ? "正在进入工作台" : "环境已就绪")}</h2><p role={entering ? "status" : undefined}>{tr(entering ? "正在等待后台检查结束并确认环境状态，请稍候…" : "独立系统已安装，工具、文件和登录状态会持续保存。以后打开 Cage 可直接进入工作台。")}</p></div> : <>
+          {step === "install" && (showReady ? <div className="initialization-ready"><ShieldCheck size={36} /><h2>{tr(entering ? "正在进入工作台" : "环境已就绪")}</h2><p role={entering ? "status" : undefined}>{tr(entering ? "正在等待后台检查结束并确认环境状态，请稍候…" : "独立系统已安装，工具、文件和登录状态会持续保存。以后打开 SuperCage 可直接进入工作台。")}</p></div> : <>
             {needsRestart && <section className="initialization-notice" aria-label={tr("需要重启环境")}><h2>{tr("下一步：重启环境并重新检测")}</h2><p>{tr("环境设置已变化。请先保存文件，再点击下方按钮。重启并通过检查前，外网保持关闭。")}</p><button className="primary" disabled={busy || Boolean(connectionError)} onClick={restart}>{status.vm_running ? tr("重启环境并重新检测") : tr("启动环境并重新检测")}</button></section>}
             {progress ? <SetupProgress job={progress} onDetails={() => setDetails(true)} onStop={stop} onRetry={needsRestart ? restart : install} onDNS={dnsFailed ? openDNSSettings : undefined} disconnected={Boolean(connectionError) || submitting} /> : <div className="initialization-operation" role="status">{busy && <LoaderCircle size={22} className="spin" />}<p>{measuring ? tr("正在经所选代理测量 Debian 软件源的下载速度，最多约 20 秒…") : stopped ? tr("安装已停止，已有下载和磁盘会保留。点击「继续安装」接着完成。") : job.message || (status.vm_running ? tr("请完成客机连接和网络检查。") : tr("准备继续原安装，已有文件和磁盘会保留。"))}</p>{!busy && !job.error && !mirrors && !needsRestart && <button className="primary" disabled={Boolean(connectionError)} onClick={install}>{status.ready ? tr("重新启动并检查") : tr("继续安装")}</button>}{busy && !measuring && <button onClick={stop} disabled={submitting}>{tr("停止安装")}</button>}</div>}
             {job.error && !progress && <div className="initialization-notice" role="alert"><SafetyMessage message={job.error} />{!networkPending && !needsRestart && <button className="primary" disabled={busy || Boolean(connectionError)} onClick={install}>{tr("继续安装")}</button>}{dnsFailed && <button disabled={busy} onClick={openDNSSettings}>{tr("测试或修改加密 DNS")}</button>}</div>}
             {status.ready && network.mode !== "open" && !busy && !needsRestart && <>
               <div className="initialization-network"><p>{status.safety?.error || job.error || status.network_error || tr("客机已经连接，请完成网络和隔离检查后进入工作台。")}</p><button disabled={Boolean(connectionError)} onClick={checkNetwork}>{tr("运行网络与隔离检查")}</button></div>
             </>}
-            {(progress?.setup_progress.phase === "image" || (failed && !networkPending)) && <p>{tr("系统镜像遵循主机代理设置。下载失败时，可在操作详情中查看当前文件和重试记录。客机内的联网请求使用 Cage 代理。")}</p>}
-            <div className="initialization-recovery">{canReselect && <button disabled={busy} onClick={() => setStep("system")}>{tr("查看或撤销原安装选择")}</button>}<button onClick={() => { if (failed) setDnsOpen(true); setStep("proxy"); }} disabled={busy}>{tr("检查 Cage 代理配置")}</button>{!progress && <button onClick={() => setDetails(true)}>{tr("查看操作详情")}</button>}</div>
+            {(progress?.setup_progress.phase === "image" || (failed && !networkPending)) && <p>{tr("系统镜像遵循主机代理设置。下载失败时，可在操作详情中查看当前文件和重试记录。客机内的联网请求使用 SuperCage 代理。")}</p>}
+            <div className="initialization-recovery">{canReselect && <button disabled={busy} onClick={() => setStep("system")}>{tr("查看或撤销原安装选择")}</button>}<button onClick={() => { if (failed) setDnsOpen(true); setStep("proxy"); }} disabled={busy}>{tr("检查 SuperCage 代理配置")}</button>{!progress && <button onClick={() => setDetails(true)}>{tr("查看操作详情")}</button>}</div>
           </>)}
         </div>
         {mirrors && step === "install" && <section className="initialization-notice" aria-label={tr("Debian 软件源")}><h2>{tr("安装前，选择 Debian 软件源")}</h2><p>{tr("已经所选代理依次测量各软件源的下载速度。国内直连时国内镜像通常更快；出口在海外时官方 CDN 更快。")}</p>

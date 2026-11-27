@@ -137,7 +137,7 @@ func (e *app) main(ctx context.Context, args []string) int {
 var versionRe = regexp.MustCompile(`^[0-9]+(\.[0-9]+)*(-[A-Za-z0-9.]+)?$`)
 
 // Command names this program in the messages of the commands it shares with
-// other entry points. A program that embeds this package, such as Cage, sets
+// other entry points. A program that embeds this package, such as SuperCage, sets
 // its own before calling Main.
 var Command = "agent-vm"
 
@@ -146,7 +146,7 @@ var Command = "agent-vm"
 var UpdateHint string
 
 // StaleBaseHint, when set, replaces the advice to re-clone a VM whose base
-// was rebuilt. A program whose VM disk holds the user's data, such as Cage,
+// was rebuilt. A program whose VM disk holds the user's data, such as SuperCage,
 // names its own repair path instead of --reset, which deletes that disk.
 var StaleBaseHint string
 

@@ -67,7 +67,7 @@ func (r *Runtime) inspectMounts(container *engineContainer) (MountPropagation, e
 }
 
 // Called only after this Start booted a stopped container, before any project
-// share or Cage application is started. Detach inherited propagation first,
+// share or SuperCage application is started. Detach inherited propagation first,
 // then establish a new group entirely inside the private container namespace.
 func (r *Runtime) initializeMounts(ctx context.Context, containerID string) error {
 	container, err := r.inspectContainer(ctx)

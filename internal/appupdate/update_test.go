@@ -18,7 +18,7 @@ import (
 )
 
 func fixtureRelease(v string, pre bool) release {
-	return release{Tag: "v" + v, Prerelease: pre, Assets: []asset{{Name: "Cage-" + v + "-macos-arm64.dmg", URL: "https://github.com/" + repository + "/releases/download/v" + v + "/Cage-" + v + "-macos-arm64.dmg", Size: 3, Digest: "sha256:" + strings.Repeat("a", 64), State: "uploaded"}}}
+	return release{Tag: "v" + v, Prerelease: pre, Assets: []asset{{Name: "SuperCage-" + v + "-macos-arm64.dmg", URL: "https://github.com/" + repository + "/releases/download/v" + v + "/SuperCage-" + v + "-macos-arm64.dmg", Size: 3, Digest: "sha256:" + strings.Repeat("a", 64), State: "uploaded"}}}
 }
 func TestReleaseSelectionPreservesChannelsAndNumericPrereleases(t *testing.T) {
 	rs := []release{fixtureRelease("0.2.0-alpha.9", true), fixtureRelease("0.2.0-alpha.10", true), fixtureRelease("0.1.0", false)}
@@ -40,23 +40,23 @@ func TestReleaseSelectionPreservesChannelsAndNumericPrereleases(t *testing.T) {
 func TestIntelMacSelectsOnlyItsOwnPackage(t *testing.T) {
 	intel := func(v string) release {
 		r := fixtureRelease(v, false)
-		name := "Cage-" + v + "-macos-amd64.dmg"
+		name := "SuperCage-" + v + "-macos-amd64.dmg"
 		r.Assets = append(r.Assets, asset{Name: name, URL: "https://github.com/" + repository + "/releases/download/v" + v + "/" + name, Size: 3, Digest: "sha256:" + strings.Repeat("b", 64), State: "uploaded"})
 		return r
 	}
 	c, err := catalog.Select([]release{intel("0.2.0"), fixtureRelease("0.3.0", false)}, "0.1.0", "darwin", "amd64")
-	if err != nil || c == nil || c.Version != "0.2.0" || c.Archive.Name != "Cage-0.2.0-macos-amd64.dmg" {
+	if err != nil || c == nil || c.Version != "0.2.0" || c.Archive.Name != "SuperCage-0.2.0-macos-amd64.dmg" {
 		t.Fatalf("Intel Mac selected %#v: %v", c, err)
 	}
-	if c, err = catalog.Select([]release{intel("0.2.0")}, "0.1.0", "darwin", "arm64"); err != nil || c == nil || c.Archive.Name != "Cage-0.2.0-macos-arm64.dmg" {
+	if c, err = catalog.Select([]release{intel("0.2.0")}, "0.1.0", "darwin", "arm64"); err != nil || c == nil || c.Archive.Name != "SuperCage-0.2.0-macos-arm64.dmg" {
 		t.Fatalf("Apple Silicon selected %#v: %v", c, err)
 	}
 }
 
 func TestRejectReleaseAssetOutsideRepositoryOrOversize(t *testing.T) {
 	for _, mutate := range []func(*release){
-		func(r *release) { r.Assets[0].URL = "https://evil.example/Cage.dmg" },
-		func(r *release) { r.Assets[0].URL = "https://github.com/Other/App/releases/download/v0.2.0/Cage.dmg" },
+		func(r *release) { r.Assets[0].URL = "https://evil.example/SuperCage.dmg" },
+		func(r *release) { r.Assets[0].URL = "https://github.com/Other/App/releases/download/v0.2.0/SuperCage.dmg" },
 		func(r *release) { r.Assets[0].Size = maxArchive + 1 },
 		func(r *release) { r.Tag = "v../../malicious" },
 		func(r *release) { r.Draft = true },
@@ -70,7 +70,7 @@ func TestRejectReleaseAssetOutsideRepositoryOrOversize(t *testing.T) {
 	}
 }
 func TestRedirectPolicyRejectsCredentialsAndHostLookalikes(t *testing.T) {
-	for _, raw := range []string{"http://github.com/" + repository + "/releases/download/v1/a", "https://github.com.evil.example/a", "https://github.com@evil.example/a", "https://github.com:8443/" + repository + "/releases/download/v1/a", "https://evil.githubusercontent.com/a", "https://release-assets.githubusercontent.com.evil.example/a", "file:///tmp/Cage.app"} {
+	for _, raw := range []string{"http://github.com/" + repository + "/releases/download/v1/a", "https://github.com.evil.example/a", "https://github.com@evil.example/a", "https://github.com:8443/" + repository + "/releases/download/v1/a", "https://evil.githubusercontent.com/a", "https://release-assets.githubusercontent.com.evil.example/a", "file:///tmp/SuperCage.app"} {
 		u, _ := url.Parse(raw)
 		if allowedURL(u, true) {
 			t.Fatal("accepted", raw)
@@ -91,7 +91,7 @@ func responseClient(body string, status int) *http.Client {
 	})}
 }
 func TestDownloadVerifiesSizeDigestAndPrivateFile(t *testing.T) {
-	content := "Cage archive"
+	content := "SuperCage archive"
 	digest := fmt.Sprintf("%x", sha256.Sum256([]byte(content)))
 	a := fixtureRelease("0.2.0", false).Assets[0]
 	a.Size = int64(len(content))
@@ -101,7 +101,7 @@ func TestDownloadVerifiesSizeDigestAndPrivateFile(t *testing.T) {
 		ok               bool
 	}{{"valid", content, digest, true}, {"hash", content, strings.Repeat("a", 64), false}, {"oversize", content + "x", digest, false}, {"short", content[:3], digest, false}} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "Cage.dmg")
+			path := filepath.Join(t.TempDir(), "SuperCage.dmg")
 			var received int64
 			err := download(context.Background(), responseClient(tc.body, 200), a, tc.hash, path, func(n int64) { received = n }, func() {})
 			if tc.ok {

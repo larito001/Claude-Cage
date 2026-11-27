@@ -37,7 +37,7 @@ export function PhoneHistory({ navigate, onClose }) {
       const next = await browserRequest("/history", { body: payload, signal: controller.signal });
       if (controller.signal.aborted) return;
       if (payload.mode === "list") {
-        if (!Array.isArray(next?.items)) throw new Error("电脑返回的浏览历史格式无效，请更新电脑端 Cage。");
+        if (!Array.isArray(next?.items)) throw new Error("电脑返回的浏览历史格式无效，请更新电脑端 SuperCage。");
         setItems(next.items);
       } else {
         setClearing(false);
@@ -52,7 +52,7 @@ export function PhoneHistory({ navigate, onClose }) {
     } catch (e) {
       if (controller.signal.aborted) return;
       const unsupported = e.status === 404 || e.status === 405 || e instanceof SyntaxError;
-      setError(unsupported ? "这台电脑尚不支持浏览历史，请更新电脑端 Cage。" : e.message);
+      setError(unsupported ? "这台电脑尚不支持浏览历史，请更新电脑端 SuperCage。" : e.message);
     } finally {
       if (request.current === controller) {
         request.current = null;

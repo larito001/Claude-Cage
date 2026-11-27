@@ -29,7 +29,7 @@ func stopInstance(ctx context.Context, inst *limatype.Instance) error {
 				return stopOrphanedInstance(ctx, current)
 			}
 		}
-		return fmt.Errorf("Cage 环境的停止通知不可用；保留环境，请查看 hostagent 日志")
+		return fmt.Errorf("SuperCage 环境的停止通知不可用；保留环境，请查看 hostagent 日志")
 	}
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute+10*time.Second)
 	defer cancel()
@@ -38,7 +38,7 @@ func stopInstance(ctx context.Context, inst *limatype.Instance) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("等待 Cage 环境保存并停止超时: %w", ctx.Err())
+			return fmt.Errorf("等待 SuperCage 环境保存并停止超时: %w", ctx.Err())
 		case <-ticker.C:
 			current, err := store.Inspect(ctx, inst.Name)
 			if err != nil {
@@ -50,7 +50,7 @@ func stopInstance(ctx context.Context, inst *limatype.Instance) error {
 			case stopPollStopOrphan:
 				return stopOrphanedInstance(ctx, current)
 			case stopPollBrokenFail:
-				return fmt.Errorf("Cage 宿主代理已退出但环境处于异常状态（%s），无法确认安全停止；请查看 hostagent 日志", current.Status)
+				return fmt.Errorf("SuperCage 宿主代理已退出但环境处于异常状态（%s），无法确认安全停止；请查看 hostagent 日志", current.Status)
 			}
 		}
 	}

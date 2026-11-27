@@ -134,7 +134,7 @@ func (s *Server) clientPluginsRequest(w http.ResponseWriter, r *http.Request, pa
 		jsonReply(w, svc.syncer.snapshot())
 	case path == "plugins/sync" && r.Method == http.MethodPost:
 		if !s.hasTrustedView(r) {
-			http.Error(w, "请在本机 Cage 窗口同步插件", http.StatusForbidden)
+			http.Error(w, "请在本机 SuperCage 窗口同步插件", http.StatusForbidden)
 			return
 		}
 		svc.syncer.requestSync()
@@ -143,7 +143,7 @@ func (s *Server) clientPluginsRequest(w http.ResponseWriter, r *http.Request, pa
 		jsonReply(w, svc.bridge.snapshot())
 	case path == "plugins/bridge" && r.Method == http.MethodPost:
 		if !s.hasTrustedView(r) {
-			http.Error(w, "请在本机 Cage 窗口共享本机插件", http.StatusForbidden)
+			http.Error(w, "请在本机 SuperCage 窗口共享本机插件", http.StatusForbidden)
 			return
 		}
 		var in struct {

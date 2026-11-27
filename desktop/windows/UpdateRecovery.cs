@@ -16,7 +16,7 @@ internal static class UpdateRecovery
         {
             if (File.Exists(target + ".cage-installation.json") || !Directory.Exists(target) || !Directory.Exists(backup)) return false;
             UpdatePolicy.PlainPath(target); UpdatePolicy.PlainPath(backup);
-            if (!File.Exists(Path.Combine(backup, "Cage.exe")) || !File.Exists(Path.Combine(backup, "Cage.install-id"))) return false;
+            if (!File.Exists(Path.Combine(backup, "SuperCage.exe")) || !File.Exists(Path.Combine(backup, "Cage.install-id"))) return false;
             foreach (var source in Directory.EnumerateFiles(backup, "*", SearchOption.AllDirectories))
             {
                 var installed = Path.Combine(target, Path.GetRelativePath(backup, source));
@@ -44,10 +44,10 @@ internal static class UpdateRecovery
     // the launched process need not be the one showing the candidate. An App
     // left running from the installation restarts the controller that rollback
     // stopped and holds program files open. Only its exact launcher path is
-    // matched; other Cage installations keep running.
+    // matched; other SuperCage installations keep running.
     public static async Task<bool> StopInstalledApps(string target)
     {
-        var launcher = Path.Combine(target, "Cage.exe");
+        var launcher = Path.Combine(target, "SuperCage.exe");
         var stopped = false;
         foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(launcher)))
             using (process)
@@ -73,7 +73,7 @@ internal static class UpdateRecovery
         while (RunningFrom(prefix) is { } running)
         {
             if (DateTime.UtcNow >= deadline)
-                throw new IOException("新版 Cage 的 " + running + " 仍在运行，安装目录尚未改动。请退出 Cage 后重试恢复");
+                throw new IOException("新版 SuperCage 的 " + running + " 仍在运行，安装目录尚未改动。请退出 SuperCage 后重试恢复");
             await Task.Delay(250);
         }
     }

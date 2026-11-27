@@ -54,7 +54,7 @@ func (s *Server) hostIsHeadless() bool {
 // capabilities so a connected desktop client can compute an incremental sync.
 func (s *Server) getHostPluginSync(w http.ResponseWriter, r *http.Request) {
 	if !s.hasPluginControlView(r) {
-		http.Error(w, "请通过受信任的 Cage 桌面窗口同步插件", http.StatusForbidden)
+		http.Error(w, "请通过受信任的 SuperCage 桌面窗口同步插件", http.StatusForbidden)
 		return
 	}
 	s.mu.Lock()
@@ -95,7 +95,7 @@ func (s *Server) getHostPluginSync(w http.ResponseWriter, r *http.Request) {
 // modifying grants, settings or secrets.
 func (s *Server) syncHostPlugin(w http.ResponseWriter, r *http.Request) {
 	if !s.hasPluginControlView(r) {
-		http.Error(w, "请通过受信任的 Cage 桌面窗口同步插件", http.StatusForbidden)
+		http.Error(w, "请通过受信任的 SuperCage 桌面窗口同步插件", http.StatusForbidden)
 		return
 	}
 	name := strings.TrimSpace(r.URL.Query().Get("name"))
@@ -355,7 +355,7 @@ func (r *clientPluginSyncRunner) runOnce(ctx context.Context) (locked bool, busy
 			continue
 		}
 		if unavailable := manifest.Unavailable(remoteManifest.Version, true); unavailable != "" {
-			skipped = append(skipped, clientPluginSyncItem{Name: name, Version: manifest.Version, Reason: "远程 Cage 版本暂不兼容此插件"})
+			skipped = append(skipped, clientPluginSyncItem{Name: name, Version: manifest.Version, Reason: "远程 SuperCage 版本暂不兼容此插件"})
 			continue
 		}
 

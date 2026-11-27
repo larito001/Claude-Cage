@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Stop only the legacy Cage editor before systemd takes ownership."""
+"""Stop only the legacy SuperCage editor before systemd takes ownership."""
 import os
 from pathlib import Path
 import pwd

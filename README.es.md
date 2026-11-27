@@ -1,12 +1,12 @@
 <div align="center">
 
-<h1>Claude Cage</h1>
+<h1>SuperCage</h1>
 
 **Mantenga a la señorita Claude en una jaula para que podamos proteger mejor nuestro tiempo juntos.**
 
-<img src="assets/claude-cage-character.png" alt="Claude Cage" width="320" />
+<img src="assets/claude-cage-character.png" alt="SuperCage" width="320" />
 
-[![Release](https://img.shields.io/github/v/release/Lee-xeo/Claude-Cage?include_prereleases)](https://github.com/Lee-xeo/Claude-Cage/releases) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/larito001/Super-Cage?include_prereleases)](https://github.com/larito001/Super-Cage/releases) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <a href="https://trendshift.io/repositories/339051#achievements"><img src="https://trendshift.io/api/badge/trendshift/repositories/339051/daily?language=Go" alt="Trendshift — Go Repository of the Day" width="250" height="55" /></a> <a href="https://trendshift.io/repositories/339051#achievements"><img src="https://trendshift.io/api/badge/trendshift/repositories/339051/weekly?language=Go" alt="Trendshift — Go Repository of the Week" width="250" height="55" /></a>
 
@@ -22,26 +22,26 @@
 
 1. **Claude en sí es seguro, pero su arnés (harness) y los programas asociados no lo son**: incluidos Claude Code, Claude Desktop y los correos, páginas y señales que recibe el navegador.
 2. **Para aprovechar las capacidades de Claude con seguridad suelen existir dos caminos: proxy inverso o control remoto** — sacar a Claude de un servidor para ejecutarlo directamente en el equipo anfitrión, o desplegarlo en un entorno aislado para que controle el equipo de forma controlada. Creemos que el segundo camino es más seguro y más conforme.
-3. **Por eso, la idea central de Cage es ofrecer un entorno local ligero y aislado para los programas de Claude y, mediante plugins MCP estándar, permitirle usar el equipo de forma segura y controlada** — con permisos explícitos y confirmación del usuario en cada acción, mucho más seguro que exponer SSH directamente.
+3. **Por eso, la idea central de SuperCage es ofrecer un entorno local ligero y aislado para los programas de Claude y, mediante plugins MCP estándar, permitirle usar el equipo de forma segura y controlada** — con permisos explícitos y confirmación del usuario en cada acción, mucho más seguro que exponer SSH directamente.
 
-Así, Cage logra tres objetivos a la vez:
+Así, SuperCage logra tres objetivos a la vez:
 
 - **Encerrar lo peligroso y liberar lo útil.** La señorita Claude permanece cómoda en su jaula, sentada sobre su pequeño cangrejo, y simplemente extiende la mano para resolver el trabajo exterior, sin tener que reconstruir toda una oficina dentro de Cage.
-- **Colaboración desacoplada con la comunidad mediante el mercado de plugins.** En nuestro [mercado de plugins abierto (cage-plugins)](https://github.com/larito001/cage-plugins), **plugin = MCP + extensión**: MCP aporta capacidades a Claude y la extensión personaliza Cage. La comunidad aporta herramientas y vistas en el mercado sin saturar las issues del repositorio principal, mientras el equipo de Cage se enfoca en el núcleo.
+- **Colaboración desacoplada con la comunidad mediante el mercado de plugins.** En nuestro [mercado de plugins abierto (cage-plugins)](https://github.com/larito001/cage-plugins), **plugin = MCP + extensión**: MCP aporta capacidades a Claude y la extensión personaliza Cage. La comunidad aporta herramientas y vistas en el mercado sin saturar las issues del repositorio principal, mientras el equipo de SuperCage se enfoca en el núcleo.
 - **Conforme, seguro, ligero, local, económico y listo para usar en un clic.** Ya no hace falta mantener sistemas invitados complejos ni temer que Claude quede limitado, ni pagar costes elevados en la nube ni arriesgar la seguridad de tus datos: todo funciona de manera elegante en tu propio equipo.
 
 ## Hartazgo con Anthropic
 
-Como usuarios normales que sólo queremos hablar y colaborar con Claude, estamos cansados de configurar instancias de VPS, perfiles de huellas dactilares del navegador y comprobaciones del entorno, mientras nos preocupamos por las prohibiciones de cuentas y las pérdidas financieras. Presentamos **Claude Cage** — **una aplicación de escritorio lista para usar: configure su propio proxy de red y administre su entorno aislado ligero, zona horaria, idioma, comprobaciones de entorno y plugins en un solo lugar.**
+Como usuarios normales que sólo queremos hablar y colaborar con Claude, estamos cansados de configurar instancias de VPS, perfiles de huellas dactilares del navegador y comprobaciones del entorno, mientras nos preocupamos por las prohibiciones de cuentas y las pérdidas financieras. Presentamos **SuperCage** — **una aplicación de escritorio lista para usar: configure su propio proxy de red y administre su entorno aislado ligero, zona horaria, idioma, comprobaciones de entorno y plugins en un solo lugar.**
 
-Claude Cage reúne terminal, navegador, editor, Claude Desktop oficial y mercado de plugins en un mismo espacio de trabajo aislado. En macOS, Windows y Linux se usa el mismo entorno Debian 13 ligero. Comparte solo los proyectos que elijas, gestiona la red por separado, usa herramientas del equipo de forma segura mediante plugins, conecta tu servidor por SSH y continúa las tareas desde el teléfono. Sus funciones principales:
+SuperCage reúne terminal, navegador, editor, Claude Desktop oficial y mercado de plugins en un mismo espacio de trabajo aislado. En macOS, Windows y Linux se usa el mismo entorno Debian 13 ligero. Comparte solo los proyectos que elijas, gestiona la red por separado, usa herramientas del equipo de forma segura mediante plugins, conecta tu servidor por SSH y continúa las tareas desde el teléfono. Sus funciones principales:
 
-- Configuraciones de red aisladas del host; Cage enruta todo el tráfico de red dentro de su entorno a través de su propio proxy de red.
+- Configuraciones de red aisladas del host; SuperCage enruta todo el tráfico de red dentro de su entorno a través de su propio proxy de red.
 - Configuración de huellas digitales del navegador aislada del host, incluida la zona horaria y el idioma, con sincronización automática con la ubicación IP del proxy de red
 - Integración en todo el flujo de trabajo de Claude: inicio de sesión en el navegador, autorización de cuenta y proceso de Claude Code
 - Las comprobaciones de red y aislamiento integradas pausan el acceso a Internet cuando las comprobaciones críticas fallan o la evidencia está incompleta; Los controles comunitarios y de terceros proporcionan información de referencia adicional.
 
-**Resultados de la verificación ambiental con Cage:**
+**Resultados de la verificación ambiental con SuperCage:**
 
 | Comprobación de red y aislamiento | Comprobación del navegador de la comunidad |
 | :---: | :---: |
@@ -49,44 +49,44 @@ Claude Cage reúne terminal, navegador, editor, Claude Desktop oficial y mercado
 
 [FuckClaude](https://fuck-claude.vercel.app/) · [LinXiaoTao / GitHub](https://github.com/LinXiaoTao/FuckClaude)
 
-**Interfaz principal de Cage:**
+**Interfaz principal de SuperCage:**
 
-![Cage](www/public/workbench-2026-11.jpg)
+![SuperCage](www/public/workbench-2026-11.jpg)
 
 ## ¿Qué puedes hacer con la jaula?
 
-- **Trabaja en una sola ventana.** Ejecute Claude Code en la terminal, revise los cambios en el editor y use el navegador Cage para obtener una vista previa de los servicios e iniciar sesión.
-- **Desbloquea todas las capacidades con el mercado de plugins.** El [mercado abierto de plugins (cage-plugins)](https://github.com/larito001/cage-plugins) sigue la fórmula «plugin = MCP + extensión»: permite a Claude usar herramientas del equipo de forma segura y controlada (control de pantalla y teclado/ratón, documentos Office, Blender, comandos) y añadir vistas en espacio aislado a Cage con permisos explícitos y confirmación del usuario. [Guía de plugins](docs/guide/plugins.md) · [Especificación](docs/plugins.md)
-- **Un mismo entorno ligero en todas las plataformas.** Cage usa el mismo entorno Debian 13 ligero en macOS, Windows y Linux, sin mantener múltiples sistemas invitados complejos y con la misma forma de trabajar. [Entorno Debian](docs/guide/guest-systems.md)
+- **Trabaja en una sola ventana.** Ejecute Claude Code en la terminal, revise los cambios en el editor y use el navegador SuperCage para obtener una vista previa de los servicios e iniciar sesión.
+- **Desbloquea todas las capacidades con el mercado de plugins.** El [mercado abierto de plugins (cage-plugins)](https://github.com/larito001/cage-plugins) sigue la fórmula «plugin = MCP + extensión»: permite a Claude usar herramientas del equipo de forma segura y controlada (control de pantalla y teclado/ratón, documentos Office, Blender, comandos) y añadir vistas en espacio aislado a SuperCage con permisos explícitos y confirmación del usuario. [Guía de plugins](docs/guide/plugins.md) · [Especificación](docs/plugins.md)
+- **Un mismo entorno ligero en todas las plataformas.** SuperCage usa el mismo entorno Debian 13 ligero en macOS, Windows y Linux, sin mantener múltiples sistemas invitados complejos y con la misma forma de trabajar. [Entorno Debian](docs/guide/guest-systems.md)
 - **Controla lo que compartes.** Solo se comparten el espacio de trabajo predeterminado y las carpetas de proyectos abiertas explícitamente. El estado de inicio de sesión de Claude, los perfiles del navegador y las claves SSH del host no se importan automáticamente.
 - **Vea el estado de su red.** La administración de proxy de red incorporada le permite importar suscripciones, seleccionar puntos finales y verificar la IP de salida. El entorno permanece fuera de línea hasta que se superan las comprobaciones críticas. Si el proxy de red no está disponible, no se recurre a una conexión directa como alternativa.
 - **Continúe la próxima vez.** Las herramientas, los archivos y el estado de inicio de sesión persisten en el disco virtual. Las tareas en segundo plano pueden seguir ejecutándose cuando cierras la ventana.
 - **Gestione varias cuentas de Claude Code.** Consulta cuotas, asigna cuentas a nuevas sesiones y, con autorización explícita, cambia de cuenta para continuar el historial. [Claude Code](docs/guide/accounts.md)
 - **Continúa desde el teléfono.** Vincula Android o iPhone al ordenador mediante QR o código de emparejamiento. Retoma las mismas conversaciones de Claude Code, envía mensajes, aprueba herramientas y usa el navegador remoto o la ventana de Claude Desktop del ordenador.
-- **Ejecute Cage en la nube.** Conéctese por SSH a Cage desplegado en un VPS Linux x86_64 compatible, sin KVM. Los datos y la salida de red están en el servidor.
-- **Conecta por una red privada.** Inicia sesión en Tailscale dentro de Cage para conectar el equipo y el entorno por SSH en ambos sentidos. [Tailscale / SSH](docs/guide/tailscale.md)
+- **Ejecute SuperCage en la nube.** Conéctese por SSH a SuperCage desplegado en un VPS Linux x86_64 compatible, sin KVM. Los datos y la salida de red están en el servidor.
+- **Conecta por una red privada.** Inicia sesión en Tailscale dentro de SuperCage para conectar el equipo y el entorno por SSH en ambos sentidos. [Tailscale / SSH](docs/guide/tailscale.md)
 
 ## Inicio rápido
 
 Envíe esta solicitud a su agente de IA (codex, dsh, workbuddy; probablemente no Claude Code 😁):
 
 ```markdown
-Obtén el código fuente más reciente de https://github.com/Lee-xeo/Claude-Cage, compílalo, empaquétalo e instálalo. Configura el proxy de Cage para usar el nodo xx de mi Clash local y salir por mi IP xx. Supervisa todo el proceso, corrige directamente los problemas y, si es necesario, abre una issue en el proyecto para ayudar a mejorar la compatibilidad.
+Obtén el código fuente más reciente de https://github.com/larito001/Super-Cage, compílalo, empaquétalo e instálalo. Configura el proxy de SuperCage para usar el nodo xx de mi Clash local y salir por mi IP xx. Supervisa todo el proceso, corrige directamente los problemas y, si es necesario, abre una issue en el proyecto para ayudar a mejorar la compatibilidad.
 ```
 
 Todo lo que necesita es un punto final de proxy de red confiable. Este proyecto no promueve ningún proveedor de proxy; Puede encontrar un proveedor usted mismo, por ejemplo buscando en el sitio web de Black Error.
 
 ## Descarga e instalación
 
-Cage admite macOS, Windows y Linux: Apple Silicon e Intel Mac con macOS 14+, Windows 10 22H2 / 11 x64 y Debian 12 / Ubuntu 22.04 / 24.04 x86_64. Windows ARM64 y Linux ARM64 aún no son compatibles. [macOS](docs/getting-started.md) · [Windows](docs/windows.md) · [Linux](docs/linux.md).
+SuperCage admite macOS, Windows y Linux: Apple Silicon e Intel Mac con macOS 14+, Windows 10 22H2 / 11 x64 y Debian 12 / Ubuntu 22.04 / 24.04 x86_64. Windows ARM64 y Linux ARM64 aún no son compatibles. [macOS](docs/getting-started.md) · [Windows](docs/windows.md) · [Linux](docs/linux.md).
 
 1. Descargar aplicación: [macOS / Windows / Linux](https://claude-cage.com/es/#download).
-2. macOS: Abra el paquete de instalación y arrastre **Cage** en **Aplicaciones**; luego ejecútelo desde Aplicaciones. Windows: [Guía de instalación](docs/windows.md#安装并开始工作) · Linux: [Guía de instalación](docs/linux.md#安装并开始工作).
+2. macOS: Abra el paquete de instalación y arrastre **SuperCage** en **Aplicaciones**; luego ejecútelo desde Aplicaciones. Windows: [Guía de instalación](docs/windows.md#安装并开始工作) · Linux: [Guía de instalación](docs/linux.md#安装并开始工作).
 3. Siga las instrucciones de la aplicación para configurar su propio proxy de red, iniciar el entorno y abrir un proyecto.
 
-El instalador incluye el espacio de trabajo y el motor del proxy. No necesitas instalar antes Go, Node.js, Docker ni Clash. Al crear el entorno, elige su ubicación; Cage descarga la imagen de Debian 13 y las herramientas de desarrollo. Cage no proporciona servicio de proxy ni cuentas Claude.
+El instalador incluye el espacio de trabajo y el motor del proxy. No necesitas instalar antes Go, Node.js, Docker ni Clash. Al crear el entorno, elige su ubicación; SuperCage descarga la imagen de Debian 13 y las herramientas de desarrollo. SuperCage no proporciona servicio de proxy ni cuentas Claude.
 
-El código fuente y los instaladores son públicos. Las notas y sumas de comprobación están en [Releases](https://github.com/Lee-xeo/Claude-Cage/releases).
+El código fuente y los instaladores son públicos. Las notas y sumas de comprobación están en [Releases](https://github.com/larito001/Super-Cage/releases).
 
 Las funciones dependen de la compilación; las capacidades y verificaciones del instalador público figuran en las notas de la versión.
 
@@ -100,7 +100,7 @@ En la página de inicio, haga clic en "Configurar red y proxy" y luego en "Agreg
 
 ### 2. Iniciar el entorno
 
-Al crear el entorno, elige la ubicación de almacenamiento. Inicia el entorno Cage y sigue la instalación y las autorizaciones. El progreso y los errores aparecen en los detalles de la operación. Los siguientes inicios reutilizan el mismo entorno.
+Al crear el entorno, elige la ubicación de almacenamiento. Inicia el entorno SuperCage y sigue la instalación y las autorizaciones. El progreso y los errores aparecen en los detalles de la operación. Los siguientes inicios reutilizan el mismo entorno.
 
 ### 3. Abra un proyecto y ejecute Claude.
 
@@ -109,7 +109,7 @@ Haga clic en 'Abrir proyecto' para seleccionar una carpeta en su equipo, abra un
 ## Comprenda estos límites antes de usarlo
 
 - Las ediciones y eliminaciones en proyectos compartidos afectan directamente a los archivos de su equipo. Utilice control de versiones o copias de seguridad. El directorio `.git` del proyecto permite lectura y escritura; puede preparar cambios, crear commits y cambiar de rama en Cage.
-- Todos los proyectos comparten un entorno Cage, incluidas sus herramientas, cuentas y sistema de archivos Debian. Los proyectos no están aislados unos de otros.
+- Todos los proyectos comparten un entorno SuperCage, incluidas sus herramientas, cuentas y sistema de archivos Debian. Los proyectos no están aislados unos de otros.
 - Por defecto, las conexiones públicas salientes admiten IPv4 TCP y DNS usa el mismo proxy. UDP, IPv6, ICMP públicos y el acceso directo al equipo o a la red local están limitados. Al activar Tailscale, el acceso a los dispositivos sigue los permisos de la red privada.
 - Las comprobaciones de red muestran la configuración actual y pruebas de muestra. No pueden garantizar que una cuenta evite las restricciones de la plataforma y no reemplazan una auditoría completa de seguridad de virtualización.
 
@@ -125,7 +125,7 @@ Para consultar el índice completo, consulte [Índice de documentación](docs/RE
 | Instale, configure un proxy de red y abra su primer proyecto | [Empezando](docs/getting-started.md) |
 | Solucionar problemas de descargas, inicio, conectividad e inicio de sesión | [Preguntas frecuentes y recuperación](docs/troubleshooting.md) |
 | Aprenda los controles del teclado, la apariencia, la persistencia de datos y el comportamiento de salida | [Uso diario](docs/getting-started.md#日常使用) |
-| Informar un problema reproducible | [GitHub Issues](https://github.com/Lee-xeo/Claude-Cage/issues) |
+| Informar un problema reproducible | [GitHub Issues](https://github.com/larito001/Super-Cage/issues) |
 | Contribuir correcciones, funciones o documentación: revisión del Issue → invitación como colaborador → PR | [Guía de contribución (chino)](.github/CONTRIBUTING.md) |
 
 El proyecto está evolucionando rápidamente. Únase al grupo comunitario para compartir comentarios; Los mantenedores de la comunidad son bienvenidos.
@@ -142,7 +142,7 @@ La jaula se deriva de [agent-vm](https://github.com/sylvinus/agent-vm).
 
 La licencia principal del proyecto es [MIT](LICENSE). Los componentes incluidos conservan sus respectivas licencias. Mihomo se distribuye como un ejecutable independiente bajo GPL-3.0. Ver también [NOTICE](NOTICE) · [Licencias de terceros](THIRD_PARTY_LICENSES) · [noVNC](ui/vendor/novnc/LICENSE.txt)。
 
-Cage es un proyecto comunitario independiente y no está afiliado a Anthropic.
+SuperCage es un proyecto comunitario independiente y no está afiliado a Anthropic.
 
 ## Referencias y agradecimientos
 
@@ -160,10 +160,10 @@ Gracias a los siguientes proyectos por capacidades fundamentales y referencias d
 - [claude-post-ban-cleanup](https://github.com/l2461090/claude-post-ban-cleanup): referencia para el inventario preciso, la protección de datos y la limpieza recuperable de caché; implementación independiente en Cage.
 
 
-<a href="https://www.star-history.com/?repos=Lee-xeo%2FClaude-Cage&amp;type=date">
+<a href="https://www.star-history.com/?repos=larito001%2FSuper-Cage&amp;type=date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date&amp;theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date" />
-    <img alt="Claude Cage GitHub Star History" src="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date" width="800" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date&amp;theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date" />
+    <img alt="SuperCage GitHub Star History" src="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date" width="800" />
   </picture>
 </a>

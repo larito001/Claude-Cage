@@ -42,7 +42,7 @@ func TestInstallTLS12PreludeOptInAndCleanup(t *testing.T) {
 }
 
 // The TLS 1.2 cap lives in CURL_HOME, which sudo's env_reset drops. Every curl
-// Cage runs during installation must therefore run as the invoking user, in
+// SuperCage runs during installation must therefore run as the invoking user, in
 // the shell that exported CURL_HOME: never on a sudo command line or inside a
 // script that sudo runs (a heredoc fed to a sudo shell).
 func TestInstallCurlNeverRunsUnderSudo(t *testing.T) {

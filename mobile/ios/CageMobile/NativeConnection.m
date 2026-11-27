@@ -25,7 +25,7 @@ static void setError(NSError **error, NSString *text) {
 - (instancetype)initWithError:(NSError **)error {
     self = [super init];
     if (!self) return nil;
-    NSString *name = simulatorIdentity ? @"io.github.lee-xeo.claude-cage.mobile.simulator.v1" : @"io.github.lee-xeo.claude-cage.mobile.device.v1";
+    NSString *name = simulatorIdentity ? @"io.github.lee-xeo.super-cage.mobile.simulator.v1" : @"io.github.lee-xeo.super-cage.mobile.device.v1";
     NSData *tag = [name dataUsingEncoding:NSUTF8StringEncoding];
     NSMutableDictionary *query = [@{(__bridge id)kSecClass:(__bridge id)kSecClassKey,
         (__bridge id)kSecAttrApplicationTag:tag, (__bridge id)kSecAttrKeyType:(__bridge id)kSecAttrKeyTypeECSECPrimeRandom,

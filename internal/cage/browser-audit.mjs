@@ -18,7 +18,7 @@ async function openSettingsTarget(cdp, url) {
 }
 
 // Read settings in a background blank page in the user profile, excluded from
-// Cage's tab strip. Chromium's hidden-target path skips the profile's renderer
+// SuperCage's tab strip. Chromium's hidden-target path skips the profile's renderer
 // preferences and reads UI-locale defaults even in the default context.
 async function readBrowserSettings(cdp, exclusions, expectedTimezone, device) {
   const url = `about:blank#cage-settings-${randomUUID()}`;

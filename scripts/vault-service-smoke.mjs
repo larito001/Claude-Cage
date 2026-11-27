@@ -15,7 +15,7 @@ await fs.writeFile(path.join(profile, "workbench.json"), JSON.stringify({ worksp
 let service, browser, page;
 async function start() {
   await fs.rm(path.join(profile, "control.json"), { force: true });
-  service = spawn(path.join(root, "_output/vault-qa/cage"), ["serve"], { env: { ...process.env, CLAUDE_CAGE_CONFIG: path.join(profile, "config.json") }, stdio: "ignore" });
+  service = spawn(path.join(root, "_output/vault-qa/cage"), ["serve"], { env: { ...process.env, SUPER_CAGE_CONFIG: path.join(profile, "config.json") }, stdio: "ignore" });
   let control;
   for (let i = 0; i < 100; i++) {
     try { control = JSON.parse(await fs.readFile(path.join(profile, "control.json"), "utf8")); break; }
@@ -60,18 +60,18 @@ try {
   await stop();
   await page.goto(await start());
   await page.getByLabel("账户密码", { exact: true }).fill("isolated-vault-account-password");
-  await page.getByRole("button", { name: "解锁 Cage", exact: true }).click();
+  await page.getByRole("button", { name: "解锁 SuperCage", exact: true }).click();
   await openVault();
   await page.getByText("real-service@example.test", { exact: true }).waitFor();
   await page.getByRole("button", { name: "查看密码", exact: true }).click();
-  await page.getByLabel("Cage 账户密码", { exact: true }).fill("isolated-vault-account-password");
+  await page.getByLabel("SuperCage 账户密码", { exact: true }).fill("isolated-vault-account-password");
   await page.getByRole("button", { name: "验证并查看" }).click();
   await page.getByLabel("已保存的网站密码").waitFor();
   assert.equal(await page.getByLabel("已保存的网站密码").textContent(), "isolated-website-secret");
   await page.getByRole("button", { name: "返回工作台", exact: true }).click();
   await page.getByRole("button", { name: /^账户菜单，/ }).click();
   await page.getByRole("menuitem", { name: /锁定 Cage/ }).click();
-  await page.getByRole("region", { name: "解锁 Cage", exact: true }).waitFor();
+  await page.getByRole("region", { name: "解锁 SuperCage", exact: true }).waitFor();
   assert.equal(await page.evaluate(async () => (await fetch("/api/vault")).status), 423);
   assert.equal(await fs.readFile(path.join(profile, "password-vault.json"), "utf8"), raw, "restart/lock modified vault data");
   assert.deepEqual(errors, []);

@@ -102,7 +102,7 @@ func (r *Runtime) Start(ctx context.Context, configPath string, log io.Writer) e
 		return err
 	}
 	if !inspection.State.Exists {
-		return errors.New("容器尚未准备，请先运行 Cage 容器安装")
+		return errors.New("容器尚未准备，请先运行 SuperCage 容器安装")
 	}
 	if inspection.State.Running {
 		if !inspection.State.MountsReady {
@@ -195,7 +195,7 @@ func (r *Runtime) Start(ctx context.Context, configPath string, log io.Writer) e
 			cancel()
 			if err == nil && record.PID == command.Process.Pid {
 				if log != nil {
-					fmt.Fprintln(log, "Cage container network and protected project share are ready.")
+					fmt.Fprintln(log, "SuperCage container network and protected project share are ready.")
 				}
 				return nil
 			}

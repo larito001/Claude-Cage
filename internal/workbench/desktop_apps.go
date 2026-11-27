@@ -174,7 +174,7 @@ func (s *Server) desktopApp(w http.ResponseWriter, r *http.Request) {
 	}
 	target, ok := s.desktopAppTarget(r.PathValue("plugin"), r.PathValue("app"))
 	if !ok {
-		http.Error(w, "插件未启用，或这个版本的 Cage 还不能运行它的应用", http.StatusNotFound)
+		http.Error(w, "插件未启用，或这个版本的 SuperCage 还不能运行它的应用", http.StatusNotFound)
 		return
 	}
 	if r.Method == http.MethodPost {
@@ -188,7 +188,7 @@ func (s *Server) desktopApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.vmRunning() {
-		http.Error(w, "请先启动 Cage 环境", 409)
+		http.Error(w, "请先启动 SuperCage 环境", 409)
 		return
 	}
 	run := "/run/desktop-" + target.id
@@ -247,7 +247,7 @@ func isNativeProviderDesktopApp(app hostbridge.DesktopApp) bool {
 
 func (s *Server) changeDesktopApp(t desktopAppTarget, action string) error {
 	if isNativeProviderDesktopApp(t.app) {
-		return errors.New("Cage 已原生内置该桌面应用的多实例支持，请直接从左侧原生桌面入口使用，无需通过插件安装或卸载")
+		return errors.New("SuperCage 已原生内置该桌面应用的多实例支持，请直接从左侧原生桌面入口使用，无需通过插件安装或卸载")
 	}
 	title := t.app.Title
 	switch action {

@@ -500,7 +500,7 @@ func (s *Server) allocateClaudeAccount(previous claudeAccountList, workspace str
 	var empty claudeSelection
 	epoch, unlocked := s.account.access()
 	if !unlocked {
-		return empty, errors.New("Cage 已锁定，请先解锁")
+		return empty, errors.New("SuperCage 已锁定，请先解锁")
 	}
 	var ids []string
 	checkDefault := false
@@ -527,7 +527,7 @@ func (s *Server) allocateClaudeAccount(previous claudeAccountList, workspace str
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if epoch.Err() != nil {
-		return empty, errors.New("Cage 已锁定，请先解锁")
+		return empty, errors.New("SuperCage 已锁定，请先解锁")
 	}
 	list, err := s.loadClaudeAccounts()
 	if err != nil {

@@ -3,8 +3,8 @@ import { localizeBackendMessage } from "./backend-message.mjs";
 
 export const errorText = {
   http: "{0}失败（HTTP {1}）：{2}",
-  connection: "{0}失败：工作台与 Cage 后台的连接已中断。请点击重新连接；若刚才正在保存或上传，恢复后先核对结果再重试。",
-  native: "{0}失败：{1}。请重新连接 Cage；仍失败时在设置中导出诊断包。",
+  connection: "{0}失败：工作台与 SuperCage 后台的连接已中断。请点击重新连接；若刚才正在保存或上传，恢复后先核对结果再重试。",
+  native: "{0}失败：{1}。请重新连接 SuperCage；仍失败时在设置中导出诊断包。",
   invalidResponse: "{0}失败：后台返回的结果格式无效。请重新连接；仍出现时在设置中导出诊断包。",
 };
 
@@ -53,12 +53,12 @@ export function operationName(path = "", method = "GET") {
   if (path.startsWith("/terminals")) return "连接终端";
   if (path === "/start") return "启动环境";
   if (path === "/stop") return "停止环境";
-  return "连接 Cage 工作台";
+  return "连接 SuperCage 工作台";
 }
 
 export function httpErrorMessage(path, status, text = "", contentType = "", method = "GET", localize = formatMessage) {
   // Proxy HTML pages, stack traces and untranslated runtime errors are not UI
-  // explanations. Preserve short Chinese messages supplied by Cage itself.
+  // explanations. Preserve short Chinese messages supplied by SuperCage itself.
   const message = text.trim();
   if (contentType.startsWith("text/plain") && message.length <= 2000 && /\p{Script=Han}/u.test(message) && !/<(?:html|body|script|!doctype)\b/i.test(message)) {
     return localizeBackendMessage(message, localize);
@@ -69,12 +69,12 @@ export function httpErrorMessage(path, status, text = "", contentType = "", meth
   const action = operationName(path, method);
   const reasons = {
     400: "后台没有接受这次请求。请核对填写的内容；仍失败时在设置中导出诊断包。",
-    401: "工作台登录会话已失效。请重新连接 Cage，再发起这次操作。",
-    403: "后台拒绝了这次访问。请从 Cage 应用重新打开工作台。",
+    401: "工作台登录会话已失效。请重新连接 SuperCage，再发起这次操作。",
+    403: "后台拒绝了这次访问。请从 SuperCage 应用重新打开工作台。",
     404: "当前后台没有提供所需功能。请确认应用与后台已完成更新。",
     409: "环境状态已变化或另一个操作尚未结束。请刷新状态并等待当前操作完成。",
     413: "文件或请求内容超过允许大小。请缩小文件或分批处理。",
-    423: "Cage 已锁定。请先解锁账户，再发起这次操作。",
+    423: "SuperCage 已锁定。请先解锁账户，再发起这次操作。",
     429: "请求过于频繁。请等待片刻，避免连续点击。",
     500: "后台处理请求时出错。请在设置中导出诊断包，并附上刚才执行的操作。",
     502: "后台未能连接环境内的服务。请确认环境已启动，再检查环境组件状态。",

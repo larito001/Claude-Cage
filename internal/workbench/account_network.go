@@ -255,7 +255,7 @@ func (s *Server) ensureAccountNetwork(ctx context.Context, id, node string) erro
 	if err != nil {
 		diagnostics.Log("warn", "account-network", fmt.Sprintf("prepare node failed err=%v", err))
 		return &accountRouteError{
-			message: "账号节点尚未就绪，请更新 Cage 环境并应用代理配置",
+			message: "账号节点尚未就绪，请更新 SuperCage 环境并应用代理配置",
 			cause:   err,
 		}
 	}

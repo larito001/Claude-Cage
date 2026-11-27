@@ -10,7 +10,7 @@ import { seed, verify } from "./personal-data-fixture.mjs";
 
 const source = process.argv[2];
 if (process.platform !== "darwin" || !source || !path.isAbsolute(source) || !source.endsWith(".app")) {
-  throw new Error("Usage on macOS: node scripts/test-macos-install.mjs /absolute/path/to/Cage.app");
+  throw new Error("Usage on macOS: node scripts/test-macos-install.mjs /absolute/path/to/SuperCage.app");
 }
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.CAGE_PLAYWRIGHT_MODULE || "playwright");
@@ -19,8 +19,8 @@ const qaHome = path.join(root, "user");
 const manifest = path.join(root, "personal-data.json");
 // The 12 preservation fixtures contain marker bytes. Use a separate valid profile for login.
 const profile = path.join(root, "runtime-profile");
-const env = { ...process.env, HOME: qaHome, CLAUDE_CAGE_CONFIG: path.join(profile, "config.json") };
-const installed = path.join(qaHome, "Applications", "Cage.app");
+const env = { ...process.env, HOME: qaHome, SUPER_CAGE_CONFIG: path.join(profile, "config.json") };
+const installed = path.join(qaHome, "Applications", "SuperCage.app");
 const mount = path.join(root, "mount");
 const image = path.join(root, "manual-install.dmg");
 const stage = path.join(root, "volume");
@@ -37,14 +37,14 @@ try {
   await fs.mkdir(path.dirname(installed), { recursive: true });
   await fs.mkdir(stage);
   await fs.mkdir(mount);
-  run("ditto", [source, path.join(stage, "Cage.app")]);
+  run("ditto", [source, path.join(stage, "SuperCage.app")]);
   run("hdiutil", ["create", "-quiet", "-volname", "Cage-Isolated-QA", "-srcfolder", stage, "-format", "UDZO", image]);
   run("hdiutil", ["attach", "-nobrowse", "-readonly", "-mountpoint", mount, image]);
   mounted = true;
   const result = {
     dmg_sha256: await hash(image),
     backend_sha256: await hash(path.join(source, "Contents/Resources/cage")),
-    launcher_sha256: await hash(path.join(source, "Contents/MacOS/Cage")),
+    launcher_sha256: await hash(path.join(source, "Contents/MacOS/SuperCage")),
   };
 
   if (evidence) await fs.mkdir(evidence, { recursive: true });
@@ -52,7 +52,7 @@ try {
   let savedAccountHash;
   for (const phase of ["install", "reinstall"]) {
     if (phase === "reinstall") await fs.rm(installed, { recursive: true });
-    run("ditto", [path.join(mount, "Cage.app"), installed]);
+    run("ditto", [path.join(mount, "SuperCage.app"), installed]);
     if (savedAccountHash) assert.equal(await hash(path.join(profile, "account.json")), savedAccountHash, "reinstall changed the account file");
     run("codesign", ["--verify", "--deep", "--strict", installed]);
     assert.equal(await hash(path.join(installed, "Contents/Resources/cage")), result.backend_sha256);
@@ -66,7 +66,7 @@ try {
     try {
       await page.goto(entry.url);
       if (phase === "install") {
-        await page.getByRole("heading", { name: "注册 Cage 账户", exact: true }).waitFor();
+        await page.getByRole("heading", { name: "注册 SuperCage 账户", exact: true }).waitFor();
         await page.getByRole("checkbox", { name: /^记住我/ }).uncheck();
         await page.getByLabel("用户名", { exact: true }).fill(username);
         await page.getByLabel("设置密码", { exact: true }).fill(password);
@@ -77,12 +77,12 @@ try {
         assert.ok(recoveryKey.trim(), "new accounts must receive a recovery key");
         await fs.writeFile(path.join(root, "recovery-key.txt"), recoveryKey, { mode: 0o600 });
         await page.getByRole("checkbox", { name: "我已安全保存完整恢复密钥", exact: true }).check();
-        await page.getByRole("button", { name: "继续使用 Cage", exact: true }).click();
+        await page.getByRole("button", { name: "继续使用 SuperCage", exact: true }).click();
       } else {
         await page.getByLabel("账户密码", { exact: true }).fill(password);
-        await page.getByRole("button", { name: "解锁 Cage", exact: true }).click();
+        await page.getByRole("button", { name: "解锁 SuperCage", exact: true }).click();
       }
-      await page.getByRole("heading", { name: "为 Cage 准备独立环境", exact: true }).waitFor();
+      await page.getByRole("heading", { name: "为 SuperCage 准备独立环境", exact: true }).waitFor();
       assert.equal(await page.getByRole("navigation", { name: "主导航" }).count(), 0, "workbench must remain hidden before initialization");
       if (evidence) await page.screenshot({ animations: "disabled", path: path.join(evidence, `${phase}-initialization.png`) });
       await page.getByRole("button", { name: "下一步：配置代理", exact: true }).click();
@@ -90,7 +90,7 @@ try {
       assert.ok(await page.getByRole("button", { name: "开始安装", exact: true }).isDisabled(), "a fresh profile must require a proxy before installing");
       // Do not start a VM or configure real network credentials in package-preservation QA.
       await page.getByRole("button", { name: "上一步", exact: true }).click();
-      await page.getByRole("heading", { name: "为 Cage 准备独立环境", exact: true }).waitFor();
+      await page.getByRole("heading", { name: "为 SuperCage 准备独立环境", exact: true }).waitFor();
       const account = await page.evaluate(async () => {
         const context = await (await fetch("/api/client/context")).json();
         return (await fetch("/api/account", { headers: { "X-Cage-Connection": context.connection_id } })).json();

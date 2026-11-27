@@ -118,5 +118,5 @@ Function ParseCageInstallOptions
     ${EndIf}
   ${Loop}
   invalid_directory:
-    StrCpy $CageOptionError "/D= must be the last option. Give an unquoted absolute Windows path with backslashes, such as /D=D:\Cage Builds\Cage."
+    StrCpy $CageOptionError "/D= must be the last option. Give an unquoted absolute Windows path with backslashes, such as /D=D:\SuperCage Builds\Cage."
 FunctionEnd

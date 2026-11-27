@@ -78,8 +78,8 @@ internal static partial class UpdatePolicy
         var directory = Path.GetDirectoryName(path) ?? "";
         if (!string.Equals(Path.GetDirectoryName(directory), Path.GetFullPath(updateRoot).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) ||
             !Path.GetFileName(directory).StartsWith("download-", StringComparison.Ordinal) ||
-            !string.Equals(Path.GetFileName(path), "Cage-setup.exe", StringComparison.Ordinal))
-            throw new InvalidDataException("更新安装包不属于 Cage 的私有下载目录");
+            !string.Equals(Path.GetFileName(path), "SuperCage-setup.exe", StringComparison.Ordinal))
+            throw new InvalidDataException("更新安装包不属于 SuperCage 的私有下载目录");
         return path;
     }
 

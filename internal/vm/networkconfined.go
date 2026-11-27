@@ -18,7 +18,7 @@ var ErrNetworkOpen = errors.New("agent-vm starts no VM with a network besides it
 func NetworkConfined(cfg *limatype.LimaYAML) error {
 	// Only these drivers attach the VM's NIC to our host-side netstack.
 	// WSL2 and HCS have separate host-managed networking, even with no
-	// explicit networks entry, so they cannot enforce the Cage egress gate.
+	// explicit networks entry, so they cannot enforce the SuperCage egress gate.
 	if cfg.VMType != nil && *cfg.VMType != limatype.QEMU && *cfg.VMType != limatype.VZ {
 		return fmt.Errorf("%w: VM driver %q does not use the confined network", ErrNetworkOpen, *cfg.VMType)
 	}

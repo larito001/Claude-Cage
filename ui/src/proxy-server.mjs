@@ -1,5 +1,5 @@
 // Recognize numeric loopback spellings and localhost while the user types.
-// The backend also checks addresses assigned to the Cage host itself.
+// The backend also checks addresses assigned to the SuperCage host itself.
 export function isLocalListener(server) {
   const host = server.trim().replace(/^\[|\]$/g, "").replace(/\.$/, "").toLowerCase();
   if (host === "localhost" || host.endsWith(".localhost")) return true;

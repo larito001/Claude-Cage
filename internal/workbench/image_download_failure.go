@@ -67,11 +67,11 @@ func imageDownloadFailure(output string) (reason, next string, ok bool) {
 	next = "这通常与所选代理出口和镜像站之间的连接有关。请在网络与代理设置中换一个节点，或稍后再继续安装"
 	if hostProxy {
 		// The image is fetched by the host through its own proxy settings,
-		// so a different Cage node cannot fix this failure.
-		next = "镜像由宿主机经系统代理或 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 环境变量下载，不经过 Cage 节点，换节点无效。请确认这些设置指向正在运行的代理端口（macOS 还要检查 launchctl getenv 返回的用户域变量），再继续安装"
+		// so a different SuperCage node cannot fix this failure.
+		next = "镜像由宿主机经系统代理或 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 环境变量下载，不经过 SuperCage 节点，换节点无效。请确认这些设置指向正在运行的代理端口（macOS 还要检查 launchctl getenv 返回的用户域变量），再继续安装"
 	}
 	if hostProxyConfig {
-		next = "镜像由宿主机经系统代理下载，不经过 Cage 节点，换节点无效。宿主机的系统代理或自动代理（PAC）设置无法读取或解析，下载已停止且未改为直连。请检查系统代理与 PAC 设置以及提供它们的代理软件，或设置 HTTPS_PROXY 后再继续安装"
+		next = "镜像由宿主机经系统代理下载，不经过 SuperCage 节点，换节点无效。宿主机的系统代理或自动代理（PAC）设置无法读取或解析，下载已停止且未改为直连。请检查系统代理与 PAC 设置以及提供它们的代理软件，或设置 HTTPS_PROXY 后再继续安装"
 	}
 	if kept {
 		next += "；已下载的部分会保留，继续安装时从断点续传"

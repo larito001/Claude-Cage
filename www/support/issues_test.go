@@ -50,7 +50,7 @@ func TestIssueRetryAfterLostResponse(t *testing.T) {
 				Repositories []string
 				Permissions  map[string]string
 			}
-			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || len(payload.Repositories) != 1 || payload.Repositories[0] != "Claude-Cage" || len(payload.Permissions) != 1 || payload.Permissions["issues"] != "write" {
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil || len(payload.Repositories) != 1 || payload.Repositories[0] != "Super-Cage" || len(payload.Permissions) != 1 || payload.Permissions["issues"] != "write" {
 				t.Fatal("token is not restricted to project Issues")
 			}
 			result = `{"token":"test"}`

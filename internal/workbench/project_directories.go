@@ -34,7 +34,7 @@ func (s *Server) projectDirectories(w http.ResponseWriter, r *http.Request) {
 		home, err = os.UserHomeDir()
 		if err == nil {
 			var other []string
-			other, err = privateProjectDirectories(filepath.Join(home, ".claude-cage"))
+			other, err = privateProjectDirectories(filepath.Join(home, ".super-cage"))
 			reserved = append(reserved, other...)
 		}
 	}
@@ -51,7 +51,7 @@ func (s *Server) projectDirectories(w http.ResponseWriter, r *http.Request) {
 		return false
 	}
 	if private(real) {
-		http.Error(w, "Cage 配置目录不能作为项目浏览", 403)
+		http.Error(w, "SuperCage 配置目录不能作为项目浏览", 403)
 		return
 	}
 	directory, err := os.Open(real)

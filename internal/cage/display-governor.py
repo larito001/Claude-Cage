@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Pace a Cage virtual display by what its viewer is doing.
+"""Pace a SuperCage virtual display by what its viewer is doing.
 
 Chromium and Electron render in software here, and take their frame interval
 from the display's RandR refresh rate. Rendering, capture, encoding, transport

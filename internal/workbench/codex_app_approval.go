@@ -97,7 +97,7 @@ func runCodexConfirmation(ctx context.Context, input []byte, args ...string) boo
 	}
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, filepath.Join(contents, "MacOS", "Cage"), args...)
+	cmd := exec.CommandContext(ctx, filepath.Join(contents, "MacOS", "SuperCage"), args...)
 	cmd.Stdin = bytes.NewReader(input)
 	return cmd.Run() == nil && ctx.Err() == nil
 }

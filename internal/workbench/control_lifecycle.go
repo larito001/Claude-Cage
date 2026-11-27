@@ -95,7 +95,7 @@ func (s *Server) handoffWithVMOwnerLocked(w http.ResponseWriter, permittedOwner 
 	if s.closing {
 		s.mu.Unlock()
 		s.op.Unlock()
-		http.Error(w, "后台正在更新，请重新打开 Cage。", http.StatusServiceUnavailable)
+		http.Error(w, "后台正在更新，请重新打开 SuperCage。", http.StatusServiceUnavailable)
 		return
 	}
 	reason := ""
@@ -150,7 +150,7 @@ func (s *Server) handoffPreservingVMLocked(w http.ResponseWriter) {
 	if s.closing {
 		s.mu.Unlock()
 		s.op.Unlock()
-		http.Error(w, "后台正在更新，请重新打开 Cage。", http.StatusServiceUnavailable)
+		http.Error(w, "后台正在更新，请重新打开 SuperCage。", http.StatusServiceUnavailable)
 		return
 	}
 	reason := ""

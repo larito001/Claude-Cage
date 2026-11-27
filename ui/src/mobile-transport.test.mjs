@@ -24,7 +24,7 @@ test("mobile transport preserves actionable 423 account guidance and normalizes 
     );
 
     globalThis.fetch = async () => new Response(
-      "Cage 已锁定，请先登录\n",
+      "SuperCage 已锁定，请先登录\n",
       { status: 423, headers: { "Content-Type": "text/plain; charset=utf-8" } },
     );
     await assert.rejects(
@@ -32,7 +32,7 @@ test("mobile transport preserves actionable 423 account guidance and normalizes 
       error => {
         assert.equal(error.status, 423);
         assert.equal(error.recovery, "");
-        assert.equal(error.message, "Cage 已锁定。请在电脑上解锁，再重新读取。");
+        assert.equal(error.message, "SuperCage 已锁定。请在电脑上解锁，再重新读取。");
         return true;
       },
     );

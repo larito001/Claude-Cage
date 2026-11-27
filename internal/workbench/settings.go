@@ -322,7 +322,7 @@ func mountableEnvironmentDir(dir string) error {
 	if strings.HasPrefix(why, "contains whitespace") {
 		reason = "路径含有空格，Lima 无法把它共享进环境"
 	}
-	return errors.New("Cage 的内部传输目录 " + dir + " " + reason + "。该目录位于 Cage 配置目录旁，用户目录含空格（例如 Windows 账户名含空格）时就会出现。请把 Cage 配置目录移到不含空格的路径后再启动，步骤见故障排查文档“用户目录含空格时环境无法启动”。")
+	return errors.New("SuperCage 的内部传输目录 " + dir + " " + reason + "。该目录位于 SuperCage 配置目录旁，用户目录含空格（例如 Windows 账户名含空格）时就会出现。请把 SuperCage 配置目录移到不含空格的路径后再启动，步骤见故障排查文档“用户目录含空格时环境无法启动”。")
 }
 
 func validateWorkspace(path, profile string) (string, error) {
@@ -354,14 +354,14 @@ func validateWorkspace(path, profile string) (string, error) {
 	}
 	if executable, e := os.Executable(); e == nil {
 		if real, e := paths.Resolve(executable); e == nil && cage.StorageContains(abs, real) {
-			return "", errors.New("不能共享正在运行的工作台程序所在目录。请将安装版 Cage 放在项目外，并重启控制服务后选择此项目。")
+			return "", errors.New("不能共享正在运行的工作台程序所在目录。请将安装版 SuperCage 放在项目外，并重启控制服务后选择此项目。")
 		}
 	}
 	if mounts.UnderName(filepath.ToSlash(abs), nil) {
 		return "", errors.New("请选择项目根目录，不要共享 Git 等版本控制元数据目录")
 	}
 	if paths.Equal(abs, home) || filepath.Dir(abs) == abs {
-		return "", errors.New("请选择具体项目，不要共享主目录、Cage 配置或包含配置的上级目录")
+		return "", errors.New("请选择具体项目，不要共享主目录、SuperCage 配置或包含配置的上级目录")
 	}
 	private, err := privateProjectDirectories(profile)
 	if err != nil {
@@ -369,7 +369,7 @@ func validateWorkspace(path, profile string) (string, error) {
 	}
 	for _, dir := range private {
 		if cage.StoragePathsOverlap(abs, dir) {
-			return "", errors.New("Cage 配置、环境存储、迁移备份及其上级目录不能共享给虚拟机")
+			return "", errors.New("SuperCage 配置、环境存储、迁移备份及其上级目录不能共享给虚拟机")
 		}
 	}
 	if err := validateHostProjectData(abs, profile); err != nil {

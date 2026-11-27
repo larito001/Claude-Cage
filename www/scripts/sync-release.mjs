@@ -8,7 +8,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { parseArgs } from 'node:util';
 
-const repository = 'Lee-xeo/Claude-Cage';
+const repository = 'larito001/Super-Cage';
 const repoURL = `https://github.com/${repository}`;
 const apiURL = `https://api.github.com/repos/${repository}/releases`;
 const sourceArchive = name => /^mihomo-v[\d.]+-source\.tar\.gz$/.test(name) ||
@@ -28,7 +28,7 @@ export async function request(url, timeout = 180_000, { fetchImpl = fetch } = {}
   };
   let response = await fetchImpl(url, options);
   if (metadata && response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0') {
-    const tag = target.pathname.match(/^\/repos\/Lee-xeo\/Claude-Cage\/releases\/tags\/(v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/)?.[1];
+    const tag = target.pathname.match(/^\/repos\/larito001\/Super-Cage\/releases\/tags\/(v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/)?.[1];
     if (tag) {
       await response.body?.cancel();
       console.warn('Anonymous GitHub API is rate limited; reading the requested version from its public checksum manifest.');
@@ -53,9 +53,9 @@ export async function publicManifestRelease(tag, fetchImpl = fetch) {
   }
   const version = tag.slice(1);
   const allowed = name => [
-    `Cage-${version}-macos-arm64.dmg`, `Cage-${version}-macos-amd64.dmg`, `Cage-${version}-windows-amd64-setup.exe`,
-    `Cage-${version}-windows-amd64-setup-unsigned.exe`, `Cage-${version}-linux-amd64.deb`,
-    `Cage-${version}-android-arm64.apk`,
+    `SuperCage-${version}-macos-arm64.dmg`, `SuperCage-${version}-macos-amd64.dmg`, `SuperCage-${version}-windows-amd64-setup.exe`,
+    `SuperCage-${version}-windows-amd64-setup-unsigned.exe`, `SuperCage-${version}-linux-amd64.deb`,
+    `SuperCage-${version}-android-arm64.apk`,
   ].includes(name) || sourceArchive(name);
   if ([...names.keys()].some(name => !allowed(name))) throw new Error('Unexpected public release asset');
   const assets = [{ name: 'SHA256SUMS', state: 'uploaded', size: Buffer.byteLength(text), browser_download_url: `${base}SHA256SUMS` }];
@@ -73,10 +73,10 @@ export async function publicManifestRelease(tag, fetchImpl = fetch) {
 
 export function releaseAssets(release) {
   if (release.draft || !/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(release.tag_name)) {
-    throw new Error('Expected a published Cage version tag');
+    throw new Error('Expected a published SuperCage version tag');
   }
   const version = release.tag_name.slice(1);
-  const names = [`Cage-${version}-macos-arm64.dmg`, 'SHA256SUMS'];
+  const names = [`SuperCage-${version}-macos-arm64.dmg`, 'SHA256SUMS'];
   const assets = names.map(name => release.assets.find(asset => asset.name === name));
   const source = release.assets.find(asset => /^mihomo-v[\d.]+-source\.tar\.gz$/.test(asset.name));
   assets.push(source);
@@ -89,9 +89,9 @@ export function releaseAssets(release) {
     }
   }
   if (assets[1].size > 64 * 1024) throw new Error('Checksum file is too large');
-  const windows = optionalAsset(release, `Cage-${version}-windows-amd64-setup.exe`);
-  const linux = optionalAsset(release, `Cage-${version}-linux-amd64.deb`);
-  const android = optionalAsset(release, `Cage-${version}-android-arm64.apk`);
+  const windows = optionalAsset(release, `SuperCage-${version}-windows-amd64-setup.exe`);
+  const linux = optionalAsset(release, `SuperCage-${version}-linux-amd64.deb`);
+  const android = optionalAsset(release, `SuperCage-${version}-android-arm64.apk`);
   const guestSource = optionalAsset(release, `cage-macos-guest-${version}-source.tar.gz`);
   return { version, archive: assets[0], checksums: assets[1], source, windows, linux, android, guestSource };
 }
@@ -129,7 +129,7 @@ export function releaseMetadata(release, text) {
     }
   }
   if (!metadata.windowsDownloadURL && release.prerelease) {
-    const unsigned = optionalAsset(release, `Cage-${version}-windows-amd64-setup-unsigned.exe`);
+    const unsigned = optionalAsset(release, `SuperCage-${version}-windows-amd64-setup-unsigned.exe`);
     const qemu = release.assets.find(asset => /^qemu-[0-9a-f]{40}-source\.tar\.gz$/.test(asset.name));
     if (unsigned && qemu && optionalAsset(release, qemu.name)) {
       try {
@@ -157,10 +157,10 @@ export function platformMetadata(release, text) {
   const releaseURL = `${repoURL}/releases/tag/${release.tag_name}`;
   const platforms = {};
   for (const [platform, suffix] of Object.entries(platformSuffixes)) {
-    let asset = optionalAsset(release, `Cage-${version}-${suffix}`);
+    let asset = optionalAsset(release, `SuperCage-${version}-${suffix}`);
     let unsigned = false;
     if (!asset && platform === 'windows' && release.prerelease) {
-      asset = optionalAsset(release, `Cage-${version}-windows-amd64-setup-unsigned.exe`);
+      asset = optionalAsset(release, `SuperCage-${version}-windows-amd64-setup-unsigned.exe`);
       unsigned = !!asset;
     }
     if (!asset) continue;
@@ -190,8 +190,8 @@ export async function resolvePlatforms(releases, readChecksums = checksumText) {
     if (release.draft || !/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(release.tag_name)) continue;
     const version = release.tag_name.slice(1);
     const needed = Object.entries(platformSuffixes).some(([platform, suffix]) => !platforms[platform] && (
-      optionalAsset(release, `Cage-${version}-${suffix}`) ||
-      (platform === 'windows' && release.prerelease && optionalAsset(release, `Cage-${version}-windows-amd64-setup-unsigned.exe`))
+      optionalAsset(release, `SuperCage-${version}-${suffix}`) ||
+      (platform === 'windows' && release.prerelease && optionalAsset(release, `SuperCage-${version}-windows-amd64-setup-unsigned.exe`))
     ));
     if (!needed) continue;
     let available;
@@ -268,7 +268,7 @@ async function main() {
     release = releases.find(item => {
       try { releaseAssets(item); return true; } catch { return false; }
     });
-    if (!release) throw new Error('No complete public Cage release is available');
+    if (!release) throw new Error('No complete public SuperCage release is available');
   }
   const { version, archive, source, guestSource } = releaseAssets(release);
   const text = await checksumText(release);
@@ -279,7 +279,7 @@ async function main() {
   if (values['archive-directory']) {
     await download(archive, digest, values['archive-directory']);
     // The Intel Mac DMG shares the Mihomo source and is verified alongside.
-    const intel = optionalAsset(release, `Cage-${version}-macos-amd64.dmg`);
+    const intel = optionalAsset(release, `SuperCage-${version}-macos-amd64.dmg`);
     if (intel) await download(intel, checksumFor(text, intel), values['archive-directory']);
     await download(source, sourceDigest, values['archive-directory']);
     if (guestSource) await download(guestSource, checksumFor(text, guestSource), values['archive-directory']);
@@ -292,7 +292,7 @@ async function main() {
   const output = resolve(values.output);
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify(metadata, null, 2)}\n`);
-  console.log(`Website download: Cage ${version}`);
+  console.log(`Website download: SuperCage ${version}`);
 }
 
 // Node reports the entry module by its real path; compare real paths so symlinked checkouts still run.

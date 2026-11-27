@@ -1,4 +1,4 @@
-package io.github.leexeo.cage.mobile;
+package io.github.larito001.supercage.mobile;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;

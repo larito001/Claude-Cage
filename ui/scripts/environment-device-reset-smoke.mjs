@@ -148,7 +148,7 @@ for (const runtimeKind of ["vz", "qemu", "container"]) {
               protected: [
                 "宿主机上所有项目文件夹（双向共享，绝不删除或修改）",
                 "代理订阅、节点配置与出口规则",
-                "密码库、收藏与 Cage 应用通用设置",
+                "密码库、收藏与 SuperCage 应用通用设置",
               ],
               archives,
               recovery_batches: batches,

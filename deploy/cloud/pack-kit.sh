@@ -2,7 +2,7 @@
 # Inputs: trusted Linux Cage build, the verified guest build directory, Docker archives.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-: "${CAGE_SERVER_BINARY:?Specify the Linux amd64 Cage binary}"
+: "${CAGE_SERVER_BINARY:?Specify the Linux amd64 SuperCage binary}"
 : "${CAGE_GUEST_BUILD:?Specify the build-guest.sh output directory}"
 : "${CAGE_DOCKER_DOWNLOADS:?Specify the directory containing the two pinned Docker archives}"
 target="${CAGE_KIT_OUTPUT:-$PWD/_output/cloud-kit}"

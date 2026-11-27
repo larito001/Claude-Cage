@@ -50,8 +50,8 @@ try {
     ws.send(Buffer.from("\r\nLive ready " + connections + "\x1b[c"));
   });
   await page.reload();
-  await page.getByRole("button", { name: "启动 Cage 环境", exact: true }).waitFor();
-  await page.getByRole("button", { name: "启动 Cage 环境", exact: true }).click();
+  await page.getByRole("button", { name: "启动 SuperCage 环境", exact: true }).waitFor();
+  await page.getByRole("button", { name: "启动 SuperCage 环境", exact: true }).click();
   await page.getByRole("button", { name: "新建终端", exact: true }).first().waitFor();
   await page.getByRole("button", { name: "新建终端", exact: true }).first().click();
   await page.getByRole("menuitem", { name: /Claude/ }).first().waitFor();

@@ -1,4 +1,4 @@
-/* Native Linux host for the shared Cage workbench. */
+/* Native Linux host for the shared SuperCage workbench. */
 #define _POSIX_C_SOURCE 200809L
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
@@ -139,7 +139,7 @@ static void diagnostic_event(const char *message) {
     if (!app.backend || !app.profile) return;
     GSubprocessLauncher *launcher = g_subprocess_launcher_new(G_SUBPROCESS_FLAGS_STDIN_PIPE | G_SUBPROCESS_FLAGS_STDOUT_SILENCE | G_SUBPROCESS_FLAGS_STDERR_SILENCE);
     sanitize_child_media_env(launcher);
-    g_subprocess_launcher_setenv(launcher, "CLAUDE_CAGE_CONFIG", app.profile, TRUE);
+    g_subprocess_launcher_setenv(launcher, "SUPER_CAGE_CONFIG", app.profile, TRUE);
     GSubprocess *process = g_subprocess_launcher_spawn(launcher, NULL, app.backend, "diagnostic-event", NULL);
     g_object_unref(launcher);
     if (!process) return;
@@ -207,13 +207,13 @@ static void command_finished(GObject *source, GAsyncResult *result, gpointer dat
     if (g_subprocess_communicate_utf8_finish(G_SUBPROCESS(source), result, &output, NULL, &error)) {
         if (!output || strlen(output) > command->output_limit || !json_parser_load_from_data(parser, output, -1, NULL) ||
             !JSON_NODE_HOLDS_OBJECT(json_parser_get_root(parser))) {
-            g_set_error_literal(&error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "Cage 后台未返回有效状态，请查看私有配置中的 logs/。");
+            g_set_error_literal(&error, G_IO_ERROR, G_IO_ERROR_INVALID_DATA, "SuperCage 后台未返回有效状态，请查看私有配置中的 logs/。");
         } else {
             object = json_node_get_object(json_parser_get_root(parser));
             if (!g_subprocess_get_successful(command->process)) {
                 const char *message = text_member(object, "message");
                 g_set_error_literal(&error, G_IO_ERROR, G_IO_ERROR_FAILED,
-                    *message ? message : "Cage 后台操作失败，请查看 logs/。");
+                    *message ? message : "SuperCage 后台操作失败，请查看 logs/。");
             }
         }
     }
@@ -229,7 +229,7 @@ static Command *backend_arguments_limited(const char *const *args, guint seconds
     GError *error = NULL;
     GSubprocessLauncher *launcher = g_subprocess_launcher_new(G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_SILENCE);
     sanitize_child_media_env(launcher);
-    g_subprocess_launcher_setenv(launcher, "CLAUDE_CAGE_CONFIG", app.profile, TRUE);
+    g_subprocess_launcher_setenv(launcher, "SUPER_CAGE_CONFIG", app.profile, TRUE);
     if (g_strcmp0(args[1], "desktop") == 0) {
         char owner[32];
         g_snprintf(owner, sizeof(owner), "%ld", (long)getpid());
@@ -341,7 +341,7 @@ static char *choose_file(GtkFileChooserAction kind, const char *title, const cha
     if (kind != GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER) {
         GtkFileFilter *filter = gtk_file_filter_new();
         gboolean diagnostic = filename && g_str_has_suffix(filename, ".zip");
-        gtk_file_filter_set_name(filter, ui_text(diagnostic ? "诊断包 (*.zip)" : "Cage 主题 (*.json)"));
+        gtk_file_filter_set_name(filter, ui_text(diagnostic ? "诊断包 (*.zip)" : "SuperCage 主题 (*.json)"));
         gtk_file_filter_add_pattern(filter, diagnostic ? "*.zip" : "*.json");
         gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
     }
@@ -438,7 +438,7 @@ static GDBusConnection *notification_bus(void) {
         G_DBUS_SIGNAL_FLAGS_NONE, notification_signal, NULL, NULL);
     return notify_bus;
 }
-/* The service reports whether it can play sounds; Cage offers the sound
+/* The service reports whether it can play sounds; SuperCage offers the sound
    switch only when it can. An unreachable service is reported, not hidden. */
 static void notification_status_finished(GObject *source, GAsyncResult *result, gpointer data) {
     PendingReply *pending = data;
@@ -506,16 +506,16 @@ static void notification_send(WebKitScriptMessageReply *reply, JSCContext *conte
     GVariantBuilder actions, hints;
     g_variant_builder_init(&actions, G_VARIANT_TYPE("as"));
     g_variant_builder_add(&actions, "s", "default");
-    g_variant_builder_add(&actions, "s", "Cage");
+    g_variant_builder_add(&actions, "s", "SuperCage");
     g_variant_builder_init(&hints, G_VARIANT_TYPE("a{sv}"));
-    g_variant_builder_add(&hints, "{sv}", "desktop-entry", g_variant_new_string("io.github.lee_xeo.Cage"));
+    g_variant_builder_add(&hints, "{sv}", "desktop-entry", g_variant_new_string("io.github.larito001.SuperCage"));
     if (sound) g_variant_builder_add(&hints, "{sv}", "sound-name", g_variant_new_string("message-new-instant"));
     else g_variant_builder_add(&hints, "{sv}", "suppress-sound", g_variant_new_boolean(TRUE));
     NotificationSend *send = g_new0(NotificationSend, 1);
     send->pending = pending_reply(reply, context);
     send->target = g_strdup_printf("%s\n%s", terminal_id, connection_id);
     g_dbus_connection_call(bus, NOTIFY_NAME, NOTIFY_PATH, NOTIFY_NAME, "Notify",
-        g_variant_new("(susssasa{sv}i)", "Cage", 0, "io.github.lee_xeo.Cage", title, body, &actions, &hints, -1),
+        g_variant_new("(susssasa{sv}i)", "SuperCage", 0, "io.github.larito001.SuperCage", title, body, &actions, &hints, -1),
         G_VARIANT_TYPE("(u)"), G_DBUS_CALL_FLAGS_NONE, 5000, NULL, notification_sent, send);
 }
 static void language_refreshed(JsonObject *object, const GError *error, gpointer data) {
@@ -527,7 +527,7 @@ static void language_refreshed(JsonObject *object, const GError *error, gpointer
         gtk_button_set_label(GTK_BUTTON(app.retry), ui_text("重试连接"));
         gtk_button_set_label(GTK_BUTTON(app.existing), ui_text("打开现有环境保存文件"));
         gtk_button_set_label(GTK_BUTTON(app.complete), ui_text("保存后停止环境并完成更新"));
-        gtk_window_set_title(GTK_WINDOW(app.window), app.needs_update ? ui_text("Cage（更新待完成）") : "Cage");
+        gtk_window_set_title(GTK_WINDOW(app.window), app.needs_update ? ui_text("SuperCage（更新待完成）") : "SuperCage");
         reply_json(pending->reply, pending->context, "true");
     }
     pending_free(pending);
@@ -540,7 +540,7 @@ typedef struct { GSubprocess *process; GCancellable *cancel; guint deadline; Pen
 static void reply_update_state(WebKitScriptMessageReply *reply, JSCContext *context) {
     const char *text = CAGE_CLIENT_ONLY
         ? "轻量客户端使用独立安装包更新。退出客户端后更换程序；连接配置会保留，云端任务继续运行。"
-        : "Linux 版本使用系统安装包更新。请保存工作、停止环境并退出 Cage，再安装新版 .deb；用户数据会保留。";
+        : "Linux 版本使用系统安装包更新。请保存工作、停止环境并退出 SuperCage，再安装新版 .deb；用户数据会保留。";
     char *version = quote(CAGE_VERSION), *message = quote(text), *latest = update_latest ? quote(update_latest) : NULL;
     char *state = latest
         ? g_strdup_printf("{\"phase\":\"manual\",\"currentVersion\":%s,\"latestVersion\":%s,\"message\":%s}", version, latest, message)
@@ -590,7 +590,7 @@ static void update_check(WebKitScriptMessageReply *reply, JSCContext *context) {
     const char *args[] = {app.backend, "app-update", "check", NULL};
     GSubprocessLauncher *launcher = g_subprocess_launcher_new(G_SUBPROCESS_FLAGS_STDOUT_PIPE | G_SUBPROCESS_FLAGS_STDERR_SILENCE);
     sanitize_child_media_env(launcher);
-    g_subprocess_launcher_setenv(launcher, "CLAUDE_CAGE_CONFIG", app.profile, TRUE);
+    g_subprocess_launcher_setenv(launcher, "SUPER_CAGE_CONFIG", app.profile, TRUE);
     GSubprocess *process = update_checking ? NULL : g_subprocess_launcher_spawnv(launcher, args, NULL);
     g_object_unref(launcher);
     if (!process) { reply_update_state(reply, context); return; }
@@ -1097,11 +1097,11 @@ static gboolean bridge_received(WebKitUserContentManager *manager, JSCValue *val
         }
     } else if (!strcmp(name, "accountDevice")) {
         if (!strcmp(text_member(request, "operation"), "status")) reply_json(reply, context, "{\"supported\":false}");
-        else reply_error(reply, "Linux 版本使用 Cage 账户密码解锁。");
+        else reply_error(reply, "Linux 版本使用 SuperCage 账户密码解锁。");
     } else if (!strcmp(name, "appReference")) {
         const char *kind = text_member(request, "kind");
-        const char *uri = !strcmp(kind, "source") ? "https://github.com/larito001/Claude-Cage/commits/allcage"
-            : !strcmp(kind, "releases") ? "https://github.com/larito001/Claude-Cage/releases" : NULL;
+        const char *uri = !strcmp(kind, "source") ? "https://github.com/larito001/Super-Cage/commits/supercage"
+            : !strcmp(kind, "releases") ? "https://github.com/larito001/Super-Cage/releases" : NULL;
         if (!uri) reply_error(reply, "未知的项目页面");
         else {
             GError *error = NULL;
@@ -1161,7 +1161,7 @@ static gboolean bridge_received(WebKitUserContentManager *manager, JSCValue *val
         if (app.picker_open || !*connection || (strcmp(mode,"read") && strcmp(mode,"write"))) {
             reply_error(reply, "请在云端工作台重新选择项目。");
         } else {
-            const char *prompt = !strcmp(mode,"write") ? "云端 Cage 可以读取、修改和删除所选项目中的文件。" : "云端 Cage 可以读取所选项目中的文件。";
+            const char *prompt = !strcmp(mode,"write") ? "云端 SuperCage 可以读取、修改和删除所选项目中的文件。" : "云端 SuperCage 可以读取所选项目中的文件。";
             char *path = choose_file(GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, prompt, NULL);
             if (path) {
                 const char *args[] = {app.backend,"share-project","--json","--connection",connection,mode,path,NULL};
@@ -1173,7 +1173,7 @@ static gboolean bridge_received(WebKitUserContentManager *manager, JSCValue *val
         if (app.picker_open) reply_error(reply, "请先完成当前文件选择。");
         else {
             const char *prompt = !strcmp(text_member(request, "purpose"), "environmentStorage")
-                ? "请选择用于保存镜像和虚拟磁盘的空文件夹。" : "仅此文件夹会与 Cage 共享。请选择具体项目。";
+                ? "请选择用于保存镜像和虚拟磁盘的空文件夹。" : "仅此文件夹会与 SuperCage 共享。请选择具体项目。";
             char *path = choose_file(GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, prompt, NULL);
             reply_string(reply, context, path ? path : "");
             g_free(path);
@@ -1434,13 +1434,13 @@ static void bootstrapped(JsonObject *object, const GError *error, gpointer data)
     g_uri_unref(uri);
     app.ready = FALSE;
     install_bridge();
-    gtk_window_set_title(GTK_WINDOW(app.window), app.needs_update ? ui_text("Cage（更新待完成）") : "Cage");
+    gtk_window_set_title(GTK_WINDOW(app.window), app.needs_update ? ui_text("SuperCage（更新待完成）") : "SuperCage");
     webkit_web_view_load_uri(app.web, url);
 }
 static void bootstrap(const char *option) {
     if (app.bootstrapping) return;
     app.bootstrapping = TRUE;
-    gtk_label_set_text(GTK_LABEL(app.status), ui_text("正在连接 Cage 工作台…"));
+    gtk_label_set_text(GTK_LABEL(app.status), ui_text("正在连接 SuperCage 工作台…"));
     gtk_stack_set_visible_child_name(GTK_STACK(app.stack), "status");
     gtk_widget_hide(app.retry); gtk_widget_hide(app.existing); gtk_widget_hide(app.complete);
     backend("desktop", option, bootstrapped, NULL);
@@ -1450,7 +1450,7 @@ static void existing_clicked(GtkButton *button, gpointer data) { (void)button; (
 static void complete_clicked(GtkButton *button, gpointer data) {
     (void)button; (void)data;
     GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(app.window), GTK_DIALOG_MODAL, GTK_MESSAGE_QUESTION, GTK_BUTTONS_OK_CANCEL,
-        "%s", ui_text("请先保存文件。继续后将停止 Cage 环境并完成后台更新，终端任务会结束，项目和登录状态会保留。"));
+        "%s", ui_text("请先保存文件。继续后将停止 SuperCage 环境并完成后台更新，终端任务会结束，项目和登录状态会保留。"));
     gboolean accepted = gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK;
     gtk_widget_destroy(dialog);
     if (accepted) bootstrap("--complete-update");
@@ -1644,10 +1644,10 @@ static void menu_action(GSimpleAction *simple, GVariant *parameter, gpointer dat
         request_quit();
     } else if (!strcmp(name, "updates")) {
         GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(app.window), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE,
-            "%s", ui_text("Linux 版本通过安装包更新。请保存文件、停止环境并退出 Cage，再安装已核对摘要的官方新版本。"));
+            "%s", ui_text("Linux 版本通过安装包更新。请保存文件、停止环境并退出 SuperCage，再安装已核对摘要的官方新版本。"));
         gtk_dialog_run(GTK_DIALOG(dialog)); gtk_widget_destroy(dialog);
     } else if (!strcmp(name, "about")) {
-        gtk_show_about_dialog(GTK_WINDOW(app.window), "program-name", "Cage", "version", CAGE_VERSION,
+        gtk_show_about_dialog(GTK_WINDOW(app.window), "program-name", "SuperCage", "version", CAGE_VERSION,
             "comments", ui_text("本机隔离编码工作区"), "license-type", GTK_LICENSE_MIT_X11, NULL);
     } else action(name);
 }
@@ -1659,10 +1659,10 @@ static void update_menu(void) {
     g_menu_append(file, ui_text("关闭当前标签"), "app.closeTab");
     g_menu_append(file, ui_text("重新加载界面"), "app.reloadWorkbench");
     g_menu_append(file, ui_text("关闭窗口（保留环境）"), "app.closeWindow");
-    g_menu_append(file, ui_text("退出 Cage…"), "app.quit");
+    g_menu_append(file, ui_text("退出 SuperCage…"), "app.quit");
     g_menu_append(settings, ui_text("打开设置"), "app.settings");
     g_menu_append(settings, ui_text("应用更新…"), "app.updates");
-    g_menu_append(help, ui_text("关于 Cage"), "app.about");
+    g_menu_append(help, ui_text("关于 SuperCage"), "app.about");
     g_menu_remove_all(app.menu);
     g_menu_append_submenu(app.menu, ui_text("文件"), G_MENU_MODEL(file));
     g_menu_append_submenu(app.menu, ui_text("设置"), G_MENU_MODEL(settings));
@@ -1671,10 +1671,10 @@ static void update_menu(void) {
 }
 static void create_window(void) {
     app.window = gtk_application_window_new(app.application);
-    gtk_window_set_title(GTK_WINDOW(app.window), "Cage");
+    gtk_window_set_title(GTK_WINDOW(app.window), "SuperCage");
     gtk_window_set_default_size(GTK_WINDOW(app.window), 1280, 850);
     gtk_widget_set_size_request(app.window, 820, 580);
-    gtk_window_set_icon_name(GTK_WINDOW(app.window), "io.github.lee_xeo.Cage");
+    gtk_window_set_icon_name(GTK_WINDOW(app.window), "io.github.larito001.SuperCage");
     g_signal_connect(app.window, "delete-event", G_CALLBACK(close_window), NULL);
     g_signal_connect(app.window, "window-state-event", G_CALLBACK(visibility_changed), NULL);
     g_signal_connect(app.window, "map-event", G_CALLBACK(visibility_changed), NULL);
@@ -1701,7 +1701,7 @@ static void create_window(void) {
     GtkWidget *status_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 16);
     gtk_widget_set_margin_start(status_box, 48); gtk_widget_set_margin_end(status_box, 48);
     gtk_widget_set_margin_top(status_box, 48); gtk_widget_set_valign(status_box, GTK_ALIGN_START);
-    app.status = gtk_label_new(ui_text("正在启动 Cage 工作台…"));
+    app.status = gtk_label_new(ui_text("正在启动 SuperCage 工作台…"));
     gtk_label_set_line_wrap(GTK_LABEL(app.status), TRUE);
     gtk_label_set_xalign(GTK_LABEL(app.status), 0);
     gtk_box_pack_start(GTK_BOX(status_box), app.status, FALSE, FALSE, 0);
@@ -1717,7 +1717,7 @@ static void create_window(void) {
     g_signal_connect(app.existing, "clicked", G_CALLBACK(existing_clicked), NULL);
     g_signal_connect(app.complete, "clicked", G_CALLBACK(complete_clicked), NULL);
     gtk_stack_add_named(GTK_STACK(app.stack), status_box, "status");
-    /* Workbench layout persists within this private Cage profile. No system
+    /* Workbench layout persists within this private SuperCage profile. No system
      * browser profile or guest browser data is shared with this WebView. */
     WebKitWebsiteDataManager *storage = webkit_website_data_manager_new(
         "base-data-directory", app.web_data, "base-cache-directory", app.web_cache, NULL);
@@ -1792,33 +1792,33 @@ static int self_test(void) {
 }
 int main(int argc, char **argv) {
     if (argc == 2 && !strcmp(argv[1], "--self-test")) return self_test();
-    if (argc == 2 && !strcmp(argv[1], "--version")) { g_print("Cage %s\n", CAGE_VERSION); return 0; }
-    if (argc == 3 && !strcmp(argv[1], "--smoke-test") && g_path_is_absolute(argv[2]) && g_getenv("CLAUDE_CAGE_CONFIG")) {
+    if (argc == 2 && !strcmp(argv[1], "--version")) { g_print("SuperCage %s\n", CAGE_VERSION); return 0; }
+    if (argc == 3 && !strcmp(argv[1], "--smoke-test") && g_path_is_absolute(argv[2]) && g_getenv("SUPER_CAGE_CONFIG")) {
         app.smoke_output = g_strdup(argv[2]); app.result = 1;
         app.storage_phase = g_getenv("CAGE_SMOKE_STORAGE_PHASE");
         app.storage_marker = g_getenv("CAGE_SMOKE_STORAGE_MARKER");
         if (app.storage_phase && (g_strcmp0(app.storage_phase, "seed") && g_strcmp0(app.storage_phase, "verify"))) return 2;
         if (app.storage_phase && (!app.storage_marker || !*app.storage_marker || strlen(app.storage_marker) > 128)) return 2;
     } else if (argc != 1) {
-        g_printerr("Usage: cage-desktop [--version | --self-test | --smoke-test /absolute/report.json]\nSmoke tests require an isolated CLAUDE_CAGE_CONFIG with an unlocked test account.\n");
+        g_printerr("Usage: cage-desktop [--version | --self-test | --smoke-test /absolute/report.json]\nSmoke tests require an isolated SUPER_CAGE_CONFIG with an unlocked test account.\n");
         return 2;
     }
-    if (geteuid() == 0) { g_printerr("Cage 桌面需要以普通用户运行，请勿使用 sudo 启动。\n"); return 1; }
+    if (geteuid() == 0) { g_printerr("SuperCage 桌面需要以普通用户运行，请勿使用 sudo 启动。\n"); return 1; }
     char *executable = g_file_read_link("/proc/self/exe", NULL);
-    if (!executable) { g_printerr("无法定位 Cage 安装目录。\n"); return 1; }
+    if (!executable) { g_printerr("无法定位 SuperCage 安装目录。\n"); return 1; }
     char *directory = g_path_get_dirname(executable);
     app.backend = g_build_filename(directory, "cage", NULL);
     g_free(directory); g_free(executable);
-    if (!g_file_test(app.backend, G_FILE_TEST_IS_EXECUTABLE)) { g_printerr("安装目录缺少 Cage 后台，请重新安装。\n"); return 1; }
-    const char *configured = g_getenv("CLAUDE_CAGE_CONFIG");
+    if (!g_file_test(app.backend, G_FILE_TEST_IS_EXECUTABLE)) { g_printerr("安装目录缺少 SuperCage 后台，请重新安装。\n"); return 1; }
+    const char *configured = g_getenv("SUPER_CAGE_CONFIG");
     app.profile = configured && *configured ? g_canonicalize_filename(configured, NULL)
-        : CAGE_CLIENT_ONLY ? g_build_filename(g_get_home_dir(), ".claude-cage", "client", "config.json", NULL)
-        : g_build_filename(g_get_home_dir(), ".claude-cage", "config.json", NULL);
-    g_setenv("CLAUDE_CAGE_CONFIG", app.profile, TRUE);
+        : CAGE_CLIENT_ONLY ? g_build_filename(g_get_home_dir(), ".super-cage", "client", "config.json", NULL)
+        : g_build_filename(g_get_home_dir(), ".super-cage", "config.json", NULL);
+    g_setenv("SUPER_CAGE_CONFIG", app.profile, TRUE);
     load_language();
     g_log_set_default_handler(diagnostic_glib, NULL);
     if (!prepare_web_storage()) {
-        g_printerr("无法创建 Cage 私有界面数据目录，请检查配置目录的所有者、权限或符号链接。\n");
+        g_printerr("无法创建 SuperCage 私有界面数据目录，请检查配置目录的所有者、权限或符号链接。\n");
         return 1;
     }
     app.media_plugins_isolated = media_plugins_isolate(app.web_cache, media_plugins_system_dirs);

@@ -49,7 +49,7 @@ func runAgent(args []string, stdin io.Reader, stdout io.Writer, clientOnly bool)
 			if errors.As(err, &ae) {
 				reply.Error = ae
 			} else {
-				reply.Error = &workbench.AgentError{Code: "operation_failed", Message: "Cage could not complete the operation. Inspect diagnostics.", NextAction: "doctor"}
+				reply.Error = &workbench.AgentError{Code: "operation_failed", Message: "SuperCage could not complete the operation. Inspect diagnostics.", NextAction: "doctor"}
 			}
 			if reply.Error.Code == "invalid_input" || reply.Error.Code == "unknown_operation" {
 				code = 2
@@ -128,9 +128,9 @@ func runAgent(args []string, stdin io.Reader, stdout io.Writer, clientOnly bool)
 		if err != nil {
 			return finish(nil, err)
 		}
-		*config = filepath.Join(home, ".claude-cage", "config.json")
+		*config = filepath.Join(home, ".super-cage", "config.json")
 		if clientOnly {
-			*config = filepath.Join(home, ".claude-cage", "client", "config.json")
+			*config = filepath.Join(home, ".super-cage", "client", "config.json")
 		}
 	}
 	path, err := filepath.Abs(*config)
@@ -165,7 +165,7 @@ func runAgent(args []string, stdin io.Reader, stdout io.Writer, clientOnly bool)
 		return finish(map[string]bool{"created": err == nil}, err)
 	case "service.start":
 		if clientOnly {
-			return finish(nil, &workbench.AgentError{Code: "user_action_required", Message: "Open the installed Cage client to start its connection service", NextAction: "open_desktop"})
+			return finish(nil, &workbench.AgentError{Code: "user_action_required", Message: "Open the installed SuperCage client to start its connection service", NextAction: "open_desktop"})
 		}
 		if err := host.ConfigureWindowsRuntime(); err != nil {
 			return finish(nil, err)

@@ -45,7 +45,7 @@ function Assert-WindowsWorkbenchTestBase {
         if (-not $root -or -not [IO.Path]::IsPathFullyQualified($root)) { continue }
         $prefix = (Resolve-WindowsBuildDirectory $root).TrimEnd('\', '/') + '\'
         if ($path.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
-            throw 'The workbench smoke test directory resolves inside AppData or another private configuration directory. Set RUNNER_TEMP to a writable local directory outside it, such as D:\CageBuildTemp.'
+            throw 'The workbench smoke test directory resolves inside AppData or another private configuration directory. Set RUNNER_TEMP to a writable local directory outside it, such as D:\SuperCageBuildTemp.'
         }
     }
 }
@@ -72,7 +72,7 @@ function Assert-WindowsBuildDirectoryIntegrity {
         try {
             $lines = @(& $icacls $Directory 2>$null)
             if ($LASTEXITCODE -eq 0 -and (Test-WindowsLowIntegrityText $lines)) {
-                throw "Build directory '$Directory' carries Windows Low Mandatory Level (Low IL). Executables built here inherit Low IL and cannot write to %TEMP% (causing 'cage.exe verify-vm-assets' to fail with Access is denied). Copy the repository to a normal local directory without a Low Mandatory Level label (for example C:\src\Claude-Cage) and rebuild. See docs/windows.md#windows-源码构建."
+                throw "Build directory '$Directory' carries Windows Low Mandatory Level (Low IL). Executables built here inherit Low IL and cannot write to %TEMP% (causing 'cage.exe verify-vm-assets' to fail with Access is denied). Copy the repository to a normal local directory without a Low Mandatory Level label (for example C:\src\Super-Cage) and rebuild. See docs/windows.md#windows-源码构建."
             }
         } finally { $PSNativeCommandUseErrorActionPreference = $savedNative }
     }
@@ -83,7 +83,7 @@ function Assert-WindowsBuildDirectoryIntegrity {
         try {
             $groups = @(& $whoami '/groups' 2>$null)
             if ($LASTEXITCODE -eq 0 -and (Test-WindowsLowIntegrityText $groups)) {
-                throw 'The current build shell runs at Windows Low Mandatory Level (Low IL), which prevents built executables from writing to %TEMP%. Run the build from a normal Medium-integrity shell in a standard local directory (for example C:\src\Claude-Cage). See docs/windows.md#windows-源码构建.'
+                throw 'The current build shell runs at Windows Low Mandatory Level (Low IL), which prevents built executables from writing to %TEMP%. Run the build from a normal Medium-integrity shell in a standard local directory (for example C:\src\Super-Cage). See docs/windows.md#windows-源码构建.'
             }
         } finally { $PSNativeCommandUseErrorActionPreference = $savedNative }
     }
@@ -121,10 +121,10 @@ function Get-WindowsWorkbenchStorageError {
     param([string]$Profile)
     if (-not $Profile) { return }
     # Only include the fixed sharing errors in public build diagnostics.
-    $storageErrors = @('请选择具体项目，不要共享主目录、Cage 配置或包含配置的上级目录',
+    $storageErrors = @('请选择具体项目，不要共享主目录、SuperCage 配置或包含配置的上级目录',
         '请选择项目根目录，不要共享 Git 等版本控制元数据目录',
-        'Cage 配置、环境存储及备份不能共享',
-        'Cage 配置、环境存储、迁移备份及其上级目录不能共享给虚拟机')
+        'SuperCage 配置、环境存储及备份不能共享',
+        'SuperCage 配置、环境存储、迁移备份及其上级目录不能共享给虚拟机')
     foreach ($relative in @('logs/events.jsonl', 'desktop-entry/logs/events.jsonl')) {
         $log = Join-Path $Profile $relative
         foreach ($line in (Get-Content -LiteralPath $log -Tail 64 -ErrorAction SilentlyContinue)) {
@@ -149,15 +149,15 @@ function Assert-WindowsWorkbenchReport {
     param([int]$ExitCode, [string]$Report, [string]$ControllerProfile)
     $reportFile = Get-Item -LiteralPath $Report -ErrorAction SilentlyContinue
     if ($reportFile -isnot [IO.FileInfo]) {
-        Stop-WindowsWorkbenchAcceptance "Cage workbench acceptance failed ($ExitCode). No smoke report: $Report" $ControllerProfile
+        Stop-WindowsWorkbenchAcceptance "SuperCage workbench acceptance failed ($ExitCode). No smoke report: $Report" $ControllerProfile
     }
     if ($reportFile.Length -gt 65536) {
-        Stop-WindowsWorkbenchAcceptance "Cage smoke report exceeds the bounded diagnostic size: $Report" $ControllerProfile
+        Stop-WindowsWorkbenchAcceptance "SuperCage smoke report exceeds the bounded diagnostic size: $Report" $ControllerProfile
     }
     try { $result = Get-Content -LiteralPath $Report -Raw | ConvertFrom-Json -AsHashtable -NoEnumerate }
     catch { $result = $null }
     if ($result -isnot [System.Collections.IDictionary]) {
-        Stop-WindowsWorkbenchAcceptance "Cage workbench acceptance failed ($ExitCode). Invalid smoke report: $Report" $ControllerProfile
+        Stop-WindowsWorkbenchAcceptance "SuperCage workbench acceptance failed ($ExitCode). Invalid smoke report: $Report" $ControllerProfile
     }
     $failed = $ExitCode -ne 0 -or $result['success'] -ne $true -or $result['nativeBridgeReady'] -ne $true
     $safe = @{ phase = ConvertTo-SmokeSafeText $result['phase']; nativeStatus = ConvertTo-SmokeSafeText $result['nativeStatus']; jsErrors = @() }
@@ -183,10 +183,10 @@ function Assert-WindowsWorkbenchReport {
     }
     # Log only these already-bounded fields, even when the process failed. Do
     # not print launch entries, page URLs, account data or the raw report.
-    Write-Host ('Cage smoke diagnostic: ' + ($safe | ConvertTo-Json -Depth 6 -Compress))
+    Write-Host ('SuperCage smoke diagnostic: ' + ($safe | ConvertTo-Json -Depth 6 -Compress))
     if ($failed) {
         $reason = $safe['controllerError'] ?? $safe.nativeStatus
-        throw "Cage workbench/bridge acceptance failed ($ExitCode), phase $($safe.phase): $reason. Diagnostics: $Report"
+        throw "SuperCage workbench/bridge acceptance failed ($ExitCode), phase $($safe.phase): $reason. Diagnostics: $Report"
     }
 }
 
@@ -195,7 +195,7 @@ function Wait-WindowsWorkbenchFiles {
     # The log relay can outlive the controller's profile lock. Wait for the
     # isolated build's executable images to be released before moving them.
     $deadline = [DateTime]::UtcNow.AddSeconds(20)
-    foreach ($relative in @('Cage.exe', 'resources/cage.exe')) {
+    foreach ($relative in @('SuperCage.exe', 'resources/cage.exe')) {
         $file = Join-Path $AppDirectory $relative
         while ($true) {
             try {
@@ -219,17 +219,17 @@ function Assert-WindowsWorkbench {
     New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
     $report = Join-Path $testRoot 'smoke.json'
     $profile = Join-Path $testRoot 'profile'
-    $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $AppDirectory 'Cage.exe'))
+    $start = [Diagnostics.ProcessStartInfo]::new((Join-Path $AppDirectory 'SuperCage.exe'))
     $start.UseShellExecute = $false
     $start.WorkingDirectory = $AppDirectory
-    $start.Environment['CLAUDE_CAGE_CONFIG'] = Join-Path $profile 'config.json'
+    $start.Environment['SUPER_CAGE_CONFIG'] = Join-Path $profile 'config.json'
     $start.ArgumentList.Add('--smoke-test')
     $start.ArgumentList.Add($report)
     $window = [Diagnostics.Process]::Start($start)
     $passed = $false
     try {
         if (-not $window.WaitForExit(180000)) {
-            Stop-WindowsWorkbenchAcceptance "Cage workbench acceptance timed out. Diagnostics retained at $testRoot" $profile
+            Stop-WindowsWorkbenchAcceptance "SuperCage workbench acceptance timed out. Diagnostics retained at $testRoot" $profile
         }
         Assert-WindowsWorkbenchReport -ExitCode $window.ExitCode -Report $report -ControllerProfile $profile
         Wait-WindowsWorkbenchFiles -AppDirectory $AppDirectory
@@ -246,7 +246,7 @@ function Assert-WindowsWorkbench {
                 $cleanup.CreateNoWindow = $true
                 $cleanup.RedirectStandardOutput = $true
                 $cleanup.RedirectStandardError = $true
-                $cleanup.Environment['CLAUDE_CAGE_CONFIG'] = Join-Path $profile 'config.json'
+                $cleanup.Environment['SUPER_CAGE_CONFIG'] = Join-Path $profile 'config.json'
                 $cleanup.ArgumentList.Add('prepare-update'); $cleanup.ArgumentList.Add('--json')
                 $controller = [Diagnostics.Process]::Start($cleanup)
                 try {
@@ -497,7 +497,7 @@ function Publish-WindowsQemuRuntime {
         $marker = Get-Item -LiteralPath (Join-Path $Directory 'cage-build.json') -ErrorAction SilentlyContinue
         if (-not $ManagedCache -and -not $empty -and
             ($marker -isnot [IO.FileInfo] -or ($marker.Attributes -band [IO.FileAttributes]::ReparsePoint))) {
-            throw "Choose an empty directory or an existing Cage QEMU build output: $Directory"
+            throw "Choose an empty directory or an existing SuperCage QEMU build output: $Directory"
         }
         $removePrevious = $empty -or (Test-WindowsQemuBuildManifest $Directory)
         $previous = "$Directory.previous-$([guid]::NewGuid().ToString('N'))"
@@ -618,7 +618,7 @@ function Sign-CageFile {
         } finally { if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force } }
     } else {
         Invoke-BuildTool $SignTool @('sign', '/sha1', $env:CAGE_WINDOWS_CERT_SHA1, '/fd', 'SHA256',
-            '/tr', 'http://timestamp.digicert.com', '/td', 'SHA256', '/d', 'Cage', $Path)
+            '/tr', 'http://timestamp.digicert.com', '/td', 'SHA256', '/d', 'SuperCage', $Path)
         Invoke-BuildTool $SignTool @('verify', '/pa', '/all', $Path)
     }
 }

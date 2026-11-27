@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.CAGE_PLAYWRIGHT_MODULE || "playwright");
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "cage-diagnostics-"));
 const profile = path.join(root, "profile");
-const env = { ...process.env, CLAUDE_CAGE_CONFIG: path.join(profile, "config.json") };
+const env = { ...process.env, SUPER_CAGE_CONFIG: path.join(profile, "config.json") };
 let browser;
 const reportDirectory = process.env.CAGE_DIAGNOSTIC_REPORT
   ? path.resolve(process.env.CAGE_DIAGNOSTIC_REPORT)
@@ -24,7 +24,7 @@ try {
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ acceptDownloads: true, viewport: { width: 1280, height: 900 } });
   await page.goto(entry.url);
-  await page.getByRole("heading", { name: "注册 Cage 账户", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "注册 SuperCage 账户", exact: true }).waitFor();
   await page.getByLabel("用户名", { exact: true }).fill("diagnostics_qa");
   await page.getByLabel("设置密码", { exact: true }).fill("Test-only-password-8712");
   await page.getByLabel("确认密码", { exact: true }).fill("Test-only-password-8712");

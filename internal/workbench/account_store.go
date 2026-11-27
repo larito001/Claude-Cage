@@ -230,7 +230,7 @@ func (a *localAccount) markMissingAccount(w http.ResponseWriter) {
 
 func (a *localAccount) desktopOnlyMobileMessage() string {
 	if a == nil {
-		return "Cage 已锁定，请先登录"
+		return "SuperCage 已锁定，请先登录"
 	}
 	a.mu.Lock()
 	trustedLocal := a.record != nil && a.record.TrustedDevice != ""
@@ -344,7 +344,7 @@ func (a *localAccount) updateProfile(name, avatar string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if len(a.key) != 32 {
-		return errors.New("请先解锁 Cage")
+		return errors.New("请先解锁 SuperCage")
 	}
 	record := *a.record
 	record.Username = name
@@ -363,7 +363,7 @@ func (a *localAccount) changePassword(oldPassword, newPassword string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if len(a.key) != 32 {
-		return errors.New("请先解锁 Cage")
+		return errors.New("请先解锁 SuperCage")
 	}
 	if time.Now().Before(a.nextAttempt) {
 		return errors.New("请稍后再试")
@@ -400,7 +400,7 @@ func (a *localAccount) desktopKey() ([]byte, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	if len(a.key) != 32 {
-		return nil, errors.New("请先登录 Cage，再打开 Claude Desktop")
+		return nil, errors.New("请先登录 SuperCage，再打开 Claude Desktop")
 	}
 	// Base64 is accepted by the keyring without newline/encoding ambiguity.
 	encoded := make([]byte, base64.RawStdEncoding.EncodedLen(len(a.key)))

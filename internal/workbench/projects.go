@@ -233,7 +233,7 @@ func (s *Server) ensureProjectShare(path string) (returned error) {
 	// this explicitly authorized path, without changing other projects' mounts.
 	prepared, err := s.guest(ctx, prepareProjectMountCommand(quoted))
 	if err != nil {
-		return errors.New("无法在 Cage 中准备项目目录")
+		return errors.New("无法在 SuperCage 中准备项目目录")
 	}
 	// 挂载与 SFTP 服务使用同一组客机 UID/GID：客机工具把文件 chown 给自己时，宿主视为属主不变。
 	owner := parseGuestOwner(prepared)

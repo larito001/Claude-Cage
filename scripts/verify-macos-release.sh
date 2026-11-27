@@ -16,10 +16,10 @@ validate_ticket() {
 shopt -s nullglob
 # A directory holds at most one DMG per architecture: arm64 (Apple Silicon)
 # and amd64 (Intel). Both bundle the same Mihomo, so one source serves both.
-arm=("$directory"/Cage-*-macos-arm64.dmg)
-intel=("$directory"/Cage-*-macos-amd64.dmg)
+arm=("$directory"/SuperCage-*-macos-arm64.dmg)
+intel=("$directory"/SuperCage-*-macos-amd64.dmg)
 if [[ ${#arm[@]} -gt 1 || ${#intel[@]} -gt 1 || $(( ${#arm[@]} + ${#intel[@]} )) == 0 ]]; then
-  echo 'Expected one Cage DMG per macOS architecture.' >&2; exit 1
+  echo 'Expected one SuperCage DMG per macOS architecture.' >&2; exit 1
 fi
 archives=(${arm[@]+"${arm[@]}"} ${intel[@]+"${intel[@]}"})
 sources=("$directory"/mihomo-v*-source.tar.gz)
@@ -50,7 +50,7 @@ trap detach EXIT
 
 verify_archive() {
   local archive=$1 version arch machine bundle executable
-  version="${archive##*/Cage-}"
+  version="${archive##*/SuperCage-}"
   arch="${version##*-macos-}"
   arch="${arch%.dmg}"
   version="${version%-macos-"$arch".dmg}"
@@ -60,20 +60,20 @@ verify_archive() {
   spctl --assess --type open --context context:primary-signature --verbose=2 "$archive"
   mount="$(mktemp -d)"
   hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$archive" >/dev/null
-  bundle="$mount/Cage.app"
+  bundle="$mount/SuperCage.app"
   test "$(/usr/libexec/PlistBuddy -c 'Print :CageVersion' "$bundle/Contents/Info.plist")" = "$version"
   codesign --verify --deep --strict --verbose=2 \
-    -R='anchor apple generic and identifier "io.github.lee-xeo.claude-cage" and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists' "$bundle"
+    -R='anchor apple generic and identifier "io.github.larito001.super-cage" and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists' "$bundle"
   validate_ticket "$bundle"
   spctl --assess --type execute --verbose=2 "$bundle"
   # The DMG name is what the in-app updater selects; its App must match it.
-  for executable in Contents/MacOS/Cage Contents/Resources/cage Contents/Resources/mihomo Contents/Resources/CageUpdateInstaller; do
+  for executable in Contents/MacOS/SuperCage Contents/Resources/cage Contents/Resources/mihomo Contents/Resources/CageUpdateInstaller; do
     [[ "$(lipo -archs "$bundle/$executable")" == "$machine" ]] || { echo "Architecture mismatch in $executable" >&2; return 1; }
   done
   if [[ $arch == amd64 ]]; then
     [[ "$(lipo -archs "$bundle/Contents/Resources/intel-macos/runtime/bin/qemu-system-x86_64")" == x86_64 ]]
   fi
   detach
-  echo "Verified Developer ID, notarization, Gatekeeper, version and corresponding source: Cage $version ($arch)"
+  echo "Verified Developer ID, notarization, Gatekeeper, version and corresponding source: SuperCage $version ($arch)"
 }
 for archive in "${archives[@]}"; do verify_archive "$archive"; done

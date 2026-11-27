@@ -1,4 +1,4 @@
-// Isolated browser fixture. No request from this page reaches the running Cage service.
+// Isolated browser fixture. No request from this page reaches the running SuperCage service.
 import { createRequire } from "node:module";
 import { defaultAppearance, presets } from "../src/appearance-state.mjs";
 const require = createRequire(import.meta.url);
@@ -57,7 +57,7 @@ export async function createWorkbench({
     accountPassword: "fixture-password",
     failAccountSave: false,
     settings: {
-      workspace: "/Users/shihao/.claude-cage-workspace",
+      workspace: "/Users/shihao/.super-cage-workspace",
       browser_home_url: "https://www.bing.com/",
       dns_url: "https://cloudflare-dns.com/dns-query",
       timezone: "Asia/Shanghai",
@@ -69,9 +69,9 @@ export async function createWorkbench({
       exit_policy: { mode: "dynamic", scope: "country", country_code: "US" },
     },
     status: {
-      environment_directory: "/Users/shihao/.claude-cage-workspace",
+      environment_directory: "/Users/shihao/.super-cage-workspace",
       environment_workspace: true,
-      projects: ["/Users/shihao/.claude-cage-workspace"],
+      projects: ["/Users/shihao/.super-cage-workspace"],
       ready: false,
       vm_running: false,
       keyboard: "mac",
@@ -125,7 +125,7 @@ export async function createWorkbench({
     if (path === "/account") return route.fulfill({ json: accountView() });
     if (path.startsWith("/account/")) {
       const action = path.split("/").at(-1);
-      if (!["create", "unlock"].includes(action) && !state.account.unlocked) return route.fulfill({ status: 423, body: "请先解锁 Cage" });
+      if (!["create", "unlock"].includes(action) && !state.account.unlocked) return route.fulfill({ status: 423, body: "请先解锁 SuperCage" });
       if (action === "create") {
         if (state.account.exists || !body.username?.trim() || body.password?.length < 8 || body.password !== body.confirm_password) return route.fulfill({ status: 400, body: "账户信息无效" });
         Object.assign(state.account, { exists: true, unlocked: true, username: body.username.trim(), avatar: body.avatar || "" });
@@ -154,7 +154,7 @@ export async function createWorkbench({
       }
       return route.fulfill({ json: accountView() });
     }
-    if (!state.account.unlocked && !["/session", "/launch", "/appearance"].includes(path)) return route.fulfill({ status: 423, body: "Cage 已锁定，请先登录" });
+    if (!state.account.unlocked && !["/session", "/launch", "/appearance"].includes(path)) return route.fulfill({ status: 423, body: "SuperCage 已锁定，请先登录" });
     if (browserRequest && path.startsWith("/browser/") && path !== "/browser/events") return browserRequest(route, path, body);
     if (path.startsWith("/cli/")) {
       if (cliRequest) return cliRequest(route, path, body);
@@ -261,7 +261,7 @@ export async function createWorkbench({
           if (!state.status.projects.includes(body.workspace))
             state.status.projects.push(body.workspace);
           state.status.environment_workspace = body.workspace.endsWith(
-            "/.claude-cage-workspace",
+            "/.super-cage-workspace",
           );
         }
       }
@@ -274,7 +274,7 @@ export async function createWorkbench({
       result = { id };
     } else if (path === "/start") {
       state.status.job = { id: "start", kind: "start", running: false };
-      state.settings.workspace = "/Users/shihao/.claude-cage-workspace";
+      state.settings.workspace = "/Users/shihao/.super-cage-workspace";
       state.status.environment_workspace = true;
       state.status.ready = true;
       state.status.vm_running = true;
@@ -399,7 +399,7 @@ export async function createWorkbench({
   });
   if (beforeNavigate) await beforeNavigate(page, state);
   await page.goto(url || process.env.CAGE_UI_URL || "http://127.0.0.1:5198");
-  if (waitForReady && !startupFailure && !state.status.vm_running && clientContext.mode !== "none") await page.getByRole("heading", { name: state.initialization.required ? state.initialization.started ? "安装并检查客机环境" : "为 Cage 准备独立环境" : /^(先启动 Cage 环境|Claude Cage)$/ }).waitFor();
+  if (waitForReady && !startupFailure && !state.status.vm_running && clientContext.mode !== "none") await page.getByRole("heading", { name: state.initialization.required ? state.initialization.started ? "安装并检查客机环境" : "为 SuperCage 准备独立环境" : /^(先启动 Cage 环境|SuperCage)$/ }).waitFor();
   return { browser, context, page, state, errors };
 }
 

@@ -28,19 +28,19 @@ ManifestSupportedOS all
   !error "OUTPUT_FILE is required"
 !endif
 
-!define APP_ID "io.github.lee-xeo.claude-cage"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\ClaudeCage"
+!define APP_ID "io.github.lee-xeo.super-cage"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\SuperCage"
 !define WEBVIEW2_APP_ID "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
-Name "Cage ${VERSION}"
+Name "SuperCage ${VERSION}"
 OutFile "${OUTPUT_FILE}"
-InstallDir "$LOCALAPPDATA\Programs\Cage"
+InstallDir "$LOCALAPPDATA\Programs\SuperCage"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
 VIProductVersion "${VERSION_NUMERIC}"
-VIAddVersionKey /LANG=1033 "ProductName" "Cage"
+VIAddVersionKey /LANG=1033 "ProductName" "SuperCage"
 VIAddVersionKey /LANG=1033 "ProductVersion" "${VERSION}"
 VIAddVersionKey /LANG=1033 "FileVersion" "${VERSION}"
-VIAddVersionKey /LANG=1033 "FileDescription" "Cage Windows Installer"
-VIAddVersionKey /LANG=1033 "LegalCopyright" "Cage contributors"
+VIAddVersionKey /LANG=1033 "FileDescription" "SuperCage Windows Installer"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "SuperCage contributors"
 
 !ifdef SIGN_SCRIPT
   !uninstfinalize '"${SIGN_PWSH}" -NoProfile -File "${SIGN_SCRIPT}" -Path "%1"' = 0
@@ -48,9 +48,9 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "Cage contributors"
 
 !define MUI_ABORTWARNING
 !define MUI_LANGDLL_ALLLANGUAGES
-!define MUI_LANGDLL_WINDOWTITLE "Cage"
+!define MUI_LANGDLL_WINDOWTITLE "SuperCage"
 !define MUI_LANGDLL_INFO "$(CageInstallerLanguage)"
-!define MUI_FINISHPAGE_RUN "$INSTDIR\Cage.exe"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\SuperCage.exe"
 !define MUI_FINISHPAGE_RUN_NOTCHECKED
 !define MUI_FINISHPAGE_TEXT "$(CageFinishHelp)"
 !insertmacro MUI_PAGE_WELCOME
@@ -158,7 +158,7 @@ FunctionEnd
 !macro AcquireInstallationMutex
   ; NSIS and UpdateInstaller both reject an existing named object and keep
   ; their handle until the transaction ends. No caller waits for ownership.
-  System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\Cage.Installation") p.r0 ?e'
+  System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\SuperCage.Installation") p.r0 ?e'
   Pop $1
   ${If} $0 == 0
     SetErrorLevel 2
@@ -191,10 +191,10 @@ Function LoadShortcutOptions
   ${If} $0 != ""
     StrCpy $DesktopShortcut 0
     StrCpy $StartMenuShortcuts 0
-    ${If} ${FileExists} "$DESKTOP\Cage.lnk"
+    ${If} ${FileExists} "$DESKTOP\SuperCage.lnk"
       StrCpy $DesktopShortcut 1
     ${EndIf}
-    ${If} ${FileExists} "$SMPROGRAMS\Cage\Cage.lnk"
+    ${If} ${FileExists} "$SMPROGRAMS\SuperCage\SuperCage.lnk"
       StrCpy $StartMenuShortcuts 1
     ${EndIf}
   ${EndIf}
@@ -246,7 +246,7 @@ Function SetDefaultInstallDirectory
   ${EndIf}
   System::Call 'kernel32::GetDriveTypeW(w "D:\") i .r0'
   ${If} $0 == 3
-    StrCpy $INSTDIR "D:\Cage"
+    StrCpy $INSTDIR "D:\SuperCage"
   ${EndIf}
 FunctionEnd
 
@@ -352,7 +352,7 @@ Function CheckDestination
     ${EndIf}
     StrCpy $ExistingInstall "1"
     ; Never stop processes by their name or force-close user workloads.
-    !insertmacro CheckStopped "Cage.exe"
+    !insertmacro CheckStopped "SuperCage.exe"
     !insertmacro CheckStopped "resources\cage.exe"
     !insertmacro CheckStopped "resources\mihomo.exe"
     !insertmacro CheckStopped "resources\runtime\qemu\qemu-system-x86_64.exe"
@@ -391,7 +391,7 @@ Function RestorePreservedFiles
   ${EndIf}
 FunctionEnd
 
-Section "Cage" Main
+Section "SuperCage" Main
   !insertmacro InstallPhase "acquiring_installation_lock"
   !insertmacro AcquireInstallationMutex
   StrCpy $TransactionRecord "$INSTDIR.cage-installation.json"
@@ -587,29 +587,29 @@ Section "Cage" Main
     ${EndIf}
   ${EndIf}
   !insertmacro InstallPhase "registering_installation"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "Cage"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "SuperCage"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "Cage contributors"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "SuperCage contributors"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
   WriteRegStr HKCU "${UNINSTALL_KEY}" "QuietUninstallString" '$\"$INSTDIR\Uninstall.exe$\" /S'
-  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\Cage.exe,0"
+  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\SuperCage.exe,0"
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
   SetOutPath "$INSTDIR"
   ${If} $DesktopShortcut == 1
-    CreateShortcut "$DESKTOP\Cage.lnk" "$INSTDIR\Cage.exe"
+    CreateShortcut "$DESKTOP\SuperCage.lnk" "$INSTDIR\SuperCage.exe"
   ${Else}
-    Delete "$DESKTOP\Cage.lnk"
+    Delete "$DESKTOP\SuperCage.lnk"
   ${EndIf}
   ${If} $StartMenuShortcuts == 1
-    CreateDirectory "$SMPROGRAMS\Cage"
-    CreateShortcut "$SMPROGRAMS\Cage\Cage.lnk" "$INSTDIR\Cage.exe"
-    CreateShortcut "$SMPROGRAMS\Cage\Uninstall Cage.lnk" "$INSTDIR\Uninstall.exe"
+    CreateDirectory "$SMPROGRAMS\SuperCage"
+    CreateShortcut "$SMPROGRAMS\SuperCage\SuperCage.lnk" "$INSTDIR\SuperCage.exe"
+    CreateShortcut "$SMPROGRAMS\SuperCage\Uninstall SuperSuperCage.lnk" "$INSTDIR\Uninstall.exe"
   ${Else}
-    Delete "$SMPROGRAMS\Cage\Cage.lnk"
-    Delete "$SMPROGRAMS\Cage\Uninstall Cage.lnk"
-    RMDir "$SMPROGRAMS\Cage"
+    Delete "$SMPROGRAMS\SuperCage\SuperCage.lnk"
+    Delete "$SMPROGRAMS\SuperCage\Uninstall SuperSuperCage.lnk"
+    RMDir "$SMPROGRAMS\SuperCage"
   ${EndIf}
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "DesktopShortcut" $DesktopShortcut
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "StartMenuShortcuts" $StartMenuShortcuts
@@ -645,7 +645,7 @@ Function un.onInit
     Abort "$(CageSetupIdentity)"
   ${EndIf}
   !insertmacro UninstallPhase "checking_stopped_processes"
-  !insertmacro CheckStopped "Cage.exe"
+  !insertmacro CheckStopped "SuperCage.exe"
   !insertmacro CheckStopped "resources\cage.exe"
   !insertmacro CheckStopped "resources\mihomo.exe"
   !insertmacro CheckStopped "resources\runtime\qemu\qemu-system-x86_64.exe"
@@ -681,10 +681,10 @@ Section "Uninstall"
     Abort "$(CageSetupDetail15)"
   ${EndIf}
   !insertmacro UninstallPhase "removing_shortcuts_and_registration"
-  Delete "$DESKTOP\Cage.lnk"
-  Delete "$SMPROGRAMS\Cage\Cage.lnk"
-  Delete "$SMPROGRAMS\Cage\Uninstall Cage.lnk"
-  RMDir "$SMPROGRAMS\Cage"
+  Delete "$DESKTOP\SuperCage.lnk"
+  Delete "$SMPROGRAMS\SuperCage\SuperCage.lnk"
+  Delete "$SMPROGRAMS\SuperCage\Uninstall SuperSuperCage.lnk"
+  RMDir "$SMPROGRAMS\SuperCage"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
   !insertmacro UninstallPhase "removing_install_directory"
   RMDir "$INSTDIR"

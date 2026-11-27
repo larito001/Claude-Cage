@@ -86,7 +86,7 @@ export function MicrophoneIndicator({ mic }) {
   }
   const message =
     mic.state === "denied"
-      ? tr("麦克风权限未授予，请在系统设置中允许 Cage 使用麦克风后点击重试")
+      ? tr("麦克风权限未授予，请在系统设置中允许 SuperCage 使用麦克风后点击重试")
       : mic.state === "no-device"
         ? tr("未检测到可用的本机麦克风")
         : mic.state === "unsupported"

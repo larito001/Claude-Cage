@@ -1,12 +1,12 @@
 <div align="center">
 
-<h1>Claude Cage</h1>
+<h1>SuperCage</h1>
 
 **ሚስ ክላውድ ኣብ ጓጓ ኣቐምጥዋ፡ ምእንቲ ብሓባር ዘለና ግዜ ብዝበለጸ ክንከላኸለሉ ንኽእል**
 
-<img src="assets/claude-cage-character.png" alt="Claude Cage" width="320" />
+<img src="assets/claude-cage-character.png" alt="SuperCage" width="320" />
 
-[![Release](https://img.shields.io/github/v/release/Lee-xeo/Claude-Cage?include_prereleases)](https://github.com/Lee-xeo/Claude-Cage/releases) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/larito001/Super-Cage?include_prereleases)](https://github.com/larito001/Super-Cage/releases) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <a href="https://trendshift.io/repositories/339051#achievements"><img src="https://trendshift.io/api/badge/trendshift/repositories/339051/daily?language=Go" alt="Trendshift — Go Repository of the Day" width="250" height="55" /></a> <a href="https://trendshift.io/repositories/339051#achievements"><img src="https://trendshift.io/api/badge/trendshift/repositories/339051/weekly?language=Go" alt="Trendshift — Go Repository of the Week" width="250" height="55" /></a>
 
@@ -22,26 +22,26 @@
 
 1. **Claude ባዕሉ ድሑን እዩ፣ እንተኾነ መሓውር ምክያዱ (harness)ን ተዛመድቲ ፕሮግራማቱን ኣይኮኑን** — Claude Code፣ Claude Desktop፣ ከምኡ’ውን ኣብ መርበብ መዳህሰሲ ዝረኽቦም ኢመይላት፣ ገጻትን ምልክታት ከባቢን ሓዊሱ።
 2. **ብድሕንነት ዓቕሚ Claude ንምጥቃም ብተለምዶ ክልተ መገድታት ኣለዉ፡ reverse proxy ወይ ርሑቕ ምቁጽጻር** — ንClaude ካብ ሰርቨር ኣውጺእካ ብቐጥታ ኣብ ኣአንጋዲ ምክያድ፣ ወይ ኣብ ዝተነጸለ ከባቢ ኣቐሚጥካ ንኣአንጋዲ ብዝተቖጻጸረ መገዲ ከም ዝጥቀም ምግባር። እቲ ካልኣይ ዝያዳ ድሑንን ምስ ሕጊ ዝሰማማዕን ምዃኑ ንኣምን።
-3. **ስለዚ ቀንዲ ሓሳብ Cage ንተዛመድቲ ፕሮግራማት Claude ቀሊል ናይ ቦታዊ ዝተነጸለ ከባቢ ምፍጣርን ብመደበኛ MCP ፕለጊናት ኣቢሉ Claude ንኮምፒውተርካ ብድሕንነትን ቁጽጽርን ከም ዝጥቀም ምግባርን እዩ** — ግልጺ ፍቓዳትን ምርግጋጽ ተጠቃሚን ስለ ዘለዎ ካብ ቀጥታዊ SSH ዝያዳ ድሑን እዩ።
+3. **ስለዚ ቀንዲ ሓሳብ SuperCage ንተዛመድቲ ፕሮግራማት Claude ቀሊል ናይ ቦታዊ ዝተነጸለ ከባቢ ምፍጣርን ብመደበኛ MCP ፕለጊናት ኣቢሉ Claude ንኮምፒውተርካ ብድሕንነትን ቁጽጽርን ከም ዝጥቀም ምግባርን እዩ** — ግልጺ ፍቓዳትን ምርግጋጽ ተጠቃሚን ስለ ዘለዎ ካብ ቀጥታዊ SSH ዝያዳ ድሑን እዩ።
 
-በዚ መገዲ Cage ሰለስተ ሸቶታት ብሓደ እዋን የዐውት፦
+በዚ መገዲ SuperCage ሰለስተ ሸቶታት ብሓደ እዋን የዐውት፦
 
-- **ነቲ ሓደገኛ ዓጺኻ ነቲ ጠቓሚ ዓቕሚ ምኽፋት።** ወይዘሮ Claude ኣብ ውሽጢ Cage ኣብ ልዕሊ ንእሽቶ ዕንቅርቢታ ብምቾት ተቐሚጣ ኢዳ ናብ ወጻኢ ብምዝርጋሕ ስራሕ ትፍጽም — ኣብ ውሽጢ Cage ምሉእ ቤት ጽሕፈት ካብ ሓድሽ ምህናጽ ኣየድልን።
-- **ብዕዳጋ ፕለጊን ኣቢልካ ምስ ክፉት ምንጪ ማሕበረሰብ ዝተፈለየ ምትሕብባር።** ኣብ ክፉት [ዕዳጋ ፕለጊን (cage-plugins)](https://github.com/larito001/cage-plugins) **ፕለጊን = MCP + ምስፋሕ** እዩ፡ MCP ንClaude ዓቕሚ ይህብ፣ ምስፋሕ ድማ ንCage የመዓራሪ። ማሕበረሰብ ንዝርዝር Issue ናይ Cage ከየጻበበ ኣብ ዕዳጋ ፕለጊን ይሳተፍ፣ ጉጅለ Cage ድማ ኣብ ቀንዲ ከባቢን መርበብን የትኩር።
+- **ነቲ ሓደገኛ ዓጺኻ ነቲ ጠቓሚ ዓቕሚ ምኽፋት።** ወይዘሮ Claude ኣብ ውሽጢ SuperCage ኣብ ልዕሊ ንእሽቶ ዕንቅርቢታ ብምቾት ተቐሚጣ ኢዳ ናብ ወጻኢ ብምዝርጋሕ ስራሕ ትፍጽም — ኣብ ውሽጢ SuperCage ምሉእ ቤት ጽሕፈት ካብ ሓድሽ ምህናጽ ኣየድልን።
+- **ብዕዳጋ ፕለጊን ኣቢልካ ምስ ክፉት ምንጪ ማሕበረሰብ ዝተፈለየ ምትሕብባር።** ኣብ ክፉት [ዕዳጋ ፕለጊን (cage-plugins)](https://github.com/larito001/cage-plugins) **ፕለጊን = MCP + ምስፋሕ** እዩ፡ MCP ንClaude ዓቕሚ ይህብ፣ ምስፋሕ ድማ ንSuperCage የመዓራሪ። ማሕበረሰብ ንዝርዝር Issue ናይ SuperCage ከየጻበበ ኣብ ዕዳጋ ፕለጊን ይሳተፍ፣ ጉጅለ SuperCage ድማ ኣብ ቀንዲ ከባቢን መርበብን የትኩር።
 - **ሕጋዊ፣ ድሑን፣ ቀሊል፣ ቦታዊ፣ ትሑት ወጻኢን ብሓደ ጠውቂ ንኣጠቓቕማ ድሉውን።** ውስብስብ ብዙሕ ስርዓተ ክወና ጋሻታት ምሕላው፣ ዓቕሚ Claude ከይድረት ምፍራሕ ወይ ክቡር ወጻኢ ክላውድን ስግኣት ዳታን ኣየድልን — ኩሉ ኣብ ናይ ገዛእ ርእስኻ ኮምፒውተር ብጽቡቕ ይፍጸም።
 
 ## ብAnthropic ተሰላቺና
 
-ከም ተራ ተጠቀምቲ ምስ ክላውድ ጥራይ ክንዛረብን ክንተሓባበርን እንደሊ፡ ብዛዕባ እገዳ ኣካውንትን ፋይናንሳዊ ክሳራን እናተጨነቕና፡ ንVPS instances፡ ናይ መርበብ ሓበሬታ ኣሰር ኣጻብዕቲ ፕሮፋይላት፡ ከምኡ’ውን ናይ ከባቢ ምፍታሽ ምውቃር ደኺምና ኣለና። **Claude Cage** ነቕርብ — **ንኣጠቓቕማ ድሉው ዝኾነ ናይ ዴስክቶፕ መተግበሪ: ናይ ገዛእ ርእስኻ ናይ መርበብ ፕሮክሲ ኣዋቅርን ቀሊል ዝተነጸለ ከባቢኻ፣ ዞባ ሰዓትካ፣ ቋንቋኻ፣ ምፍታሽ ከባቢኻን ፕለጊናትካን ኣብ ሓደ ቦታ ኣመሓድር።**
+ከም ተራ ተጠቀምቲ ምስ ክላውድ ጥራይ ክንዛረብን ክንተሓባበርን እንደሊ፡ ብዛዕባ እገዳ ኣካውንትን ፋይናንሳዊ ክሳራን እናተጨነቕና፡ ንVPS instances፡ ናይ መርበብ ሓበሬታ ኣሰር ኣጻብዕቲ ፕሮፋይላት፡ ከምኡ’ውን ናይ ከባቢ ምፍታሽ ምውቃር ደኺምና ኣለና። **SuperCage** ነቕርብ — **ንኣጠቓቕማ ድሉው ዝኾነ ናይ ዴስክቶፕ መተግበሪ: ናይ ገዛእ ርእስኻ ናይ መርበብ ፕሮክሲ ኣዋቅርን ቀሊል ዝተነጸለ ከባቢኻ፣ ዞባ ሰዓትካ፣ ቋንቋኻ፣ ምፍታሽ ከባቢኻን ፕለጊናትካን ኣብ ሓደ ቦታ ኣመሓድር።**
 
-Claude Cage ተርሚናል፣ መርበብ መዳህሰሲ፣ ኣርታዒ፣ ወግዓዊ Claude Desktopን ዕዳጋ ፕለጊንን ኣብ ሓደ ዝተፈልየ ናይ ስራሕ ቦታ የዋህድ። ኣብ macOS፣ Windows ን Linux ን ሓደ ዓይነት ቀሊል Debian 13 ከባቢ ይጥቀም። ዝመረጽካዮም ፕሮጀክትታት ኣካፍል፣ መርበብ ብተናጻል ኣመሓድር፣ ብፕለጊናት መሳርሒታት ኮምፒውተርካ ብድሕንነት ተጠቐም፣ ምስ ናይ ገዛእ ርእስኻ ሰርቨር ብSSH ተራኸብ፣ ካብ ስልኪ ስራሕ ቀጽል። ቀንዲ ባህርያት፦
+SuperCage ተርሚናል፣ መርበብ መዳህሰሲ፣ ኣርታዒ፣ ወግዓዊ Claude Desktopን ዕዳጋ ፕለጊንን ኣብ ሓደ ዝተፈልየ ናይ ስራሕ ቦታ የዋህድ። ኣብ macOS፣ Windows ን Linux ን ሓደ ዓይነት ቀሊል Debian 13 ከባቢ ይጥቀም። ዝመረጽካዮም ፕሮጀክትታት ኣካፍል፣ መርበብ ብተናጻል ኣመሓድር፣ ብፕለጊናት መሳርሒታት ኮምፒውተርካ ብድሕንነት ተጠቐም፣ ምስ ናይ ገዛእ ርእስኻ ሰርቨር ብSSH ተራኸብ፣ ካብ ስልኪ ስራሕ ቀጽል። ቀንዲ ባህርያት፦
 
-- ካብቲ ኣአንጋዲ ዝተነጸሉ ቅጥዕታት መርበብ፤ Cage ንኹሉ ኣብ ውሽጢ ከባቢኡ ዝርከብ ትራፊክ መርበብ ብናይ ገዛእ ርእሱ ኔትወርክ ፕሮክሲ የመሓላልፎ
+- ካብቲ ኣአንጋዲ ዝተነጸሉ ቅጥዕታት መርበብ፤ SuperCage ንኹሉ ኣብ ውሽጢ ከባቢኡ ዝርከብ ትራፊክ መርበብ ብናይ ገዛእ ርእሱ ኔትወርክ ፕሮክሲ የመሓላልፎ
 - ካብቲ ኣአንጋዲ ዝተነጸለ ቅጥዕታት ኣሰር ኣጻብዕቲ መርበብ ሓበሬታ፡ ዞባ ሰዓትን ቋንቋን ሓዊሱ፡ ምስ ኣውቶማቲክ ምትእስሳር ናብቲ ናይ መርበብ ፕሮክሲ IP ቦታ
 - ውህደት ኣብ ምሉእ ዋሕዚ ስራሕ ክላውድ: ምእታው መርበብ ሓበሬታ፣ ፍቓድ ኣካውንት፣ ከምኡ’ውን መስርሕ ኮድ ክላውድ
 - ኣብ ውሽጡ ዝተሃንጸ ኔትወርክን ተነጽሎን ምፍታሽ ወሳኒ ምፍታሽ ኣብ ዝፈሽለሉ ወይ መርትዖታት ኣብ ዘይተማልአሉ እዋን ንመእተዊ ኢንተርነት ደው የብሎ፤ ናይ ማሕበረሰብን ሳልሳይ ወገንን ምፍታሽ ተወሳኺ መወከሲ ሓበሬታ ይህብ
 
-**ውጽኢት ምፍታሽ ከባቢ ምስ Cage፤**
+**ውጽኢት ምፍታሽ ከባቢ ምስ SuperCage፤**
 
 | መርመራ መርበብን ምፍላይን | ናይ ማሕበረሰብ መርመራ መርበብ መዳህሰሲ |
 | :---: | :---: |
@@ -49,44 +49,44 @@ Claude Cage ተርሚናል፣ መርበብ መዳህሰሲ፣ ኣርታዒ፣ �
 
 [FuckClaude](https://fuck-claude.vercel.app/) · [LinXiaoTao / GitHub](https://github.com/LinXiaoTao/FuckClaude)
 
-**ቀንዲ መተሓላለፊ Cage፤**
+**ቀንዲ መተሓላለፊ SuperCage፤**
 
-![Cage](www/public/workbench-2026-11.jpg)
+![SuperCage](www/public/workbench-2026-11.jpg)
 
-## ብCage እንታይ ክትገብር ትኽእል
+## ብSuperCage እንታይ ክትገብር ትኽእል
 
-- **ኣብ ሓደ መስኮት ስራሕ።** ኣብቲ ተርሚናል ክላውድ ኮድ ኣካይድ፣ ኣብ ኤዲተር ለውጢ ዳግም፣ ከምኡ’ውን ኣገልግሎታት ቅድመ-ምርኢትን ንምእታውን ንCage ዳህሳሲ ተጠቐም።
-- **ብዕዳጋ ፕለጊን ኩሉ ዓቕሚ ክፈት።** ክፉት [ዕዳጋ ፕለጊን (cage-plugins)](https://github.com/larito001/cage-plugins) ብ«ፕለጊን = MCP + ምስፋሕ» ንClaude መሳርሒታት ኮምፒውተርካ (ስክሪንን ኪቦርድ/ማውስን፣ ሰነዳት Office፣ Blender፣ ትእዛዛት) ብግልጺ ፍቓድን ምርግጋጽን ከም ዝጥቀምን ንCage ዝተፈለዩ ገጻት ከም ትውስኽን ይገብር። [መምርሒ ፕለጊን](docs/guide/plugins.md) · [መግለጺ ልምዓት](docs/plugins.md)
-- **ኣብ ኩሉ መድረኻት ሓደ ቀሊል ከባቢ።** Cage ኣብ macOS፣ Windows ን Linux ን ውስብስብ ብዙሕ ጋሻ ስርዓታት ከይሓለወ ነቲ ሓደ ቀሊል Debian 13 ከባቢ ምስ ተመሳሳሊ መሳርሒታትን ኣሰራርሓን ይጥቀም። [Debian ከባቢ](docs/guide/guest-systems.md)
+- **ኣብ ሓደ መስኮት ስራሕ።** ኣብቲ ተርሚናል ክላውድ ኮድ ኣካይድ፣ ኣብ ኤዲተር ለውጢ ዳግም፣ ከምኡ’ውን ኣገልግሎታት ቅድመ-ምርኢትን ንምእታውን ንSuperCage ዳህሳሲ ተጠቐም።
+- **ብዕዳጋ ፕለጊን ኩሉ ዓቕሚ ክፈት።** ክፉት [ዕዳጋ ፕለጊን (cage-plugins)](https://github.com/larito001/cage-plugins) ብ«ፕለጊን = MCP + ምስፋሕ» ንClaude መሳርሒታት ኮምፒውተርካ (ስክሪንን ኪቦርድ/ማውስን፣ ሰነዳት Office፣ Blender፣ ትእዛዛት) ብግልጺ ፍቓድን ምርግጋጽን ከም ዝጥቀምን ንSuperCage ዝተፈለዩ ገጻት ከም ትውስኽን ይገብር። [መምርሒ ፕለጊን](docs/guide/plugins.md) · [መግለጺ ልምዓት](docs/plugins.md)
+- **ኣብ ኩሉ መድረኻት ሓደ ቀሊል ከባቢ።** SuperCage ኣብ macOS፣ Windows ን Linux ን ውስብስብ ብዙሕ ጋሻ ስርዓታት ከይሓለወ ነቲ ሓደ ቀሊል Debian 13 ከባቢ ምስ ተመሳሳሊ መሳርሒታትን ኣሰራርሓን ይጥቀም። [Debian ከባቢ](docs/guide/guest-systems.md)
 - **ነቲ እተካፍሎ ተቖጻጸሮ።** እቲ ነባሪ ናይ ስራሕ ቦታን ብግልጺ ዝተኸፍቱ ናይ ፕሮጀክት ማህደርን ጥራይ እዮም ዝካፈሉ። ናይቲ ኣአንጋዲ ናይ Claude መእተዊ ኩነታት፣ ናይ መርበብ ሓበሬታ ፕሮፋይላትን SSH መፍትሕታትን ብኣውቶማቲክ ኣይኣትዉን እዮም።
 - **ኩነታት መርበብካ ርአ።** ኣብ ውሽጢ ዝተሃንጸ ምሕደራ ፕሮክሲ መርበብ ምዝገባታት ከተእቱ፣ መወዳእታ ነጥብታት ክትመርጽን መውጽኢ IP ክትምርምርን የኽእለካ። እቲ ከባቢ ክሳብ ወሳኒ ምፍታሽ ዝሓልፍ ካብ መስመር ወጻኢ ይጸንሕ። እቲ ናይ መርበብ ፕሮክሲ እንተዘይተረኺቡ፡ ናብ ቀጥታዊ ምትእስሳር ዝኾነ ምምላስ የለን።
 - **ኣብ ዝቕጽል ግዜ ቀጽል።** መሳርሒታት፡ ፋይላትን ናይ ምእታው ኩነታትን ኣብቲ ቨርቹዋል ዲስክ ይጸንሑ። መስኮት ምስ ዓጸኻ ናይ ድሕረ ባይታ ዕማማት ክቕጽሉ ይኽእሉ።
 - **ብዙሓት ናይ Claude Code ኣካውንታት ኣመሓድር።** ናይ ኣጠቓቕማ ገደባት ርአ፣ ንሓደስቲ ክፍለ ግዜታት ኣካውንት መድብ፣ ብግልጺ ፍቓድ ድማ ኣካውንት ቀይርካ ታሪኽ ቀጽል። [Claude Code](docs/guide/accounts.md)
 - **ካብ ስልኪ ቀጽል።** Android ወይ iPhone ምስ ኮምፒውተር ብQR ወይ ኮድ ምጽማድ ኣራኽብ። ተመሳሳሊ ዝርርብ Claude Code ቀጽል፣ መልእኽቲ ስደድ፣ መሳርሒታት ኣፍቅድ፣ ናይ ርሑቕ መዳህሰሲ ወይ መስኮት Claude Desktop ናይ ኮምፒውተር ተጠቐም።
-- **Cage ኣብ ክላውድ ኣካይድ።** ነቲ መስፈርታት ዘማልእ Linux x86_64 VPS ዝተተኽለ Cage ብSSH ተራኸቦ፤ KVM ኣየድልን። ዳታን መውጽኢ መርበብን ኣብ ሰርቨር እዮም።
-- **ብውልቃዊ መርበብ ተራኸብ።** ኣብ Cage ውሽጢ Tailscale እቶ፣ ኣብ መንጎ ኣአንጋዲን ከባቢን ናይ ክልተ ኣንፈት SSH ተጠቐም። [Tailscale / SSH](docs/guide/tailscale.md)
+- **SuperCage ኣብ ክላውድ ኣካይድ።** ነቲ መስፈርታት ዘማልእ Linux x86_64 VPS ዝተተኽለ SuperCage ብSSH ተራኸቦ፤ KVM ኣየድልን። ዳታን መውጽኢ መርበብን ኣብ ሰርቨር እዮም።
+- **ብውልቃዊ መርበብ ተራኸብ።** ኣብ SuperCage ውሽጢ Tailscale እቶ፣ ኣብ መንጎ ኣአንጋዲን ከባቢን ናይ ክልተ ኣንፈት SSH ተጠቐም። [Tailscale / SSH](docs/guide/tailscale.md)
 
 ## ቅልጡፍ ምጅማር
 
 ነዚ ሕቶ ናብ AI ወኪልካ ስደዶ (codex, dsh, workbuddy — ምናልባት ክላውድ ኮድ ኣይኮነን 😁):
 
 ```markdown
-ካብ https://github.com/Lee-xeo/Claude-Cage እቲ ሓድሽ ምንጪ ኮድ ኣምጽእ፣ ሃንጾ፣ ጠቕሊልካ ኣትክሎ። ፕሮክሲ Cage ብናይ ኣካባቢየይ Clash xx ኖድ ኣቢሉ ብናተይ xx IP ክወጽእ ኣዋቕሮ። ንብምሉኡ ሂደት ተኸታተል፣ ጸገማት ብቐጥታ ኣርም፣ እንተድልዩ ድማ ምስምማዕ ንምምሕያሽ ኣብ ፕሮጀክቱ issue ኣቕርብ።
+ካብ https://github.com/larito001/Super-Cage እቲ ሓድሽ ምንጪ ኮድ ኣምጽእ፣ ሃንጾ፣ ጠቕሊልካ ኣትክሎ። ፕሮክሲ SuperCage ብናይ ኣካባቢየይ Clash xx ኖድ ኣቢሉ ብናተይ xx IP ክወጽእ ኣዋቕሮ። ንብምሉኡ ሂደት ተኸታተል፣ ጸገማት ብቐጥታ ኣርም፣ እንተድልዩ ድማ ምስምማዕ ንምምሕያሽ ኣብ ፕሮጀክቱ issue ኣቕርብ።
 ```
 
 ዘድልየካ ዘተኣማምን ናይ መርበብ ፕሮክሲ መወዳእታ ነጥቢ ጥራይ እዩ። እዚ ፕሮጀክት ንዝኾነ ፕሮክሲ ወሃቢ ዘስፋሕፍሕ ኣይኮነን፤ ባዕልኻ ኣቕራቢ ክትረክብ ትኽእል ኢኻ፣ ንኣብነት ኣብ መርበብ ሓበሬታ Black Error ብምድላይ።
 
 ## ዳውንሎድ ምግባርን ምትካልን።
 
-Cage macOS፣ Windows እና Linux ይድግፍ፦ Apple Silicon እና Intel Mac ምስ macOS 14+፣ Windows 10 22H2 / 11 x64 እና Debian 12 / Ubuntu 22.04 / 24.04 x86_64. Windows ARM64 እና Linux ARM64 ገና ኣይድገፉን። [macOS](docs/getting-started.md) · [Windows](docs/windows.md) · [Linux](docs/linux.md).
+SuperCage macOS፣ Windows እና Linux ይድግፍ፦ Apple Silicon እና Intel Mac ምስ macOS 14+፣ Windows 10 22H2 / 11 x64 እና Debian 12 / Ubuntu 22.04 / 24.04 x86_64. Windows ARM64 እና Linux ARM64 ገና ኣይድገፉን። [macOS](docs/getting-started.md) · [Windows](docs/windows.md) · [Linux](docs/linux.md).
 
 1. ነቲ መተግበሪ ኣውርድ: [macOS / Windows / Linux](https://claude-cage.com/ti/#download).
-2. macOS: ነቲ ናይ ምትካል ፓCage ከፊትካ ጎተቶ **Cage** ናብ... **መመልከቲታት**; ድሕሪኡ ካብ Applications ጀምር። Windows: [መምርሒ ምትካል](docs/windows.md#安装并开始工作) · Linux: [መምርሒ ምትካል](docs/linux.md#安装并开始工作).
+2. macOS: ነቲ ናይ ምትካል ፓSuperCage ከፊትካ ጎተቶ **SuperCage** ናብ... **መመልከቲታት**; ድሕሪኡ ካብ Applications ጀምር። Windows: [መምርሒ ምትካል](docs/windows.md#安装并开始工作) · Linux: [መምርሒ ምትካል](docs/linux.md#安装并开始工作).
 3. ናይ ገዛእ ርእስኻ ኔትወርክ ፕሮክሲ ንምውቃር፣ ነቲ ከባቢ ንምጅማርን ፕሮጀክት ንምኽፋትን ኣብ ውሽጢ ኣፕ ዘሎ መምርሒታት ተኸተል።
 
-መትከሊ ንናይ ስራሕ ቦታን ሞተር ፕሮክሲን የጠቓልል። Go፣ Node.js፣ Docker ወይ Clash ኣቐዲምካ ምትካል ኣየድልን። ኣከባቢ ክትፈጥር ከለኻ መኽዘኒ ቦታ ምረጽ፤ Cage ናይ Debian 13 ምስልን ናይ ምምዕባል መሳርሒታትን የውርድ። Cage ኣገልግሎት ፕሮክሲ ወይ ሕሳብ Claude ኣይህብን።
+መትከሊ ንናይ ስራሕ ቦታን ሞተር ፕሮክሲን የጠቓልል። Go፣ Node.js፣ Docker ወይ Clash ኣቐዲምካ ምትካል ኣየድልን። ኣከባቢ ክትፈጥር ከለኻ መኽዘኒ ቦታ ምረጽ፤ SuperCage ናይ Debian 13 ምስልን ናይ ምምዕባል መሳርሒታትን የውርድ። SuperCage ኣገልግሎት ፕሮክሲ ወይ ሕሳብ Claude ኣይህብን።
 
-ምንጪ ኮድን መትከልታትን ንህዝቢ ክፉት እዮም። መዘኻኸሪ ስሪትን ቼክሳምን ኣብ [Releases](https://github.com/Lee-xeo/Claude-Cage/releases) ተወከስ።
+ምንጪ ኮድን መትከልታትን ንህዝቢ ክፉት እዮም። መዘኻኸሪ ስሪትን ቼክሳምን ኣብ [Releases](https://github.com/larito001/Super-Cage/releases) ተወከስ።
 
 ባህርያት ብዝትጥቀመሉ ግንባታ ይውሰኑ፤ ናይ ህዝባዊ መጽዓኒ ዓቕምን ዶብ ፈተናን ኣብ ናይ ልቀት መዘኻኸሪ ይግለጹ።
 
@@ -100,16 +100,16 @@ macOS እና ዝተፈረሙ Windows ስሪቶች ብዝተመርጸ ፕሮክ�
 
 ### 2. ከባቢ ምጅማር
 
-ኣብ መጀመርታ ናይ መኽዘን ቦታ ምረጽ። Cage ከባቢ ኣጀምር፣ ናይ ምጽዓንን ፍቓድን መምርሒ ተኸተል። ሂደትን ጌጋታትን ኣብ ዝርዝር ስራሕ ይርኣዩ። ቀጻሊ ጅማሮታት ነቲ ከባቢ ይጥቀሙ።
+ኣብ መጀመርታ ናይ መኽዘን ቦታ ምረጽ። SuperCage ከባቢ ኣጀምር፣ ናይ ምጽዓንን ፍቓድን መምርሒ ተኸተል። ሂደትን ጌጋታትን ኣብ ዝርዝር ስራሕ ይርኣዩ። ቀጻሊ ጅማሮታት ነቲ ከባቢ ይጥቀሙ።
 
 ### 3. ፕሮጀክት ከፊትና ክላውድ ኣካይድ
 
-ኣብ ኮምፒተርና ፎልደር ንምምራጽ፡ ሓድሽ ተርሚናል ንምኽፋት፡ ‘Open project’ ዝብል ጠውቕ `claude`; ድሕሪኡ ኣብ Cage browser ናይ ገዛእ ርእስኻ ኣካውንት ፍቓድ ምሃብ። ፕሮጀክት ከየዳለኻ እውን በቲ ነባሪ ናይ ስራሕ ቦታ ክትጅምር ትኽእል ኢኻ። ንምሉእ ስጉምትታት ርአ [ምጅማር](docs/getting-started.md).
+ኣብ ኮምፒተርና ፎልደር ንምምራጽ፡ ሓድሽ ተርሚናል ንምኽፋት፡ ‘Open project’ ዝብል ጠውቕ `claude`; ድሕሪኡ ኣብ SuperCage browser ናይ ገዛእ ርእስኻ ኣካውንት ፍቓድ ምሃብ። ፕሮጀክት ከየዳለኻ እውን በቲ ነባሪ ናይ ስራሕ ቦታ ክትጅምር ትኽእል ኢኻ። ንምሉእ ስጉምትታት ርአ [ምጅማር](docs/getting-started.md).
 
 ## ቅድሚ ምጥቃምካ ነዞም ገደባት ተረድኦም
 
-- ኣብ ዝተኻፈለ ፕሮጀክትታት ዝግበር ኣርትዖትን ምድምሳስን ኣብ ኮምፒተርካ ንዘለዉ ፋይላት ብቐጥታ ይጸልዎም። ቨርዥን ኮንትሮል ወይ ባክኣፕስ ተጠቐም።ናይ ፕሮጀክት `.git` ንምንባብን ንምጽሓፍን ክፉት እዩ፤ ኣብ Cage ለውጢ stage ምግባር፣ commit ምግባርን branch ምቕያርን ይከኣል።
-- ኩሎም ፕሮጀክትታት ሓደ ናይ Cage ሃዋህው ይካፈሉ፣ መሳርሒታቱ፣ ኣካውንታቱን ሊኑክስ ፋይልሲስተምን ሓዊሱ። ፕሮጀክትታት ካብ ነንሕድሕዶም ዝተነጸሉ ኣይኮኑን።
+- ኣብ ዝተኻፈለ ፕሮጀክትታት ዝግበር ኣርትዖትን ምድምሳስን ኣብ ኮምፒተርካ ንዘለዉ ፋይላት ብቐጥታ ይጸልዎም። ቨርዥን ኮንትሮል ወይ ባክኣፕስ ተጠቐም።ናይ ፕሮጀክት `.git` ንምንባብን ንምጽሓፍን ክፉት እዩ፤ ኣብ SuperCage ለውጢ stage ምግባር፣ commit ምግባርን branch ምቕያርን ይከኣል።
+- ኩሎም ፕሮጀክትታት ሓደ ናይ SuperCage ሃዋህው ይካፈሉ፣ መሳርሒታቱ፣ ኣካውንታቱን ሊኑክስ ፋይልሲስተምን ሓዊሱ። ፕሮጀክትታት ካብ ነንሕድሕዶም ዝተነጸሉ ኣይኮኑን።
 - ብነባሪ ህዝባዊ ወጻኢ ግንኙነት IPv4 TCP ይድግፍ፣ DNS ብተመሳሳሊ ፕሮክሲ ይሕለፍ። ህዝባዊ UDP፣ IPv6፣ ICMP እና ቀጥታ ናብ ኣአንጋዲ ወይ LAN ግንኙነት ውሱናት እዮም። Tailscale ብግልጺ ምስ ኣንቃሕካ፣ ናይ መሳርሒ ግንኙነት ናይ ውልቃዊ መርበብ ፍቓድ ይኽተል።
 - ኔትወርክ ምፍታሽ ህሉው ውቅርን ናሙና ዝተወሰደ መርትዖን የርኢ። ሓደ ኣካውንት ካብ ናይ መድረኽ ገደባት ከም ዝርሕቕ ውሕስነት ክህቡ ኣይክእሉን እዮም፣ ምሉእ ቨርቹዋላይዜሽን ድሕነት ኦዲት ድማ ኣይትክኡን እዮም።
 
@@ -125,7 +125,7 @@ macOS እና ዝተፈረሙ Windows ስሪቶች ብዝተመርጸ ፕሮክ�
 | ኔትወርክ ፕሮክሲ ምትካል፡ ምውቃር፡ ናይ መጀመርታ ፕሮጀክትካ ድማ ክፈት | [ምጅማር](docs/getting-started.md) |
 | ናይ ምውራድ፣ ምጅማር፣ ምትእስሳርን ምእታውን ጸገማት ምፍታሕ | [FAQን ምሕዋይን](docs/troubleshooting.md) |
 | ቁጽጽር ቁልፊ ሰሌዳ፡ መልክዕ፡ ጽንዓት ዳታን ናይ ምውጻእ ባህሪን ተማሃር | [መዓልታዊ ኣጠቓቕማ](docs/getting-started.md#日常使用) |
-| ክባዛሕ ዝኽእል ጉዳይ ሪፖርት ግበሩ | [GitHub Issues](https://github.com/Lee-xeo/Claude-Cage/issues) |
+| ክባዛሕ ዝኽእል ጉዳይ ሪፖርት ግበሩ | [GitHub Issues](https://github.com/larito001/Super-Cage/issues) |
 | ምእራም፣ ባህሪ ወይ ሰነድ ንምብርካት፦ Issue ግምገማ → ዕድመ ተሓባባሪ → PR | [መምርሒ ኣበርክቶ (ቻይንኛ)](.github/CONTRIBUTING.md) |
 
 እቲ ፕሮጀክት ብቕልጡፍ ይምዕብል ኣሎ። ርእይቶ ንምክፋል ኣብቲ ናይ ማሕበረሰብ ጉጅለ ​​ተጸንበሩ፤ ሕብረተሰብ ዝሕልዉ ሰባት ድሉዋት እዮም።
@@ -142,13 +142,13 @@ macOS እና ዝተፈረሙ Windows ስሪቶች ብዝተመርጸ ፕሮክ�
 
 እቲ ፕሮጀክት ቀንዲ ፍቓድ... [MIT](LICENSE). ዝተጠርነፉ ኣካላት በብወገኖም ፍቓድ ይዕቅቡ። ሚሆሞ ኣብ ትሕቲ GPL-3.0 ከም ፍሉይ ፈጻሚ ይዝርጋሕ። ከምኡ ውን ርአ [NOTICE](NOTICE) · [ናይ ሳልሳይ ወገን ፍቓድ](THIRD_PARTY_LICENSES) · [noVNC](ui/vendor/novnc/LICENSE.txt)。
 
-Cage ናጻ ማሕበረሰባዊ ፕሮጀክት ኮይኑ ምስ ኣንትሮፒክ ርክብ የብሉን።
+SuperCage ናጻ ማሕበረሰባዊ ፕሮጀክት ኮይኑ ምስ ኣንትሮፒክ ርክብ የብሉን።
 
 ## መወከሲታትን ምስጋናን ምሃብ
 
 ምስጋና ነዞም ዝስዕቡ ፕሮጀክትታት ንመሰረታዊ ዓቕምታትን መወከሲታት ዲዛይንን፤
 
-- [agent-vm](https://github.com/sylvinus/agent-vm): እቲ ላዕለዋይ መሰረት Cage።
+- [agent-vm](https://github.com/sylvinus/agent-vm): እቲ ላዕለዋይ መሰረት SuperCage።
 - [Lima](https://github.com/lima-vm/lima): ምሕደራ ቨርቹዋል ማሽን ሊኑክስ።
 - [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock): ቨርቹዋል ማሽን ኔትወርኪንግ።
 - [sshocker](https://github.com/lima-vm/sshocker) ከምኡ’ውን... [SFTP](https://github.com/pkg/sftp): ኣብ መንጎ ቨርቹዋል ማሽንን ሆስትን ፋይል ምክፋል።
@@ -157,13 +157,13 @@ Cage ናጻ ማሕበረሰባዊ ፕሮጀክት ኮይኑ ምስ ኣንትሮ�
 - [code-server](https://github.com/coder/code-server): እቲ ኣብ መርበብ ሓበሬታ ዝተመርኮሰ ናይ ኮድ ኣርታዒ።
 - [AIO Sandbox](https://github.com/agent-infra/sandbox): መወከሲታት ንሃዋህው ስራሕን ዲዛይን ምትእስሳርን.
 - [claude-switcher](https://github.com/YOURSJEYO/claude-switcher) ከምኡ’ውን... [Claude-Guardian](https://github.com/DUNHKpcc/Claude-Guardian): መወከሲታት ንናይ መርበብ ምፍታሽን ናይ ድሕነት መርመራታትን።
-- [claude-post-ban-cleanup](https://github.com/l2461090/claude-post-ban-cleanup): ንትኽክለኛ ቆጸራ፣ ንሓለዋ ዳታን ክምለስ ንዝኽእል ምጽራይ መሸጎጫን መወከሲ፤ Cage ብናጻ ኣተግቢሩዎ።
+- [claude-post-ban-cleanup](https://github.com/l2461090/claude-post-ban-cleanup): ንትኽክለኛ ቆጸራ፣ ንሓለዋ ዳታን ክምለስ ንዝኽእል ምጽራይ መሸጎጫን መወከሲ፤ SuperCage ብናጻ ኣተግቢሩዎ።
 
 
-<a href="https://www.star-history.com/?repos=Lee-xeo%2FClaude-Cage&amp;type=date">
+<a href="https://www.star-history.com/?repos=larito001%2FSuper-Cage&amp;type=date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date&amp;theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date" />
-    <img alt="Claude Cage GitHub Star History" src="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date" width="800" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date&amp;theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date" />
+    <img alt="SuperCage GitHub Star History" src="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date" width="800" />
   </picture>
 </a>

@@ -1,12 +1,12 @@
 <div align="center">
 
-<h1>Claude Cage</h1>
+<h1>SuperCage</h1>
 
 **አብረን ጊዜያችንን በተሻለ ሁኔታ ለመጠበቅ ሚስ Claudeን በቅርጫት ውስጥ አቆይ**
 
-<img src="assets/claude-cage-character.png" alt="Claude Cage" width="320" />
+<img src="assets/claude-cage-character.png" alt="SuperCage" width="320" />
 
-[![Release](https://img.shields.io/github/v/release/Lee-xeo/Claude-Cage?include_prereleases)](https://github.com/Lee-xeo/Claude-Cage/releases) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/larito001/Super-Cage?include_prereleases)](https://github.com/larito001/Super-Cage/releases) [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <a href="https://trendshift.io/repositories/339051#achievements"><img src="https://trendshift.io/api/badge/trendshift/repositories/339051/daily?language=Go" alt="Trendshift — Go Repository of the Day" width="250" height="55" /></a> <a href="https://trendshift.io/repositories/339051#achievements"><img src="https://trendshift.io/api/badge/trendshift/repositories/339051/weekly?language=Go" alt="Trendshift — Go Repository of the Week" width="250" height="55" /></a>
 
@@ -22,26 +22,26 @@
 
 1. **Claude ራሱ ደህንነቱ የተጠበቀ ነው፣ ነገር ግን የማስኬጃ መያዣው (harness) እና ተያያዥ ፕሮግራሞቹ አይደሉም** — Claude Code፣ Claude Desktop እንዲሁም አሳሹ የሚቀበላቸው ኢሜይሎች፣ ድረ-ገጾች እና የአካባቢ ምልክቶችን ጨምሮ።
 2. **የClaude ችሎታዎችን በደህንነት ለመጠቀም ብዙውን ጊዜ ሁለት መንገዶች አሉ፡ reverse proxy ወይም የርቀት ቁጥጥር** — Claude ን ከአገልጋይ አውጥቶ በቀጥታ በአስተናጋጁ ላይ ማስኬድ፣ ወይም በተነጠለ አካባቢ ውስጥ አስቀምጦ አስተናጋጁን በቁጥጥር ሥር እንዲያንቀሳቅስ ማድረግ። ሁለተኛው የበለጠ ደህንነቱ የተጠበቀና ከመመሪያ ጋር የሚስማማ እንደሆነ እናምናለን።
-3. **ስለዚህ የCage ዋና ሃሳብ ለClaude ተያያዥ ፕሮግራሞች ቀላል የአካባቢ መገለያ መፍጠርና በመደበኛ የMCP ፕለጊኖች አማካኝነት Claude ኮምፒውተርዎን በደህንነትና በቁጥጥር እንዲጠቀም ማድረግ ነው** — ግልጽ ፈቃዶችና የተጠቃሚ ማረጋገጫ ስላለው ከቀጥታ SSH የበለጠ ደህንነቱ የተጠበቀ ነው።
+3. **ስለዚህ የSuperCage ዋና ሃሳብ ለClaude ተያያዥ ፕሮግራሞች ቀላል የአካባቢ መገለያ መፍጠርና በመደበኛ የMCP ፕለጊኖች አማካኝነት Claude ኮምፒውተርዎን በደህንነትና በቁጥጥር እንዲጠቀም ማድረግ ነው** — ግልጽ ፈቃዶችና የተጠቃሚ ማረጋገጫ ስላለው ከቀጥታ SSH የበለጠ ደህንነቱ የተጠበቀ ነው።
 
-በዚህ መንገድ Cage ሦስት ግቦችን በአንድ ጊዜ ያሳካል፦
+በዚህ መንገድ SuperCage ሦስት ግቦችን በአንድ ጊዜ ያሳካል፦
 
-- **አደገኛውን ክፍል መዝጋት፣ ጠቃሚውን ችሎታ መክፈት።** ወይዘሮ Claude በCage ውስጥ በትንሿ ሸርጣኗ ላይ በምቾት ተቀምጣ እጇን ወደ ውጭ በመዘርጋት ሥራውን ታከናውናለች — በCage ውስጥ ሙሉ ቢሮ እንደገና መገንባት አያስፈልግም።
-- **በፕለጊን ገበያ በኩል ከክፍት ምንጭ ማህበረሰብ ጋር ተነጣጥሎ መተባበር።** በክፍቱ [የፕለጊን ገበያ (cage-plugins)](https://github.com/larito001/cage-plugins) ውስጥ **ፕለጊን = MCP + ቅጥያ** ሲሆን፣ MCP ለClaude ችሎታዎችን ይሰጣል፣ ቅጥያ ደግሞ Cage ን ያበጃል። ማህበረሰቡ የCage ዋናውን Issue ዝርዝር ሳያጨናንቅ በገበያው ውስጥ ይሳተፋል፤ የCage ቡድንም በዋናው ሥርዓት ላይ ያተኩራል።
+- **አደገኛውን ክፍል መዝጋት፣ ጠቃሚውን ችሎታ መክፈት።** ወይዘሮ Claude በSuperCage ውስጥ በትንሿ ሸርጣኗ ላይ በምቾት ተቀምጣ እጇን ወደ ውጭ በመዘርጋት ሥራውን ታከናውናለች — በSuperCage ውስጥ ሙሉ ቢሮ እንደገና መገንባት አያስፈልግም።
+- **በፕለጊን ገበያ በኩል ከክፍት ምንጭ ማህበረሰብ ጋር ተነጣጥሎ መተባበር።** በክፍቱ [የፕለጊን ገበያ (cage-plugins)](https://github.com/larito001/cage-plugins) ውስጥ **ፕለጊን = MCP + ቅጥያ** ሲሆን፣ MCP ለClaude ችሎታዎችን ይሰጣል፣ ቅጥያ ደግሞ SuperCage ን ያበጃል። ማህበረሰቡ የSuperCage ዋናውን Issue ዝርዝር ሳያጨናንቅ በገበያው ውስጥ ይሳተፋል፤ የSuperCage ቡድንም በዋናው ሥርዓት ላይ ያተኩራል።
 - **ተገዢ፣ ደህንነቱ የተጠበቀ፣ ቀላል፣ አካባቢያዊ፣ ዝቅተኛ ዋጋ እና በአንድ ጠቅታ ለመጠቀም ዝግጁ።** ውስብስብ ብዙ ሥርዓተ ክወና እንግዳዎችን መጠበቅ፣ የClaude ችሎታ መገደብን መፍራት ወይም ውድ የደመና ወጪና የውሂብ ስጋት አያስፈልግም — ሁሉም ነገር በራስዎ ኮምፒውተር በሚያምር ሁኔታ ይሠራል።
 
 ## በAnthropic ተሰላችተናል
 
-እንደ ተራ ተጠቃሚዎች ከClaude ጋር ለመነጋገር እና ለመተባበር፣ ስለ መለያ እገዳዎች እና የገንዘብ ኪሳራዎች እየተጨነቅን የVPS ምሳሌዎችን፣ የአሳሽ አሻራ መገለጫዎችን እና የአካባቢ ፍተሻዎችን ማዋቀር ሰልችቶናል። **Claude Cage** ን እናቀርባለን — **ለመጠቀም ዝግጁ የሆነ የዴስክቶፕ መተግበሪያ፡ የራስዎን የአውታረ መረብ ፕሮክሲ ያዋቅሩ እና ቀላል የተነጠለ አካባቢዎን፣ የሰዓት ሰቅን፣ ቋንቋን፣ የአካባቢ ፍተሻዎችን እና ፕለጊኖችን በአንድ ቦታ ያስተዳድሩ።**
+እንደ ተራ ተጠቃሚዎች ከClaude ጋር ለመነጋገር እና ለመተባበር፣ ስለ መለያ እገዳዎች እና የገንዘብ ኪሳራዎች እየተጨነቅን የVPS ምሳሌዎችን፣ የአሳሽ አሻራ መገለጫዎችን እና የአካባቢ ፍተሻዎችን ማዋቀር ሰልችቶናል። **SuperCage** ን እናቀርባለን — **ለመጠቀም ዝግጁ የሆነ የዴስክቶፕ መተግበሪያ፡ የራስዎን የአውታረ መረብ ፕሮክሲ ያዋቅሩ እና ቀላል የተነጠለ አካባቢዎን፣ የሰዓት ሰቅን፣ ቋንቋን፣ የአካባቢ ፍተሻዎችን እና ፕለጊኖችን በአንድ ቦታ ያስተዳድሩ።**
 
-Claude Cage ተርሚናልን፣ አሳሽን፣ አርታዒን፣ ኦፊሴላዊውን Claude Desktop እና የፕለጊን ገበያን በአንድ የተለየ የሥራ ቦታ ያጣምራል። በmacOS፣ Windows እና Linux ላይ አንድ ዓይነት ቀላል Debian 13 አካባቢ ይጠቀማል። የመረጡትን ፕሮጀክቶች ያጋሩ፣ አውታረ መረቡን በተናጠል ያስተዳድሩ፣ በፕለጊኖች የኮምፒውተርዎን መሣሪያዎች በደህንነት ይጠቀሙ፣ ከራስዎ አገልጋይ ጋር በSSH ይገናኙ እና ከስልክ ሥራ ይቀጥሉ። ዋና ባህሪያት፦
+SuperCage ተርሚናልን፣ አሳሽን፣ አርታዒን፣ ኦፊሴላዊውን Claude Desktop እና የፕለጊን ገበያን በአንድ የተለየ የሥራ ቦታ ያጣምራል። በmacOS፣ Windows እና Linux ላይ አንድ ዓይነት ቀላል Debian 13 አካባቢ ይጠቀማል። የመረጡትን ፕሮጀክቶች ያጋሩ፣ አውታረ መረቡን በተናጠል ያስተዳድሩ፣ በፕለጊኖች የኮምፒውተርዎን መሣሪያዎች በደህንነት ይጠቀሙ፣ ከራስዎ አገልጋይ ጋር በSSH ይገናኙ እና ከስልክ ሥራ ይቀጥሉ። ዋና ባህሪያት፦
 
-- ከአስተናጋጁ ተነጥለው የአውታረ መረብ ቅንብሮች; Cage ሁሉንም የአውታረ መረብ ትራፊክ በአካባቢያቸው ውስጥ በራሱ የአውታረ መረብ ፕሮክሲ በኩል ያደርሳል
+- ከአስተናጋጁ ተነጥለው የአውታረ መረብ ቅንብሮች; SuperCage ሁሉንም የአውታረ መረብ ትራፊክ በአካባቢያቸው ውስጥ በራሱ የአውታረ መረብ ፕሮክሲ በኩል ያደርሳል
 - የሰዓት ሰቅ እና ቋንቋን ጨምሮ ከአስተናጋጁ የተገለሉ የአሳሽ አሻራ ቅንጅቶች ከአውታረ መረቡ ተኪ አይፒ አካባቢ ጋር በራስ ሰር ማመሳሰል
 - በClaude የስራ ሂደት ውስጥ ያለው ውህደት፡ የአሳሽ መግባት፣ የመለያ ፍቃድ እና የClaude ኮድ ሂደት
 - አብሮገነብ አውታረመረብ እና የመነጠል ፍተሻዎች ወሳኝ ፍተሻዎች ሲቀሩ ወይም ማስረጃው ካልተሟላ የበይነመረብ መዳረሻን ባለበት ያቆማሉ። የማህበረሰብ እና የሶስተኛ ወገን ቼኮች ተጨማሪ የማጣቀሻ መረጃ ይሰጣሉ
 
-**በ Cage የአካባቢ ፍተሻ ውጤቶች፡-**
+**በ SuperCage የአካባቢ ፍተሻ ውጤቶች፡-**
 
 | የአውታረ መረብ እና የማግለል ምርመራዎች | የማህበረሰብ አሳሽ ምርመራ |
 | :---: | :---: |
@@ -49,44 +49,44 @@ Claude Cage ተርሚናልን፣ አሳሽን፣ አርታዒን፣ ኦፊሴ�
 
 [FuckClaude](https://fuck-claude.vercel.app/) · [LinXiaoTao / GitHub](https://github.com/LinXiaoTao/FuckClaude)
 
-**የ Cage ዋና በይነገጽ**
+**የ SuperCage ዋና በይነገጽ**
 
-![Cage](www/public/workbench-2026-11.jpg)
+![SuperCage](www/public/workbench-2026-11.jpg)
 
-## በ Cage ምን ማድረግ ይችላሉ
+## በ SuperCage ምን ማድረግ ይችላሉ
 
-- **በአንድ መስኮት ውስጥ ይስሩ.** በተርሚናል ውስጥ የClaude ኮድን ያሂዱ፣ በአርታዒው ላይ የተደረጉ ለውጦችን ይገምግሙ እና አገልግሎቶችን አስቀድመው ለማየት እና ለመግባት የCage አሳሹን ይጠቀሙ።
-- **በፕለጊን ገበያ ሙሉ ችሎታዎችን ይክፈቱ።** ክፍቱ [የፕለጊን ገበያ (cage-plugins)](https://github.com/larito001/cage-plugins) በ«ፕለጊን = MCP + ቅጥያ» መሠረት Claude የኮምፒውተርዎን መሣሪያዎች (ስክሪንና ኪቦርድ/ማውስ፣ Office ሰነዶች፣ Blender፣ ትዕዛዞች) በግልጽ ፈቃድና ማረጋገጫ እንዲጠቀም እና ለCage ብጁ ገጾችን እንዲያክሉ ያስችላል። [የፕለጊን መመሪያ](docs/guide/plugins.md) · [የልማት መግለጫ](docs/plugins.md)
-- **በሁሉም መድረኮች አንድ ቀላል አካባቢ።** Cage በmacOS፣ Windows እና Linux ላይ ውስብስብ ብዙ እንግዳ ሥርዓቶችን ሳያስተዳድር ያንኑ ቀላል Debian 13 አካባቢ ከተመሳሳይ መሣሪያዎች እና አሠራር ጋር ይጠቀማል። [Debian አካባቢ](docs/guide/guest-systems.md)
+- **በአንድ መስኮት ውስጥ ይስሩ.** በተርሚናል ውስጥ የClaude ኮድን ያሂዱ፣ በአርታዒው ላይ የተደረጉ ለውጦችን ይገምግሙ እና አገልግሎቶችን አስቀድመው ለማየት እና ለመግባት የSuperCage አሳሹን ይጠቀሙ።
+- **በፕለጊን ገበያ ሙሉ ችሎታዎችን ይክፈቱ።** ክፍቱ [የፕለጊን ገበያ (cage-plugins)](https://github.com/larito001/cage-plugins) በ«ፕለጊን = MCP + ቅጥያ» መሠረት Claude የኮምፒውተርዎን መሣሪያዎች (ስክሪንና ኪቦርድ/ማውስ፣ Office ሰነዶች፣ Blender፣ ትዕዛዞች) በግልጽ ፈቃድና ማረጋገጫ እንዲጠቀም እና ለSuperCage ብጁ ገጾችን እንዲያክሉ ያስችላል። [የፕለጊን መመሪያ](docs/guide/plugins.md) · [የልማት መግለጫ](docs/plugins.md)
+- **በሁሉም መድረኮች አንድ ቀላል አካባቢ።** SuperCage በmacOS፣ Windows እና Linux ላይ ውስብስብ ብዙ እንግዳ ሥርዓቶችን ሳያስተዳድር ያንኑ ቀላል Debian 13 አካባቢ ከተመሳሳይ መሣሪያዎች እና አሠራር ጋር ይጠቀማል። [Debian አካባቢ](docs/guide/guest-systems.md)
 - **የሚያጋሩትን ይቆጣጠሩ።** ነባሪው የስራ ቦታ እና በግልፅ የተከፈቱ የፕሮጀክት ማህደሮች ብቻ ነው የሚጋሩት። የአስተናጋጁ Claude የመግባት ሁኔታ፣ የአሳሽ መገለጫዎች እና የኤስኤስኤች ቁልፎች በራስ ሰር አይመጡም።
 - **የአውታረ መረብ ሁኔታዎን ይመልከቱ።** አብሮገነብ የአውታረ መረብ ተኪ አስተዳደር የደንበኝነት ምዝገባዎችን እንድታስመጣ፣ የመጨረሻ ነጥቦችን እንድትመርጥ እና መውጫውን አይፒ እንድታረጋግጥ ያስችልሃል። ወሳኝ ፍተሻዎች እስኪያልፍ ድረስ አካባቢው ከመስመር ውጭ ይቆያል። የአውታረ መረቡ ተኪ የማይገኝ ከሆነ ቀጥታ ግንኙነት ወደ ኋላ መመለስ የለም።
 - **በሚቀጥለው ጊዜ ይቀጥሉ.** መሳሪያዎች፣ ፋይሎች እና የመግባት ሁኔታ በምናባዊ ዲስክ ላይ ይቆያሉ። መስኮቱን ሲዘጉ የበስተጀርባ ተግባራት መሮጥ ይችላሉ።
 - **ብዙ የClaude Code መለያዎችን ያስተዳድሩ።** የአጠቃቀም ገደቦችን ይመልከቱ፣ ለአዲስ ክፍለ ጊዜ መለያ ይመድቡ፣ በግልጽ ፈቃድም መለያ ቀይረው ታሪኩን ይቀጥሉ። [Claude Code](docs/guide/accounts.md)
 - **ከስልክ ይቀጥሉ።** Android ወይም iPhone ከኮምፒውተር ጋር በQR ወይም በማጣመሪያ ኮድ ያገናኙ። ተመሳሳይ የClaude Code ውይይቶችን ይቀጥሉ፣ መልእክት ይላኩ፣ መሣሪያዎችን ያጽድቁ እና የርቀት አሳሽን ወይም የኮምፒውተሩን Claude Desktop መስኮት ይጠቀሙ።
-- **Cage በደመና ያስኪዱ።** መስፈርቶቹን በሚያሟላ Linux x86_64 VPS ላይ ከተጫነ Cage ጋር በSSH ይገናኙ፤ KVM አያስፈልግም። ውሂብና የአውታረ መረብ መውጫ በአገልጋዩ ላይ ናቸው።
-- **በግል አውታረ መረብ ይገናኙ።** በCage ውስጥ Tailscale ግቡና በአስተናጋጁ እና አካባቢው መካከል ባለሁለት አቅጣጫ SSH ይጠቀሙ። [Tailscale / SSH](docs/guide/tailscale.md)
+- **SuperCage በደመና ያስኪዱ።** መስፈርቶቹን በሚያሟላ Linux x86_64 VPS ላይ ከተጫነ SuperCage ጋር በSSH ይገናኙ፤ KVM አያስፈልግም። ውሂብና የአውታረ መረብ መውጫ በአገልጋዩ ላይ ናቸው።
+- **በግል አውታረ መረብ ይገናኙ።** በSuperCage ውስጥ Tailscale ግቡና በአስተናጋጁ እና አካባቢው መካከል ባለሁለት አቅጣጫ SSH ይጠቀሙ። [Tailscale / SSH](docs/guide/tailscale.md)
 
 ## ፈጣን ጅምር
 
 ይህንን ጥያቄ ወደ AI ወኪልዎ ይላኩ (ኮዴክስ ፣ ዲኤስኤስ ፣ የስራ ጓደኛ - ምናልባት Claude ኮድ 😁 ላይሆን ይችላል)
 
 ```markdown
-የ https://github.com/Lee-xeo/Claude-Cage የቅርብ ጊዜ ምንጭ ኮድ አውርድ፣ ገንባ፣ ጥቅል አድርግና ጫን። የCage ፕሮክሲ በአካባቢዬ ያለውን የClash xx ኖድ ተጠቅሞ በእኔ xx IP እንዲወጣ አዋቅር። ሂደቱን በሙሉ ተከታተል፣ ችግሮችን በቀጥታ አስተካክል፣ አስፈላጊ ከሆነም ተስማሚነትን ለማሻሻል በፕሮጀክቱ issue አስገባ።
+የ https://github.com/larito001/Super-Cage የቅርብ ጊዜ ምንጭ ኮድ አውርድ፣ ገንባ፣ ጥቅል አድርግና ጫን። የSuperCage ፕሮክሲ በአካባቢዬ ያለውን የClash xx ኖድ ተጠቅሞ በእኔ xx IP እንዲወጣ አዋቅር። ሂደቱን በሙሉ ተከታተል፣ ችግሮችን በቀጥታ አስተካክል፣ አስፈላጊ ከሆነም ተስማሚነትን ለማሻሻል በፕሮጀክቱ issue አስገባ።
 ```
 
 የሚያስፈልግህ አስተማማኝ የአውታረ መረብ ተኪ የመጨረሻ ነጥብ ነው። ይህ ፕሮጀክት ማንኛውንም ተኪ አቅራቢን አያስተዋውቅም። አቅራቢን እራስዎ ማግኘት ይችላሉ፣ ለምሳሌ የጥቁር ስህተት ድህረ ገጽን በመፈለግ።
 
 ## ማውረድ እና መጫን
 
-Cage macOS፣ Windows እና Linux ይደግፋል፦ Apple Silicon እና Intel Mac ከ macOS 14+፣ Windows 10 22H2 / 11 x64 እና Debian 12 / Ubuntu 22.04 / 24.04 x86_64. Windows ARM64 እና Linux ARM64 ገና አይደገፉም። [macOS](docs/getting-started.md) · [Windows](docs/windows.md) · [Linux](docs/linux.md).
+SuperCage macOS፣ Windows እና Linux ይደግፋል፦ Apple Silicon እና Intel Mac ከ macOS 14+፣ Windows 10 22H2 / 11 x64 እና Debian 12 / Ubuntu 22.04 / 24.04 x86_64. Windows ARM64 እና Linux ARM64 ገና አይደገፉም። [macOS](docs/getting-started.md) · [Windows](docs/windows.md) · [Linux](docs/linux.md).
 
 1. መተግበሪያውን ያውርዱ: [macOS / Windows / Linux](https://claude-cage.com/am/#download).
-2. macOS: የመጫኛ ጥቅሉን ይክፈቱ እና ይጎትቱ **Cage** ውስጥ **መተግበሪያዎች**; ከዚያ ከመተግበሪያዎች ያስጀምሩት። Windows: [የመጫኛ መመሪያ](docs/windows.md#安装并开始工作) · Linux: [የመጫኛ መመሪያ](docs/linux.md#安装并开始工作).
+2. macOS: የመጫኛ ጥቅሉን ይክፈቱ እና ይጎትቱ **SuperCage** ውስጥ **መተግበሪያዎች**; ከዚያ ከመተግበሪያዎች ያስጀምሩት። Windows: [የመጫኛ መመሪያ](docs/windows.md#安装并开始工作) · Linux: [የመጫኛ መመሪያ](docs/linux.md#安装并开始工作).
 3. የራስዎን የአውታረ መረብ ፕሮክሲ ለማዋቀር፣ አካባቢውን ለመጀመር እና ፕሮጀክት ለመክፈት የውስጠ-መተግበሪያ መመሪያዎችን ይከተሉ።
 
-ጫኚው የሥራ ቦታን እና የፕሮክሲ ሞተርን ያካትታል። Go፣ Node.js፣ Docker ወይም Clash አስቀድሞ መጫን አያስፈልግም። አካባቢውን ሲፈጥሩ የማከማቻ ቦታን ይምረጡ፤ Cage የDebian 13 ምስሉን እና የልማት መሣሪያዎቹን ያወርዳል። Cage የፕሮክሲ አገልግሎት ወይም የClaude መለያ አይሰጥም።
+ጫኚው የሥራ ቦታን እና የፕሮክሲ ሞተርን ያካትታል። Go፣ Node.js፣ Docker ወይም Clash አስቀድሞ መጫን አያስፈልግም። አካባቢውን ሲፈጥሩ የማከማቻ ቦታን ይምረጡ፤ SuperCage የDebian 13 ምስሉን እና የልማት መሣሪያዎቹን ያወርዳል። SuperCage የፕሮክሲ አገልግሎት ወይም የClaude መለያ አይሰጥም።
 
-ምንጭ ኮድ እና ጫኚዎች ለሕዝብ ክፍት ናቸው። የስሪት ማስታወሻዎችን እና ቼክሰሞችን በ [Releases](https://github.com/Lee-xeo/Claude-Cage/releases) ይመልከቱ።
+ምንጭ ኮድ እና ጫኚዎች ለሕዝብ ክፍት ናቸው። የስሪት ማስታወሻዎችን እና ቼክሰሞችን በ [Releases](https://github.com/larito001/Super-Cage/releases) ይመልከቱ።
 
 ባህሪያት በሚጠቀሙት ግንባታ ይወሰናሉ፤ የሕዝብ መጫኛው ችሎታና የሙከራ ወሰን በልቀት ማስታወሻ ይገለጻሉ።
 
@@ -100,16 +100,16 @@ macOS እና የተፈረሙ Windows ስሪቶች በተመረጠው ፕሮክ�
 
 ### 2. አካባቢውን ይጀምሩ
 
-መጀመሪያ ሲፈጥሩ የማከማቻ ቦታ ይምረጡ። Cage አካባቢን አስጀምሩና የመጫን እና የፈቃድ መመሪያን ይከተሉ። ሂደትና ስህተቶች በሥራ ዝርዝር ይታያሉ። ቀጣይ ጅማሬዎች ያንኑ አካባቢ ይጠቀማሉ።
+መጀመሪያ ሲፈጥሩ የማከማቻ ቦታ ይምረጡ። SuperCage አካባቢን አስጀምሩና የመጫን እና የፈቃድ መመሪያን ይከተሉ። ሂደትና ስህተቶች በሥራ ዝርዝር ይታያሉ። ቀጣይ ጅማሬዎች ያንኑ አካባቢ ይጠቀማሉ።
 
 ### 3. ፕሮጀክት ይክፈቱ እና Claude ያሂዱ
 
-በእርስዎ ኮምፒውተር ላይ አቃፊ ለመምረጥ፣ አዲስ ተርሚናል ለመክፈት እና ለመግባት 'Open Project' ን ጠቅ ያድርጉ `claude`; ከዚያ የራስዎን መለያ በ Cage አሳሽ ውስጥ ፍቀድ። ፕሮጀክት ሳያዘጋጁ በነባሪው የስራ ቦታ መጀመር ይችላሉ። ለሙሉ ደረጃዎች, ይመልከቱ [በመጀመር ላይ](docs/getting-started.md).
+በእርስዎ ኮምፒውተር ላይ አቃፊ ለመምረጥ፣ አዲስ ተርሚናል ለመክፈት እና ለመግባት 'Open Project' ን ጠቅ ያድርጉ `claude`; ከዚያ የራስዎን መለያ በ SuperCage አሳሽ ውስጥ ፍቀድ። ፕሮጀክት ሳያዘጋጁ በነባሪው የስራ ቦታ መጀመር ይችላሉ። ለሙሉ ደረጃዎች, ይመልከቱ [በመጀመር ላይ](docs/getting-started.md).
 
 ## ከመጠቀምዎ በፊት እነዚህን ገደቦች ይረዱ
 
-- በጋራ ፕሮጀክቶች ውስጥ ያሉ አርትዖቶች እና ስረዛዎች በእርስዎ ኮምፒውተር ላይ ያሉ ፋይሎችን በቀጥታ ይነካሉ። የስሪት መቆጣጠሪያን ወይም ምትኬዎችን ተጠቀም።የፕሮጀክቱ `.git` ማንበብና መጻፍ ይቻላል፤ በ Cage ውስጥ ለውጦችን ማዘጋጀት፣ commit ማድረግና branch መቀየር ይቻላል።
-- ሁሉም ፕሮጀክቶች መሳሪያዎቹን፣ መለያዎቹን እና የሊኑክስ ፋይል ስርዓቱን ጨምሮ አንድ የ Cage አካባቢን ይጋራሉ። ፕሮጀክቶች አንዱ ከሌላው የተገለሉ አይደሉም።
+- በጋራ ፕሮጀክቶች ውስጥ ያሉ አርትዖቶች እና ስረዛዎች በእርስዎ ኮምፒውተር ላይ ያሉ ፋይሎችን በቀጥታ ይነካሉ። የስሪት መቆጣጠሪያን ወይም ምትኬዎችን ተጠቀም።የፕሮጀክቱ `.git` ማንበብና መጻፍ ይቻላል፤ በ SuperCage ውስጥ ለውጦችን ማዘጋጀት፣ commit ማድረግና branch መቀየር ይቻላል።
+- ሁሉም ፕሮጀክቶች መሳሪያዎቹን፣ መለያዎቹን እና የሊኑክስ ፋይል ስርዓቱን ጨምሮ አንድ የ SuperCage አካባቢን ይጋራሉ። ፕሮጀክቶች አንዱ ከሌላው የተገለሉ አይደሉም።
 - በነባሪ የውጭ አውታረ መረብ IPv4 TCP ይደግፋል፣ DNS በዚያው ፕሮክሲ ይላካል። የሕዝብ UDP፣ IPv6፣ ICMP እና ቀጥታ ወደ አስተናጋጅ ወይም LAN ግንኙነት የተገደቡ ናቸው። Tailscale በግልጽ ሲነቃ የመሣሪያ ግንኙነት የግል አውታረ መረቡን ፈቃድ ይከተላል።
 - የአውታረ መረብ ፍተሻዎች የአሁኑን ውቅር እና የናሙና ማስረጃዎችን ያሳያሉ። መለያ የመድረክ ገደቦችን እንደሚያስወግድ ዋስትና ሊሰጡ አይችሉም እና የተሟላ የቨርችዋል ሴኪዩሪቲ ኦዲትን አይተኩም።
 
@@ -125,7 +125,7 @@ macOS እና የተፈረሙ Windows ስሪቶች በተመረጠው ፕሮክ�
 | የአውታረ መረብ ተኪ ጫን፣ አዋቅር እና የመጀመሪያህን ፕሮጀክት ክፈት | [በመጀመር ላይ](docs/getting-started.md) |
 | ማውረዶችን፣ ጅምርን፣ ግንኙነትን እና መግባትን መላ ፈልግ | [የሚጠየቁ ጥያቄዎች እና መልሶ ማግኛ](docs/troubleshooting.md) |
 | የቁልፍ ሰሌዳ መቆጣጠሪያዎችን፣ መልክን፣ የውሂብን ጽናት እና የመውጣት ባህሪን ተማር | [ዕለታዊ አጠቃቀም](docs/getting-started.md#日常使用) |
-| ሊባዛ የሚችል ጉዳይ ሪፖርት ያድርጉ | [GitHub Issues](https://github.com/Lee-xeo/Claude-Cage/issues) |
+| ሊባዛ የሚችል ጉዳይ ሪፖርት ያድርጉ | [GitHub Issues](https://github.com/larito001/Super-Cage/issues) |
 | ማስተካከያ፣ ባህሪ ወይም ሰነድ ለማበርከት፦ Issue ግምገማ → የተባባሪ ግብዣ → PR | [የአስተዋጽኦ መመሪያ (ቻይንኛ)](.github/CONTRIBUTING.md) |
 
 ፕሮጀክቱ በፍጥነት እያደገ ነው. ግብረመልስ ለማጋራት የማህበረሰብ ቡድኑን ይቀላቀሉ; የማህበረሰብ ጠባቂዎች እንኳን ደህና መጡ።
@@ -138,17 +138,17 @@ macOS እና የተፈረሙ Windows ስሪቶች በተመረጠው ፕሮክ�
 
 ## አመጣጥ እና ፈቃድ
 
-Cage የመጣው ከ [agent-vm](https://github.com/sylvinus/agent-vm).
+SuperCage የመጣው ከ [agent-vm](https://github.com/sylvinus/agent-vm).
 
 የፕሮጀክቱ ዋና ፈቃድ ነው። [MIT](LICENSE). የተጠቀለሉ ክፍሎች የየራሳቸውን ፈቃዶች እንደያዙ ይቆያሉ። ሚሆሞ በGPL-3.0 ስር እንደ የተለየ ተፈጻሚነት ይሰራጫል። እንዲሁም ይመልከቱ [NOTICE](NOTICE) · [የሶስተኛ ወገን ፍቃዶች](THIRD_PARTY_LICENSES) · [noVNC](ui/vendor/novnc/LICENSE.txt)。
 
-Cage ራሱን የቻለ የማህበረሰብ ፕሮጀክት ነው እና ከAnthropic ጋር ግንኙነት የለውም።
+SuperCage ራሱን የቻለ የማህበረሰብ ፕሮጀክት ነው እና ከAnthropic ጋር ግንኙነት የለውም።
 
 ## ማጣቀሻዎች እና ምስጋናዎች
 
 ለመሠረታዊ ችሎታዎች እና የንድፍ ማመሳከሪያዎች ለሚከተሉት ፕሮጀክቶች ምስጋና ይግባው.
 
-- [agent-vm](https://github.com/sylvinus/agent-vm) የ Cage የላይኛው ተፋሰስ መሠረት።
+- [agent-vm](https://github.com/sylvinus/agent-vm) የ SuperCage የላይኛው ተፋሰስ መሠረት።
 - [Lima](https://github.com/lima-vm/lima) የሊኑክስ ምናባዊ ማሽን አስተዳደር.
 - [gvisor-tap-vsock](https://github.com/containers/gvisor-tap-vsock): ምናባዊ ማሽን አውታረ መረብ.
 - [sshocker](https://github.com/lima-vm/sshocker) እና [SFTP](https://github.com/pkg/sftp) በቨርቹዋል ማሽን እና በአስተናጋጅ መካከል የፋይል መጋራት።
@@ -157,13 +157,13 @@ Cage ራሱን የቻለ የማህበረሰብ ፕሮጀክት ነው እና ከ
 - [code-server](https://github.com/coder/code-server): በአሳሽ ላይ የተመሰረተ ኮድ አርታዒ.
 - [AIO Sandbox](https://github.com/agent-infra/sandbox) የሥራ አካባቢ እና መስተጋብር ንድፍ ማጣቀሻዎች.
 - [claude-switcher](https://github.com/YOURSJEYO/claude-switcher) እና [Claude-Guardian](https://github.com/DUNHKpcc/Claude-Guardian) ለአውታረ መረብ ፍተሻዎች እና የደህንነት ምርመራዎች ማጣቀሻዎች።
-- [claude-post-ban-cleanup](https://github.com/l2461090/claude-post-ban-cleanup): ለትክክለኛ ቆጠራ፣ ለውሂብ ጥበቃ እና ሊመለስ ለሚችል የመሸጎጫ ማጽዳት ሂደት ማጣቀሻ፤ በCage በተናጠል ተተግብሯል።
+- [claude-post-ban-cleanup](https://github.com/l2461090/claude-post-ban-cleanup): ለትክክለኛ ቆጠራ፣ ለውሂብ ጥበቃ እና ሊመለስ ለሚችል የመሸጎጫ ማጽዳት ሂደት ማጣቀሻ፤ በSuperCage በተናጠል ተተግብሯል።
 
 
-<a href="https://www.star-history.com/?repos=Lee-xeo%2FClaude-Cage&amp;type=date">
+<a href="https://www.star-history.com/?repos=larito001%2FSuper-Cage&amp;type=date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date&amp;theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date" />
-    <img alt="Claude Cage GitHub Star History" src="https://api.star-history.com/svg?repos=Lee-xeo/Claude-Cage&amp;type=Date" width="800" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date&amp;theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date" />
+    <img alt="SuperCage GitHub Star History" src="https://api.star-history.com/svg?repos=larito001/Super-Cage&amp;type=Date" width="800" />
   </picture>
 </a>

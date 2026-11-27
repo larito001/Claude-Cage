@@ -337,7 +337,7 @@ func removedGuestFoldersForTest(t *testing.T, s *Server) []string {
 	return found
 }
 
-// Only an explicit choice in the Cage window moves an Ubuntu environment:
+// Only an explicit choice in the SuperCage window moves an Ubuntu environment:
 // every file keeps its content and its place relative to state, under
 // state/guests-removed, and Debian is then started in a fresh environment.
 func TestSettingAsideUbuntuEnvironmentMovesItUnchangedBeforeDebian(t *testing.T) {
@@ -367,7 +367,7 @@ func TestSettingAsideUbuntuEnvironmentMovesItUnchangedBeforeDebian(t *testing.T)
 	untrusted := httptest.NewRecorder()
 	s.handler().ServeHTTP(untrusted, r)
 	if untrusted.Code == http.StatusOK || s.jobs.snapshot().ID != "" {
-		t.Fatalf("set aside without the Cage window: %d %s", untrusted.Code, untrusted.Body.String())
+		t.Fatalf("set aside without the SuperCage window: %d %s", untrusted.Code, untrusted.Body.String())
 	}
 	for _, body := range []string{`{"set_aside_abandoned":true,"guest_system":"ubuntu-22.04"}`, `{"set_aside_abandoned":true,"guest_system":"debian-12"}`} {
 		if response := desktopRequestForTest(s, http.MethodPost, "/api/start", []byte(body)); response.Code != http.StatusConflict || s.jobs.snapshot().ID != "" {

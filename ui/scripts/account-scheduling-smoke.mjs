@@ -8,7 +8,7 @@ await mkdir(out,{recursive:true});
 const scheduling={mode:"balanced",switch_policy:"ask"};
 let profiles=[{id:"a",label:"账号 A",email:"a@example.invalid",status:"ready",enabled:true},{id:"b",label:"账号 B",email:"b@example.invalid",status:"ready",enabled:true}];
 const sid="12345678-1234-4321-aaaa-123456789abc";
-const session={id:sid,workspace:"/Users/shihao/.claude-cage-workspace",title:"调度验证",terminal_available:true,desktop_terminal_id:"first",can_send:true,revision:1,account_id:"a",account_label:"账号 A",switch_policy:"ask",turns:[]};
+const session={id:sid,workspace:"/Users/shihao/.super-cage-workspace",title:"调度验证",terminal_available:true,desktop_terminal_id:"first",can_send:true,revision:1,account_id:"a",account_label:"账号 A",switch_policy:"ask",turns:[]};
 let switchCalls=[];
 const account=(route,body)=>{
   if(body.action==="policy")session.switch_policy=body.policy;
@@ -60,14 +60,14 @@ try{
   await phone.route("**/api/**",async route=>{
     const path=new URL(route.request().url()).pathname;const body=route.request().postDataJSON();
     if(path.endsWith("/account"))return account(route,body);
-    if(path.endsWith("/projects"))return route.fulfill({json:{host:"测试电脑",ready:true,shared_sessions:true,projects:[{path:session.workspace,name:".claude-cage-workspace"}]}});
+    if(path.endsWith("/projects"))return route.fulfill({json:{host:"测试电脑",ready:true,shared_sessions:true,projects:[{path:session.workspace,name:".super-cage-workspace"}]}});
     if(path.endsWith("/sessions"))return route.fulfill({json:{sessions:[session]}});
     return route.fulfill({json:session});
   });
   await phone.goto((process.env.CAGE_UI_URL || "http://127.0.0.1:5198")+"/mobile.html");
   const drawer=phone.getByRole("dialog",{name:"工作区侧栏"});
   await drawer.waitFor();
-  const folder=drawer.getByRole("button",{name:"项目 .claude-cage-workspace",exact:true});
+  const folder=drawer.getByRole("button",{name:"项目 .super-cage-workspace",exact:true});
   if(await folder.getAttribute("aria-expanded")==="false")await folder.click();
   await phone.getByRole("button",{name:"调度验证",exact:true}).click();
   await phone.getByRole("button",{name:"账号 A · 会话绑定",exact:true}).click();

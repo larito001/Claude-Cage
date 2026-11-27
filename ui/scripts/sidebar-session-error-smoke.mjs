@@ -21,7 +21,7 @@ for (const [platform, guestSystem] of [["windows", "windows-11"], ["darwin", "ma
       requests++;
       if (pending) await new Promise(resolve => { release = resolve; });
       if (httpFailure) return route.fulfill({ status: 503, contentType: "text/plain; charset=utf-8", body: message });
-      return route.fulfill({ json: { sessions: [{ id: "error-history", title: "保留的历史会话", workspace: "/Users/shihao/.claude-cage-workspace" }], notice: message } });
+      return route.fulfill({ json: { sessions: [{ id: "error-history", title: "保留的历史会话", workspace: "/Users/shihao/.super-cage-workspace" }], notice: message } });
     },
   });
   const { page, browser, errors } = fixture;

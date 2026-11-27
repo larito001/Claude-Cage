@@ -268,7 +268,7 @@ var aptBootstrap string
 var APTBootstrapScript = "set -e\nsudo env APT_CONFIG=\"${CAGE_APT_CONFIG:-/dev/null}\" sh -se <<'CAGE_APT_BOOTSTRAP'\n" + aptBootstrap + "\nCAGE_APT_BOOTSTRAP\n"
 
 // DebianPrepareScript runs before Lima's own dependency installation as well
-// as Cage setup. Its version check also covers previously created guests.
+// as SuperCage setup. Its version check also covers previously created guests.
 var DebianPrepareScript = DebianPrepareScriptFor("")
 
 // DebianMirrorEnv carries the workbench's Debian source choice to the host
@@ -395,7 +395,7 @@ cage_install_tool code-server
 cage_install_tool claude
 cage_install_tool agy
 cage_install_tool codex
-printf 'Cage tool packages are ready; applying browser and editor components.\n'
+printf 'SuperCage tool packages are ready; applying browser and editor components.\n'
 `
 }
 

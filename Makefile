@@ -3,7 +3,7 @@
 #   make              _output/bin/agent-vm, with the guest agent and templates
 #   make install      build it, then link it onto the PATH (AGENT_VM_BIN_DIR
 #                     to choose where; ~/.local/bin by default)
-#   make cage         _output/bin/cage, the Claude Cage backend
+#   make cage         _output/bin/cage, the SuperCage backend
 #   make cage-core    the bundled proxy core that 'make cage' leaves out
 #   make limactl      Lima's own limactl from third_party/, for debugging
 #   make test         the Go tests
@@ -13,7 +13,7 @@
 GO ?= go
 GOOS ?= $(shell $(GO) env GOOS)
 GOARCH ?= $(shell $(GO) env GOARCH)
-# Cage's VERSION file owns the default. Upstream release tooling can still
+# SuperCage's VERSION file owns the default. Upstream release tooling can still
 # supply VERSION explicitly when building a historical agent-vm tag.
 VERSION ?= $(shell tr -d '\r\n' < VERSION)
 LIMA_VERSION := $(shell cat internal/limaembed/lima-version)
@@ -50,7 +50,7 @@ GO_BUILD := CGO_ENABLED=$(CGO_ENABLED) $(GO) build -trimpath -tags $(TAGS) -ldfl
 
 all: agent-vm
 
-# Claude Cage ships a separate entry point with a mandatory proxy profile.
+# SuperCage ships a separate entry point with a mandatory proxy profile.
 cage: cage-ui assets tailnet-assets
 	$(GO_BUILD) -o _output/bin/cage$(EXE) ./cmd/cage
 ifeq ($(GOOS),darwin)

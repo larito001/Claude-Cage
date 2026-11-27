@@ -1,4 +1,4 @@
-name: Build Cage for Intel Mac
+name: Build SuperCage for Intel Mac
 on:
   workflow_call:
     inputs:
@@ -107,7 +107,7 @@ jobs:
       - name: Go tests and vet
         run: |
           # Intel 上 Lima 使用 QEMU 驱动；与 internal/host/runtime_darwin_amd64.go 一致，使用随包构建的 QEMU
-          runtime="$PWD/_output/Cage.app/Contents/Resources/intel-macos/runtime/bin"
+          runtime="$PWD/_output/SuperCage.app/Contents/Resources/intel-macos/runtime/bin"
           test -x "$runtime/qemu-system-x86_64"
           export PATH="$runtime:$PATH"
           make test-go
@@ -117,7 +117,7 @@ jobs:
       - name: Native application updater
         run: bash scripts/test-app-updates.sh
       - name: External Agent CLI with an isolated profile
-        run: node scripts/agent-cli-smoke.mjs "$PWD/_output/Cage.app/Contents/Resources/cage"
+        run: node scripts/agent-cli-smoke.mjs "$PWD/_output/SuperCage.app/Contents/Resources/cage"
       - name: Native account credential status
         run: bash scripts/test-account-device.sh
       - name: Intel QEMU, guest architecture, networking and shared files
@@ -126,13 +126,13 @@ jobs:
         run: bash scripts/licenses --check
       - name: Verify the application bundle
         run: |
-          codesign --verify --deep --strict _output/Cage.app
-          _output/Cage.app/Contents/Resources/cage --help
-          _output/Cage.app/Contents/Resources/mihomo -v
-          for executable in Contents/MacOS/Cage Contents/Resources/cage Contents/Resources/mihomo Contents/Resources/intel-macos/runtime/bin/qemu-system-x86_64 Contents/Resources/intel-macos/runtime/bin/qemu-img; do
-            [[ "$(lipo -archs "_output/Cage.app/$executable")" == x86_64 ]]
+          codesign --verify --deep --strict _output/SuperCage.app
+          _output/SuperCage.app/Contents/Resources/cage --help
+          _output/SuperCage.app/Contents/Resources/mihomo -v
+          for executable in Contents/MacOS/SuperCage Contents/Resources/cage Contents/Resources/mihomo Contents/Resources/intel-macos/runtime/bin/qemu-system-x86_64 Contents/Resources/intel-macos/runtime/bin/qemu-img; do
+            [[ "$(lipo -archs "_output/SuperCage.app/$executable")" == x86_64 ]]
           done
-          runtime=_output/Cage.app/Contents/Resources/intel-macos/runtime
+          runtime=_output/SuperCage.app/Contents/Resources/intel-macos/runtime
           "$runtime/bin/qemu-system-x86_64" --version
           "$runtime/bin/qemu-system-x86_64" -accel help | grep -Fx hvf
           "$runtime/bin/qemu-img" --version
@@ -144,14 +144,14 @@ jobs:
         run: |
           version=$(tr -d '\r\n' < VERSION)
           mkdir -p _output/ci-macos-test
-          archive="$PWD/_output/ci-macos-test/Cage-$version-macos-amd64-test.tar.gz"
-          tar -czf "$archive" -C _output Cage.app
+          archive="$PWD/_output/ci-macos-test/SuperCage-$version-macos-amd64-test.tar.gz"
+          tar -czf "$archive" -C _output SuperCage.app
           check=$(mktemp -d "$RUNNER_TEMP/cage-app-archive.XXXXXX")
           trap 'rm -rf "$check"' EXIT
           tar -xzf "$archive" -C "$check"
-          codesign --verify --deep --strict "$check/Cage.app"
-          for executable in Contents/MacOS/Cage Contents/Resources/cage Contents/Resources/mihomo Contents/Resources/CageUpdateInstaller Contents/Resources/intel-macos/runtime/bin/qemu-system-x86_64 Contents/Resources/intel-macos/runtime/bin/qemu-img; do
-            test -x "$check/Cage.app/$executable"
+          codesign --verify --deep --strict "$check/SuperCage.app"
+          for executable in Contents/MacOS/SuperCage Contents/Resources/cage Contents/Resources/mihomo Contents/Resources/CageUpdateInstaller Contents/Resources/intel-macos/runtime/bin/qemu-system-x86_64 Contents/Resources/intel-macos/runtime/bin/qemu-img; do
+            test -x "$check/SuperCage.app/$executable"
           done
           (cd _output/ci-macos-test && shasum -a 256 "${archive##*/}" > SHA256SUMS)
       - uses: actions/upload-artifact@v4
@@ -229,8 +229,8 @@ jobs:
           # The Apple Silicon job publishes the same pinned Mihomo source.
           # Publishing one copy avoids two downloads of a generated archive.
           test -s "$release/mihomo-$source_version-source.tar.gz"
-          cp "$release/Cage-$version-macos-amd64.dmg" "$release/build-metadata.json" _output/ci-macos-release/
-          grep -E "^[0-9a-f]{64}  Cage-$version-macos-amd64\.dmg$" "$release/SHA256SUMS" > _output/ci-macos-release/SHA256SUMS
+          cp "$release/SuperCage-$version-macos-amd64.dmg" "$release/build-metadata.json" _output/ci-macos-release/
+          grep -E "^[0-9a-f]{64}  SuperCage-$version-macos-amd64\.dmg$" "$release/SHA256SUMS" > _output/ci-macos-release/SHA256SUMS
           (cd _output/ci-macos-release && shasum -a 256 --check SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:

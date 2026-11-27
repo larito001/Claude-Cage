@@ -13,7 +13,7 @@ import (
 
 const windowsHardwareInterface = 1 << 0 // MIB_IF_ROW2.InterfaceAndOperStatusFlags.HardwareInterface
 
-var errNoWindowsInterface = errors.New("未找到可用的物理 IPv4 网卡。请连接以太网或 Wi-Fi；仅有虚拟网卡的 Windows 虚拟机和云主机暂不可用。Cage 外网保持关闭")
+var errNoWindowsInterface = errors.New("未找到可用的物理 IPv4 网卡。请连接以太网或 Wi-Fi；仅有虚拟网卡的 Windows 虚拟机和云主机暂不可用。SuperCage 外网保持关闭")
 
 func windowsPhysicalInterface(ctx context.Context) (string, error) {
 	// IP Helper calls are synchronous. Check the deadline between calls and
@@ -22,24 +22,24 @@ func windowsPhysicalInterface(ctx context.Context) (string, error) {
 	defer cancel()
 	adapters, err := windowsPhysicalAdapters(ctx)
 	if err != nil {
-		return "", fmt.Errorf("无法读取 Windows 物理网卡信息；Cage 外网保持关闭: %w", err)
+		return "", fmt.Errorf("无法读取 Windows 物理网卡信息；SuperCage 外网保持关闭: %w", err)
 	}
 	if err := ctx.Err(); err != nil {
-		return "", fmt.Errorf("Windows 物理网卡查询超时；Cage 外网保持关闭: %w", err)
+		return "", fmt.Errorf("Windows 物理网卡查询超时；SuperCage 外网保持关闭: %w", err)
 	}
 	if len(adapters) == 0 {
 		return "", errNoWindowsInterface
 	}
 	var table *windows.MibIpForwardTable2
 	if err := windows.GetIpForwardTable2(windows.AF_INET, &table); err != nil {
-		return "", fmt.Errorf("无法读取 Windows IPv4 路由；Cage 外网保持关闭: %w", err)
+		return "", fmt.Errorf("无法读取 Windows IPv4 路由；SuperCage 外网保持关闭: %w", err)
 	}
 	if table == nil {
 		return "", errNoWindowsInterface
 	}
 	defer windows.FreeMibTable(unsafe.Pointer(table))
 	if err := ctx.Err(); err != nil {
-		return "", fmt.Errorf("Windows IPv4 路由查询超时；Cage 外网保持关闭: %w", err)
+		return "", fmt.Errorf("Windows IPv4 路由查询超时；SuperCage 外网保持关闭: %w", err)
 	}
 	name := selectWindowsPhysicalInterface(adapters, table.Rows())
 	if name == "" {

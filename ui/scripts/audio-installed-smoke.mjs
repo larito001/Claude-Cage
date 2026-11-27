@@ -11,7 +11,7 @@ assert.ok(bundle?.startsWith("/") && bundle.endsWith(".app"));
 const ssh = ["-q", "-F", process.env.CAGE_SSH_CONFIG, "-o", "BatchMode=yes", "-o", "ClearAllForwardings=yes", "-o", "ControlPath=none", "-o", "ConnectTimeout=3", process.env.CAGE_SSH_TARGET, "--"];
 const capturePIDs = () => execFileSync("ssh", [...ssh, "pgrep -x parec || true"], { encoding: "utf8" }).trim().split(/\s+/).filter(Boolean);
 const before = new Set(capturePIDs());
-const entry = JSON.parse(execFileSync(bundle + "/Contents/Resources/cage", ["desktop", "--json", "--existing"], { encoding: "utf8", env: { ...process.env, CLAUDE_CAGE_CONFIG: process.env.CAGE_CONFIG } }));
+const entry = JSON.parse(execFileSync(bundle + "/Contents/Resources/cage", ["desktop", "--json", "--existing"], { encoding: "utf8", env: { ...process.env, SUPER_CAGE_CONFIG: process.env.CAGE_CONFIG } }));
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1280, height: 850 } });
 let play;

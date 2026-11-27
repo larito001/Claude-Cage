@@ -5,8 +5,8 @@ param([Parameter(Mandatory)][string]$Installer, [switch]$RequireSignedQemu)
 . (Join-Path $PSScriptRoot 'windows-common.ps1')
 if (-not $IsWindows) { throw 'Installation smoke tests must run on Windows.' }
 $target = Join-Path $env:LOCALAPPDATA ('Programs/Cage-test-' + [guid]::NewGuid().ToString('N'))
-$savedKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\ClaudeCage'
-if (Test-Path $savedKey) { throw 'Use a disposable Windows user without an existing Cage installation.' }
+$savedKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\SuperCage'
+if (Test-Path $savedKey) { throw 'Use a disposable Windows user without an existing SuperCage installation.' }
 $fixture = Join-Path $PSScriptRoot 'personal-data-fixture.mjs'
 $manifest = Join-Path ([IO.Path]::GetTempPath()) ('cage-personal-data-' + [guid]::NewGuid().ToString('N') + '.json')
 Invoke-BuildTool 'node' @($fixture, 'seed', $env:USERPROFILE, $manifest)
@@ -29,24 +29,24 @@ function Run-Installer {
                     $value = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
                     $safe = @{phase = $value['phase']; status = $value['status']; helperExit = $value['helperExit']; operation = $value['operation']; pointerSize = $value['pointerSize']}
                     if ($value['errors']) { $safe.errors = @($value['errors'] | Select-Object -First 4 | ForEach-Object { @{type = $_['type']; hresult = $_['hresult']} }) }
-                    Write-Host ('Cage installer diagnostic: ' + ($safe | ConvertTo-Json -Depth 4 -Compress))
+                    Write-Host ('SuperCage installer diagnostic: ' + ($safe | ConvertTo-Json -Depth 4 -Compress))
                 }
             } catch { Write-Warning 'The bounded installer diagnostic could not be read.' }
         }
         throw "Installer returned $($process.ExitCode), expected $ExpectedExitCode"
     }
 }
-$desktopShortcut = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'Cage.lnk'
-$startMenuDirectory = Join-Path ([Environment]::GetFolderPath('Programs')) 'Cage'
+$desktopShortcut = Join-Path ([Environment]::GetFolderPath('DesktopDirectory')) 'SuperCage.lnk'
+$startMenuDirectory = Join-Path ([Environment]::GetFolderPath('Programs')) 'SuperCage'
 function Assert-Shortcuts {
     param([bool]$Desktop, [bool]$StartMenu)
     if ((Test-Path -LiteralPath $desktopShortcut) -ne $Desktop) { throw 'Desktop shortcut differs from the installer selection.' }
-    foreach ($name in @('Cage.lnk', 'Uninstall Cage.lnk')) {
+    foreach ($name in @('SuperCage.lnk', 'Uninstall SuperSuperCage.lnk')) {
         if ((Test-Path -LiteralPath (Join-Path $startMenuDirectory $name)) -ne $StartMenu) { throw "Start menu shortcut differs from the installer selection: $name" }
     }
     if ($Desktop) {
         $shell = New-Object -ComObject WScript.Shell
-        if ($shell.CreateShortcut($desktopShortcut).TargetPath -ne (Join-Path $target 'Cage.exe')) { throw 'Desktop shortcut targets a different installation.' }
+        if ($shell.CreateShortcut($desktopShortcut).TargetPath -ne (Join-Path $target 'SuperCage.exe')) { throw 'Desktop shortcut targets a different installation.' }
     }
 }
 # Cover the directory-picker path where the user creates an empty folder first.
@@ -54,7 +54,7 @@ New-Item -ItemType Directory -Path $target | Out-Null
 Run-Installer
 Assert-PersonalData
 Assert-Shortcuts $true $true
-if (-not (Test-Path -LiteralPath (Join-Path $target 'Cage.exe'))) { throw 'Installer did not create Cage.exe.' }
+if (-not (Test-Path -LiteralPath (Join-Path $target 'SuperCage.exe'))) { throw 'Installer did not create SuperCage.exe.' }
 Invoke-BuildTool (Join-Path $target 'resources/cage.exe') @('--help')
 Invoke-BuildTool (Join-Path $target 'resources/cage.exe') @('verify-vm-assets')
 Invoke-BuildTool (Join-Path $target 'resources/cage.exe') @('verify-web-assets')
@@ -73,11 +73,11 @@ Invoke-BuildTool (Join-Path $target 'resources/runtime/openssh/ssh.exe') @('-V')
 Assert-WindowsWorkbench -AppDirectory $target
 Assert-PersonalData
 # A locked installed executable must fail before replacing the installation.
-$before = (Get-FileHash -LiteralPath (Join-Path $target 'Cage.exe') -Algorithm SHA256).Hash
-$locked = [IO.File]::Open((Join-Path $target 'Cage.exe'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+$before = (Get-FileHash -LiteralPath (Join-Path $target 'SuperCage.exe') -Algorithm SHA256).Hash
+$locked = [IO.File]::Open((Join-Path $target 'SuperCage.exe'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
 try { Run-Installer -Update -ExpectedExitCode 2 } finally { $locked.Dispose() }
 Assert-PersonalData
-if ((Get-FileHash -LiteralPath (Join-Path $target 'Cage.exe') -Algorithm SHA256).Hash -ne $before) { throw 'Failed update replaced the existing application.' }
+if ((Get-FileHash -LiteralPath (Join-Path $target 'SuperCage.exe') -Algorithm SHA256).Hash -ne $before) { throw 'Failed update replaced the existing application.' }
 # Reinstall through the real atomic replacement path. User data must survive.
 Run-Installer -Update
 Assert-InstalledQemu
@@ -102,10 +102,10 @@ $deadline = [DateTime]::UtcNow.AddSeconds(120)
 while (((Test-Path -LiteralPath $target) -or (Test-Path $savedKey) -or
         (Test-Path -LiteralPath $desktopShortcut) -or (Test-Path -LiteralPath $startMenuDirectory)) -and
         [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }
-if (Test-Path -LiteralPath (Join-Path $target 'Cage.exe')) { throw 'Uninstall left Cage.exe behind.' }
+if (Test-Path -LiteralPath (Join-Path $target 'SuperCage.exe')) { throw 'Uninstall left SuperCage.exe behind.' }
 if (Test-Path -LiteralPath (Join-Path $target 'Uninstall.exe')) { throw 'Uninstall left its launcher behind.' }
 if (Test-Path -LiteralPath $target) { throw 'Uninstall left packaged files or directories that would block installation into the same folder.' }
-if (Test-Path $savedKey) { throw 'Uninstall left the Cage registration behind.' }
+if (Test-Path $savedKey) { throw 'Uninstall left the SuperCage registration behind.' }
 Assert-PersonalData
 Assert-Shortcuts $false $false
 Write-Host 'Install, WebView2 workbench, reinstall, uninstall and user-data preservation passed. VM startup was not tested.'

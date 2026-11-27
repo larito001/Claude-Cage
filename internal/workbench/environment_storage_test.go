@@ -27,7 +27,7 @@ func TestStorageFirstSelectionAndMigrationThroughWorkbench(t *testing.T) {
 	if previous.HasEnvironment {
 		t.Fatal("fresh profile reported an environment")
 	}
-	target := filepath.Join(t.TempDir(), "Cage 空间")
+	target := filepath.Join(t.TempDir(), "SuperCage 空间")
 	write := func(target string, prior cage.StorageLocation) Job {
 		t.Helper()
 		body, _ := json.Marshal(map[string]any{"directory": target, "previous": prior.Directory, "migrate": prior.HasEnvironment})
@@ -74,7 +74,7 @@ func TestStorageFirstSelectionAndMigrationThroughWorkbench(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(target, relativeDisk), []byte("isolated VM disk"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	second := filepath.Join(t.TempDir(), "Cage 环境")
+	second := filepath.Join(t.TempDir(), "SuperCage 环境")
 	if job := write(second, location); job.Error == "" {
 		t.Fatal("unconfirmed migration was accepted")
 	}

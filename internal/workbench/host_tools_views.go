@@ -288,7 +288,7 @@ func (s *Server) callHostTool(w http.ResponseWriter, r *http.Request) {
 	// plugin inside the environment acts where any signed-in workbench
 	// already does.
 	if plugin.Manifest.Kind != hostbridge.KindGuest && !s.hasPluginControlView(r) {
-		hostCallError(w, http.StatusForbidden, hostCallNotAllowed, "请在受信任的 Cage 窗口里使用这个页面")
+		hostCallError(w, http.StatusForbidden, hostCallNotAllowed, "请在受信任的 SuperCage 窗口里使用这个页面")
 		return
 	}
 	switch body.Method {

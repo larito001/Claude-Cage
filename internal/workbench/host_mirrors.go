@@ -138,7 +138,7 @@ func sampleMirror(ctx context.Context, client *http.Client, target string) (int6
 	return received, float64(received) / elapsed, ""
 }
 
-// mirrorProbeClient reaches the mirrors only through the selected Cage
+// mirrorProbeClient reaches the mirrors only through the selected SuperCage
 // proxy. The egress dialer has no direct fallback and passes host names to
 // the proxy unresolved; environment proxies and redirects are not followed.
 func mirrorProbeClient(cfg cage.Config) (*http.Client, func(), error) {

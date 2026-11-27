@@ -536,7 +536,7 @@ export function ClaudeAccountsPanel({ proxySources, desktopNetwork, store, runni
     {loginNotice && <p className="claude-profile-note" role="status">{loginNotice}</p>}
     {detectionError && <p className="account-error" role="alert">{detectionError}</p>}
     {usageUnavailable && !environment && <p className="claude-profile-note" role="status">{usageUnavailable}</p>}
-    {!running ? <p className="claude-profile-note">{tr("启动 Cage 环境后可检测普通终端的登录，也可登录新账号。")}</p> :
+    {!running ? <p className="claude-profile-note">{tr("启动 SuperCage 环境后可检测普通终端的登录，也可登录新账号。")}</p> :
       detectionStatus === "offline" ? <p className="claude-profile-note">{tr("工作环境就绪后可检测和登录账号。")}</p> :
       detectionStatus === "signed_out" && !accounts?.length && <p className="claude-profile-note">{tr("普通终端尚未登录 Claude 订阅。可在其中运行") + " "}<code>claude auth login</code>{tr("，登录后会在这里出现。")}</p>}
     <div className="claude-profile-list" role="region" aria-label={tr("账号列表")} tabIndex={0}>

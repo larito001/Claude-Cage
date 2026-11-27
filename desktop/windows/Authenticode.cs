@@ -33,7 +33,7 @@ internal static class Authenticode
                 Size = (uint)Marshal.SizeOf<TrustData>(), UiChoice = 2, UnionChoice = 1,
                 File = memory, StateAction = 1,
                 // Verification must not make a direct network request around the
-                // selected Cage proxy. Windows uses its existing trust cache.
+                // selected SuperCage proxy. Windows uses its existing trust cache.
                 ProviderFlags = 0x1000,
             };
             var action = new Guid("00AAC56B-CD44-11D0-8CC2-00C04FC295EE");
@@ -72,7 +72,7 @@ internal static class Authenticode
                 string.Equals(actual.Organization, own.Organization, StringComparison.Ordinal)) return;
         }
         catch (Exception error) when (error is IOException or CryptographicException or UnauthorizedAccessException) { }
-        throw new IOException("更新包的发布者签名与当前 Cage 不一致");
+        throw new IOException("更新包的发布者签名与当前 SuperCage 不一致");
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

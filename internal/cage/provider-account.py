@@ -5,7 +5,7 @@ Follows the exact same isolation model as cage-claude-account:
 - Each managed account owns ~/.local/share/cage/<provider>-accounts/<id>/config (0700).
 - Host/global API keys and external auth env vars are stripped in managed sessions.
 - File-backed credential storage is enforced so no shared keyring can cross-contaminate accounts.
-- OAuth logins open through Cage's scoped LoginBrowser (--account-id / --login-id) inside
+- OAuth logins open through SuperCage's scoped LoginBrowser (--account-id / --login-id) inside
   the account's dedicated network namespace when configured, never touching Browser Spaces or Desktops.
 - Raw tokens, paths, and callback URLs are never printed to stdout/stderr.
 """

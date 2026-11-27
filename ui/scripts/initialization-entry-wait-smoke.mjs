@@ -1,4 +1,4 @@
-// Real headless browser, isolated mock API: no guest, installation or Cage service.
+// Real headless browser, isolated mock API: no guest, installation or SuperCage service.
 // Start the UI on loopback, then set CAGE_UI_URL, CAGE_PLAYWRIGHT_MODULE and
 // CAGE_TEST_BROWSER_PATH as needed. CAGE_INITIALIZATION_EVIDENCE selects output.
 import assert from "node:assert/strict";
@@ -81,7 +81,7 @@ async function runScenario(name, firstWaitMs, rejectFirst = false) {
     const waitingButton = () => page.getByRole("button", { name: "正在进入…", exact: true });
     const workbench = () => page.getByRole("complementary", { name: "项目与终端" });
     await entryButton().waitFor();
-    await page.getByRole("heading", { name: "Cage 已准备就绪", exact: true }).waitFor();
+    await page.getByRole("heading", { name: "SuperCage 已准备就绪", exact: true }).waitFor();
     await screenshot("ready");
 
     async function attemptEntry(waitMs, attemptNumber) {
@@ -120,7 +120,7 @@ async function runScenario(name, firstWaitMs, rejectFirst = false) {
         result.samples.push({ attemptNumber, elapsedMs, ...sample });
         assert.deepEqual(sample, {
           buttonPresent: true, disabled: true, ariaBusy: "true", spinner: true,
-          readyTitle: "Cage 已准备就绪", readyPanel: true,
+          readyTitle: "SuperCage 已准备就绪", readyPanel: true,
           waitingHeading: "正在进入工作台",
           waitingStatus: "正在等待后台检查结束并确认环境状态，请稍候…",
           stopInstallation: false, installationOperation: false,

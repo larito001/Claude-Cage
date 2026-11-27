@@ -14,7 +14,7 @@ function Assert-NoCageDataInBuildOutput {
 
     $dataPath = Join-Path $Directory 'CageData'
     if (Test-Path -LiteralPath $dataPath) {
-        throw "Build output contains CageData user data at '$dataPath'. Choose a separate -OutputDirectory or move the storage using Cage Settings."
+        throw "Build output contains CageData user data at '$dataPath'. Choose a separate -OutputDirectory or move the storage using SuperCage Settings."
     }
 }
 
@@ -202,11 +202,11 @@ try {
     Copy-Item -LiteralPath 'packaging/windows/dependencies.json' -Destination (Join-Path $resources 'dependencies.json')
     Copy-Item -LiteralPath 'packaging/windows/README.txt' -Destination (Join-Path $app 'README.txt')
     Copy-Item -LiteralPath 'LICENSE' -Destination (Join-Path $app 'LICENSE.txt')
-    [IO.File]::WriteAllText((Join-Path $app 'Cage.install-id'), 'io.github.lee-xeo.claude-cage')
+    [IO.File]::WriteAllText((Join-Path $app 'Cage.install-id'), 'io.github.lee-xeo.super-cage')
     [IO.File]::WriteAllText((Join-Path $app 'version.txt'), $version)
     if ($signed) {
         $signTool = Get-SigningTool
-        foreach ($file in @('Cage.exe', 'resources/cage.exe', 'resources/mihomo.exe')) { Sign-CageFile (Join-Path $app $file) $signTool }
+        foreach ($file in @('SuperCage.exe', 'resources/cage.exe', 'resources/mihomo.exe')) { Sign-CageFile (Join-Path $app $file) $signTool }
         foreach ($file in (Get-WindowsQemuBinaries $qemuTarget)) {
             Sign-CageFile $file.FullName $signTool
             Assert-CageReleaseSignature $file.FullName
@@ -234,8 +234,8 @@ try {
     $previousOutput = $null
     if (Test-Path -LiteralPath $OutputDirectory) {
         $marker = Join-Path $OutputDirectory 'Cage.install-id'
-        if (-not (Test-Path -LiteralPath $marker) -or (Get-Content -LiteralPath $marker -Raw) -ne 'io.github.lee-xeo.claude-cage') {
-            throw 'Output directory exists and is not a Cage build.'
+        if (-not (Test-Path -LiteralPath $marker) -or (Get-Content -LiteralPath $marker -Raw) -ne 'io.github.lee-xeo.super-cage') {
+            throw 'Output directory exists and is not a SuperCage build.'
         }
         $previousOutput = $OutputDirectory + '.previous-' + [guid]::NewGuid().ToString('N')
         Move-Item -LiteralPath $OutputDirectory -Destination $previousOutput

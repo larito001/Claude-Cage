@@ -32,7 +32,7 @@ import (
 )
 
 // A temporary, public-key-authenticated SSH endpoint stands in for the guest.
-// It runs the exact command issued by Cage in an empty home. Only the synthetic
+// It runs the exact command issued by SuperCage in an empty home. Only the synthetic
 // Messages service is reachable through the test CLI's provider configuration.
 func mobileTestSSH(t *testing.T, s *Server, home string, env []string) {
 	mobileTestSSHRewrite(t, s, home, env, nil)

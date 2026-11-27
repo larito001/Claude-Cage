@@ -26,7 +26,7 @@ export function localizedPluginText(item, field, language, fallbackSource = null
 }
 
 export function formatMarketAuthor(author, translateFn) {
-  if (author?.official) return translateFn("Cage 官方");
+  if (author?.official) return translateFn("SuperCage 官方");
   const name = author?.name?.trim();
   if (!name) return translateFn("作者未注明");
   return name;

@@ -19,7 +19,7 @@ func TestCCSTerminalKeepsItsOwnIdentityWhenPoolExists(t *testing.T) {
 	for _, request := range []string{"", "auto"} {
 		selected, err := s.selectTerminalClaudeAccount("ccs sample", request, false, s.workspace())
 		if err != nil || selected != (claudeSelection{}) {
-			t.Fatalf("CCS received a Cage pool identity: %#v %v", selected, err)
+			t.Fatalf("CCS received a SuperCage pool identity: %#v %v", selected, err)
 		}
 	}
 	after, err := s.loadClaudeAccounts()
@@ -30,6 +30,6 @@ func TestCCSTerminalKeepsItsOwnIdentityWhenPoolExists(t *testing.T) {
 func TestCCSTerminalRejectsAnExplicitCageAccount(t *testing.T) {
 	s := testServer(t)
 	if _, err := s.selectTerminalClaudeAccount("ccs sample", strings.Repeat("a", 24), false, s.workspace()); err == nil {
-		t.Fatal("CCS accepted a Cage account override")
+		t.Fatal("CCS accepted a SuperCage account override")
 	}
 }

@@ -7,7 +7,7 @@ import (
 )
 
 // ConfigureWindowsRuntime retains the existing cross-platform entry point.
-// On Intel Macs it scopes the bundled QEMU runtime to this Cage process.
+// On Intel Macs it scopes the bundled QEMU runtime to this SuperCage process.
 func ConfigureWindowsRuntime() error {
 	exe, err := os.Executable()
 	if err != nil {

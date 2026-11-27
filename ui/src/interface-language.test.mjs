@@ -5,7 +5,7 @@ import { backendMessageKeys } from "./backend-message.mjs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("Cage's desktop language list and first-run translations match the README", () => {
+test("SuperCage's desktop language list and first-run translations match the README", () => {
   const readme = read("../../README.md");
   const documented = [...readme.matchAll(/\[([^\]]+)\]\(README(?:\.([\w-]+))?\.md\)/g)]
     .map(([, name, id]) => [id ?? "zh-CN", name]);
@@ -14,10 +14,10 @@ test("Cage's desktop language list and first-run translations match the README",
   const native = JSON.parse(read("../../internal/uilocale/native.json"));
   for (const { id } of languages.slice(1)) {
     const catalog = JSON.parse(read(`./locales/${id}.json`));
-    for (const source of ["界面语言", "跟随系统", "注册 Cage 账户", "为 Cage 准备独立环境", "连接你的网络代理"]) {
+    for (const source of ["界面语言", "跟随系统", "注册 SuperCage 账户", "为 SuperCage 准备独立环境", "连接你的网络代理"]) {
       assert.ok(catalog[source] && catalog[source] !== source, `${id} is missing "${source}"`);
     }
-    assert.ok(native[id]?.["正在启动 Cage 工作台…"], `${id} is missing the startup message`);
+    assert.ok(native[id]?.["正在启动 SuperCage 工作台…"], `${id} is missing the startup message`);
     for (const [source, value] of Object.entries(catalog)) {
       const placeholders = text => (text.match(/\{\d+\}/g) ?? []).sort();
       assert.deepEqual(placeholders(value), placeholders(source), `${id}: interpolation for "${source}"`);
@@ -116,7 +116,7 @@ test("all 14 non-zh-CN languages localize Tailscale, proxy intervals, API failur
       assert.equal(localize(tailnetText.copyDeviceAddress, "laptop"), "Скопировать адрес устройства laptop");
       assert.equal(localize(tailnetText.onlineCount, 2), "В сети: 2");
       assert.match(httpMsg, /Чтение состояния переноса.*HTTP 409/u);
-      assert.match(connMsg, /Чтение настроек уведомлений.*Соединение с Cage прервалось/u);
+      assert.match(connMsg, /Чтение настроек уведомлений.*Соединение с SuperCage прервалось/u);
       assert.match(nativeMsg, /Проверка системных уведомлений/u);
       assert.equal(tabLabel, "Инкогнито · Файл · demo");
       assert.equal(customTabLabel, "Инкогнито · 我的项目");

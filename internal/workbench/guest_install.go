@@ -86,7 +86,7 @@ func (s *Server) guestInstallView() (guestInstallView, error) {
 
 func (s *Server) guestInstallation(w http.ResponseWriter, r *http.Request) {
 	if !s.hasTrustedView(r) || !s.localVMStorage() {
-		http.Error(w, "请在本机 Cage 窗口选择客户机系统", http.StatusForbidden)
+		http.Error(w, "请在本机 SuperCage 窗口选择客户机系统", http.StatusForbidden)
 		return
 	}
 	v, err := s.guestInstallView()

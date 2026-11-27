@@ -464,7 +464,7 @@ private struct QRScanner: UIViewControllerRepresentable {
                 }
                 sawInvalidQR = true
             }
-            let invalidHint = "请扫描电脑「设置 → 远程连接」中的 Cage 配对二维码"
+            let invalidHint = "请扫描电脑「设置 → 远程连接」中的 SuperCage 配对二维码"
             if sawInvalidQR, hint.wrappedValue != invalidHint {
                 hint.wrappedValue = invalidHint
             }
@@ -526,7 +526,7 @@ private struct QRScannerScreen: View {
     let result: (String?) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var sweeping = false
-    @State private var hint = "将 Cage 配对二维码放入框内\n在电脑「设置 → 远程连接」中生成"
+    @State private var hint = "将 SuperCage 配对二维码放入框内\n在电脑「设置 → 远程连接」中生成"
     private let accent = Color(red: 0.91, green: 0.72, blue: 0.62)
     var body: some View {
         GeometryReader { geometry in
@@ -560,7 +560,7 @@ private struct QRScannerScreen: View {
                 VStack(spacing: 12) {
                     Text("连接你的电脑").font(.title2.bold())
                     Text(hint).font(.subheadline).foregroundStyle(.white.opacity(0.88)).multilineTextAlignment(.center)
-                    Text(simulatorPreviewEnabled ? "模拟器预览 · 即将进入示例工作台" : "仅识别 Cage 配对码")
+                    Text(simulatorPreviewEnabled ? "模拟器预览 · 即将进入示例工作台" : "仅识别 SuperCage 配对码")
                         .font(.caption).foregroundStyle(.white.opacity(0.6))
                 }.foregroundStyle(.white).padding(.horizontal, 24).padding(.bottom, 24).allowsHitTesting(false).accessibilityElement(children: .combine)
             }.background(Color.black).onAppear {sweeping = true}
@@ -590,7 +590,7 @@ private struct ConnectionSheet: View {
                     Image("PairDevices").resizable().scaledToFit().frame(maxWidth: .infinity)
                         .frame(height: 150).accessibilityHidden(true)
                     Text("连接电脑").font(.title.bold())
-                    Text("在电脑的 Cage 设置中打开「远程连接」，生成配对二维码或复制配对码。")
+                    Text("在电脑的 SuperCage 设置中打开「远程连接」，生成配对二维码或复制配对码。")
                         .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                         .padding(.bottom, 10)
                     Button {
@@ -721,7 +721,7 @@ private struct SettingsScreen: View {
                     if model.relay != CMConnection.defaultRelay() {
                         TextField("自建 VPS 的 HTTPS 地址", text: $model.relay)
                             .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    } else {Text("Cage 官方中继").foregroundStyle(.secondary)}
+                    } else {Text("SuperCage 官方中继").foregroundStyle(.secondary)}
                     Button("保存中继设置", action: model.saveRelay)
                 }
                 DisclosureGroup("指纹与连接文件", isExpanded: $advanced) {
@@ -797,7 +797,7 @@ struct CageMobileApp: App {
                         VStack(spacing: 12) {
                             Image("CageMark").resizable().scaledToFit().frame(width: 120, height: 120)
                                 .clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityHidden(true)
-                            Text("Cage").font(.system(size: 36, weight: .semibold, design: .rounded))
+                            Text("SuperCage").font(.system(size: 36, weight: .semibold, design: .rounded))
                         }
                         Button {pairing = true} label: {
                             ActionLabel(title: "连接电脑", symbol: "desktopcomputer", height: 60)

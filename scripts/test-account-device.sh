@@ -9,13 +9,13 @@ case "${1:-}" in
   --biometric)
     : "${CAGE_SIGNING_IDENTITY:?Biometric tests require a Developer ID identity}"
     : "${CAGE_PROVISIONING_PROFILE:?Biometric tests require a provisioning profile}"
-    bundle="$temporary/Cage.app"
+    bundle="$temporary/SuperCage.app"
     mkdir -p "$bundle/Contents/MacOS"
     cp "$CAGE_PROVISIONING_PROFILE" "$bundle/Contents/embedded.provisionprofile"
     cat > "$bundle/Contents/Info.plist" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>io.github.lee-xeo.claude-cage</string><key>CFBundleExecutable</key><string>Cage</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>
+<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>io.github.lee-xeo.super-cage</string><key>CFBundleExecutable</key><string>SuperCage</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>
 PLIST
-    binary="$bundle/Contents/MacOS/Cage"
+    binary="$bundle/Contents/MacOS/SuperCage"
     ;;
   *) echo 'Usage: scripts/test-account-device.sh [--biometric]' >&2; exit 2 ;;
 esac

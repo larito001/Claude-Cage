@@ -156,7 +156,7 @@ export function ClaudeDesktop({
           <button onClick={onDetails}>{tr("操作详情")}</button>
         </div>
       )}
-      {desktop?.running && desktop.managed === false && !desktop.native_user_session && <div className="connection-banner" role="status">{tr("当前应用尚未接入 Cage 账户解锁。请先保存并关闭应用，再重新打开。")}</div>}
+      {desktop?.running && desktop.managed === false && !desktop.native_user_session && <div className="connection-banner" role="status">{tr("当前应用尚未接入 SuperCage 账户解锁。请先保存并关闭应用，再重新打开。")}</div>}
       {busy && ownJob && (
         <div className="desktop-progress" role="status">
           <RefreshCw size={16} className="spin" />
@@ -185,14 +185,14 @@ export function ClaudeDesktop({
             <h2>
               {desktop?.installed
                 ? "Claude Desktop"
-                : tr("在 Cage 中使用 Claude Desktop")}
+                : tr("在 SuperCage 中使用 Claude Desktop")}
             </h2>
             <p>
-              {tr("Chat 和 Code 共用一个官方应用。在 Cage 内安装、登录并使用，项目文件来自已打开的文件夹。")}
+              {tr("Chat 和 Code 共用一个官方应用。在 SuperCage 内安装、登录并使用，项目文件来自已打开的文件夹。")}
             </p>
             {!desktop?.installed && (
               <p>
-                {tr("首次使用时从 Anthropic 官方源下载，不增加 Cage 默认安装包体积。")}
+                {tr("首次使用时从 Anthropic 官方源下载，不增加 SuperCage 默认安装包体积。")}
               </p>
             )}
             <div className="desktop-actions">
@@ -229,9 +229,9 @@ export function ClaudeDesktop({
                 </button>
               )}
             </div>
-            {desktop?.installed && <p>{tr("Linux 版通过系统软件源更新。可在“设置 → 环境与恢复”中更新，或在 Cage 终端运行 sudo apt update && sudo apt install --only-upgrade claude-desktop。")}</p>}
+            {desktop?.installed && <p>{tr("Linux 版通过系统软件源更新。可在“设置 → 环境与恢复”中更新，或在 SuperCage 终端运行 sudo apt update && sudo apt install --only-upgrade claude-desktop。")}</p>}
             <p className="desktop-note">
-              {tr("关闭应用后释放图形会话资源，登录状态保留在 Cage 环境中。需要额外虚拟机的 Cowork 功能暂未适配。")}
+              {tr("关闭应用后释放图形会话资源，登录状态保留在 SuperCage 环境中。需要额外虚拟机的 Cowork 功能暂未适配。")}
             </p>
           </div>
         )}

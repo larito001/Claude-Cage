@@ -26,7 +26,7 @@ func (e *accountProbeError) Error() string {
 }
 func (e *accountProbeError) Unwrap() error { return e.cause }
 
-var errClaudeAccessLost = errors.New("Cage 已锁定，请先解锁")
+var errClaudeAccessLost = errors.New("SuperCage 已锁定，请先解锁")
 
 type claudeAccountInput struct {
 	ProxyNodeID             *string           `json:"proxy_node_id,omitempty"`
@@ -217,7 +217,7 @@ func (s *Server) cancelClaudeDraft(id string) (claudeAccountList, error) {
 	return list, err
 }
 
-// Removes a Claude account from Cage's registry and scheduling while preserving
+// Removes a Claude account from SuperCage's registry and scheduling while preserving
 // guest CLI history and files. Refuses while terminals, mobile CLI turns,
 // Desktop services, or network namespace processes are still using it.
 func (s *Server) deleteClaudeAccount(ctx context.Context, id string) (claudeAccountList, error) {

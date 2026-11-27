@@ -13,26 +13,26 @@ output="$PWD/_output/releases/$version/linux"
 mkdir -p "$output"
 stage=$(mktemp -d "$PWD/_output/linux-amd64/package.XXXXXX")
 trap 'rm -rf "$stage"' EXIT
-mkdir -p "$stage"/{DEBIAN,usr/bin,usr/lib/claude-cage,usr/share/applications,usr/share/icons/hicolor/512x512/apps,usr/share/doc/claude-cage}
-cp -a _output/linux-amd64/app/. "$stage/usr/lib/claude-cage/"
+mkdir -p "$stage"/{DEBIAN,usr/bin,usr/lib/super-cage,usr/share/applications,usr/share/icons/hicolor/512x512/apps,usr/share/doc/super-cage}
+cp -a _output/linux-amd64/app/. "$stage/usr/lib/super-cage/"
 # The distro already owns /usr/bin/cage (a Wayland compositor).
 # Keep the backend adjacent to Mihomo, with a distinct public command.
-ln -s ../lib/claude-cage/cage "$stage/usr/bin/claude-cage"
-ln -s ../lib/claude-cage/cage-desktop "$stage/usr/bin/cage-desktop"
-install -m 644 packaging/linux/io.github.lee_xeo.Cage.desktop "$stage/usr/share/applications/"
-install -m 644 logo.png "$stage/usr/share/icons/hicolor/512x512/apps/io.github.lee_xeo.Cage.png"
-install -m 644 docs/linux.md "$stage/usr/share/doc/claude-cage/README.md"
+ln -s ../lib/super-cage/cage "$stage/usr/bin/super-cage"
+ln -s ../lib/super-cage/cage-desktop "$stage/usr/bin/cage-desktop"
+install -m 644 packaging/linux/io.github.larito001.SuperCage.desktop "$stage/usr/share/applications/"
+install -m 644 logo.png "$stage/usr/share/icons/hicolor/512x512/apps/io.github.larito001.SuperCage.png"
+install -m 644 docs/linux.md "$stage/usr/share/doc/super-cage/README.md"
 install -m 755 packaging/linux/preinst "$stage/DEBIAN/preinst"
 install -m 755 packaging/linux/preinst "$stage/DEBIAN/prerm"
 # dpkg-shlibdeps derives glibc/GTK dependencies from the build distribution.
 # Use Ubuntu 22.04 for releases; a newer build must not claim an older ABI.
 mkdir -p "$stage/debian"
-printf 'Source: claude-cage\nSection: devel\nPriority: optional\nMaintainer: Cage contributors <noreply@github.com>\n\nPackage: claude-cage\nArchitecture: amd64\nDescription: Cage desktop\n' > "$stage/debian/control"
-dependencies=$(cd "$stage" && dpkg-shlibdeps -O usr/lib/claude-cage/cage-desktop | sed -n 's/^shlibs:Depends=//p')
+printf 'Source: super-cage\nSection: devel\nPriority: optional\nMaintainer: SuperCage contributors <noreply@github.com>\n\nPackage: super-cage\nArchitecture: amd64\nDescription: SuperCage desktop\n' > "$stage/debian/control"
+dependencies=$(cd "$stage" && dpkg-shlibdeps -O usr/lib/super-cage/cage-desktop | sed -n 's/^shlibs:Depends=//p')
 [[ -n "$dependencies" ]] || { echo 'Cannot determine native dependencies.' >&2; exit 1; }
 rm -rf "$stage/debian"
 cat > "$stage/DEBIAN/control" <<EOF
-Package: claude-cage
+Package: super-cage
 Version: $deb_version
 Section: devel
 Priority: optional
@@ -41,14 +41,14 @@ Maintainer: Cage contributors <noreply@github.com>
 Depends: $dependencies, libwebkit2gtk-4.1-0 (>= 2.40), libglib2.0-bin, ca-certificates, systemd
 Suggests: qemu-system-x86, qemu-utils, ovmf, openssh-client, iproute2, git
 Recommends: dbus-user-session, fonts-noto-core, fonts-noto-cjk, libnotify-bin, zenity | kdialog
-Homepage: https://github.com/Lee-xeo/Claude-Cage
+Homepage: https://github.com/larito001/Super-Cage
 Description: Isolated coding workspace with a persistent Linux VM
  Cage combines projects, terminals, a browser and an editor in a native
  desktop window. Select a local virtual machine or connect to a Cage server over SSH.
 EOF
 # Files copied from the Go module cache can be read-only or owner-only.
 chmod -R u+rwX,go+rX,go-w "$stage"
-deb="$output/Cage-$version-linux-amd64.deb"
+deb="$output/SuperCage-$version-linux-amd64.deb"
 dpkg-deb --root-owner-group --build "$stage" "$deb"
 cp _output/linux-deps/mihomo-v1.19.33-source.tar.gz "$output/"
 (cd "$output" && sha256sum "$(basename "$deb")" mihomo-v1.19.33-source.tar.gz > SHA256SUMS)

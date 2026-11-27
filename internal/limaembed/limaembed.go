@@ -132,7 +132,7 @@ func Run(args []string) bool {
 		}
 		reversesshfs.Guard = g.Allow
 	} else {
-		// Cage grants normal file access inside explicitly shared directories.
+		// SuperCage grants normal file access inside explicitly shared directories.
 		reversesshfs.Guard = nil
 	}
 	root := &cobra.Command{

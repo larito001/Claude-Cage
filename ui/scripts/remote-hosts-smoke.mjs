@@ -1,5 +1,5 @@
 // Real client service and browser interaction, using only a fresh temp profile.
-// No cloud host or personal Cage configuration is accessed.
+// No cloud host or personal SuperCage configuration is accessed.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
@@ -14,7 +14,7 @@ if (!executable) throw new Error("Set CAGE_CLIENT_BINARY to the newly built clie
 const profile = await mkdtemp(join(tmpdir(), "cage-remote-host-ui-"));
 const artifacts = resolve(process.env.CAGE_REMOTE_QA_DIR || join(profile, "artifacts"));
 await mkdir(artifacts, { recursive: true });
-const service = spawn(executable, ["serve"], { env: { ...process.env, CLAUDE_CAGE_CONFIG: join(profile, "config.json") }, stdio: "ignore" });
+const service = spawn(executable, ["serve"], { env: { ...process.env, SUPER_CAGE_CONFIG: join(profile, "config.json") }, stdio: "ignore" });
 let browser;
 let page;
 try {
