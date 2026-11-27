@@ -605,10 +605,10 @@ Section "SuperCage" Main
   ${If} $StartMenuShortcuts == 1
     CreateDirectory "$SMPROGRAMS\SuperCage"
     CreateShortcut "$SMPROGRAMS\SuperCage\SuperCage.lnk" "$INSTDIR\SuperCage.exe"
-    CreateShortcut "$SMPROGRAMS\SuperCage\Uninstall SuperSuperCage.lnk" "$INSTDIR\Uninstall.exe"
+    CreateShortcut "$SMPROGRAMS\SuperCage\Uninstall SuperCage.lnk" "$INSTDIR\Uninstall.exe"
   ${Else}
     Delete "$SMPROGRAMS\SuperCage\SuperCage.lnk"
-    Delete "$SMPROGRAMS\SuperCage\Uninstall SuperSuperCage.lnk"
+    Delete "$SMPROGRAMS\SuperCage\Uninstall SuperCage.lnk"
     RMDir "$SMPROGRAMS\SuperCage"
   ${EndIf}
   WriteRegDWORD HKCU "${UNINSTALL_KEY}" "DesktopShortcut" $DesktopShortcut
@@ -683,7 +683,7 @@ Section "Uninstall"
   !insertmacro UninstallPhase "removing_shortcuts_and_registration"
   Delete "$DESKTOP\SuperCage.lnk"
   Delete "$SMPROGRAMS\SuperCage\SuperCage.lnk"
-  Delete "$SMPROGRAMS\SuperCage\Uninstall SuperSuperCage.lnk"
+  Delete "$SMPROGRAMS\SuperCage\Uninstall SuperCage.lnk"
   RMDir "$SMPROGRAMS\SuperCage"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
   !insertmacro UninstallPhase "removing_install_directory"

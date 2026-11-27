@@ -223,8 +223,8 @@ class CacheMaintenanceTests(unittest.TestCase):
             with patch.object(care.sys, "platform", "linux"), patch.object(care.os, "geteuid", return_value=0, create=True):
                 linux = care.production({})
         self.assertEqual(mac[2], self.home / "Library/Application Support/Cage/Browser/Default")
-        self.assertEqual(windows[2], self.home / "AppData/Local/Cage/Browser/Profile/Default")
-        self.assertEqual(windows[4], self.home / "Cage/CLI/0123456789abcdef/accounts")
+        self.assertEqual(windows[2], self.home / "AppData/Local/SuperCage/Browser/Profile/Default")
+        self.assertEqual(windows[4], self.home / "SuperCage/CLI/0123456789abcdef/accounts")
         self.assertEqual(linux[0], Path("/home/cage"))
         self.assertEqual(linux[2], Path("/home/cage-browser/profile/Default"))
         self.assertFalse(self.service.recovery.exists())

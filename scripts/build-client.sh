@@ -42,7 +42,7 @@ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/sylvinus/agent-vm
 mkdir -p "$stage/result"
 
 if [[ "$platform" == macos ]]; then
-  bundle="$stage/result/SuperSuperCage Client.app"
+  bundle="$stage/result/SuperCage Client.app"
   mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
   xcrun swiftc ${swift_flags[@]+"${swift_flags[@]}"} -O -target "$(uname -m)-apple-macosx14.0" -parse-as-library \
     -framework Cocoa -framework WebKit -framework Security -framework LocalAuthentication -framework UserNotifications \
@@ -115,7 +115,7 @@ Cage 轻量远程客户端（开发构建）
 本机只提供窗口、SSH 连接、输入和文件传递；项目、浏览器、终端与网络在云端 Cage 运行。
 默认连接配置目录为 ~/.super-cage/client；显式设置 SUPER_CAGE_CONFIG 时沿用指定路径。
 此目录为独立构建产物，不会安装或替换已安装的 Cage。当前构建使用手动更新。
-macOS 运行 SuperSuperCage Client.app。Linux 安装 app/dependencies.txt 中的系统依赖后运行 app/cage-desktop。
+macOS 运行 SuperCage Client.app。Linux 安装 app/dependencies.txt 中的系统依赖后运行 app/cage-desktop。
 本构建未公证或发布；原生运行验收范围以项目测试报告为准。
 README
 mv "$stage/result" "$destination"

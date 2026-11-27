@@ -41,7 +41,7 @@ $startMenuDirectory = Join-Path ([Environment]::GetFolderPath('Programs')) 'Supe
 function Assert-Shortcuts {
     param([bool]$Desktop, [bool]$StartMenu)
     if ((Test-Path -LiteralPath $desktopShortcut) -ne $Desktop) { throw 'Desktop shortcut differs from the installer selection.' }
-    foreach ($name in @('SuperCage.lnk', 'Uninstall SuperSuperCage.lnk')) {
+    foreach ($name in @('SuperCage.lnk', 'Uninstall SuperCage.lnk')) {
         if ((Test-Path -LiteralPath (Join-Path $startMenuDirectory $name)) -ne $StartMenu) { throw "Start menu shortcut differs from the installer selection: $name" }
     }
     if ($Desktop) {
