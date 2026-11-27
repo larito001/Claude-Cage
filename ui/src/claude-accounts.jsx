@@ -58,8 +58,23 @@ const timeLabel = (seconds) => {
   return formatter.format(seconds * 1000);
 };
 
-const usageUpdatedAt = (profile) => Math.max(profile.quota?.five_hour?.observed_at || 0,
-  profile.quota?.seven_day?.observed_at || 0) || profile.usage_checked_at || 0;
+const allQuotaWindows = (quota) => {
+  const list = [quota?.five_hour, quota?.seven_day];
+  if (Array.isArray(quota?.groups)) {
+    for (const g of quota.groups) {
+      list.push(g?.five_hour, g?.seven_day);
+    }
+  }
+  return list.filter(Boolean);
+};
+
+const usageUpdatedAt = (profile) => {
+  let latest = 0;
+  for (const w of allQuotaWindows(profile.quota)) {
+    latest = Math.max(latest, w.observed_at || 0);
+  }
+  return latest || profile.usage_checked_at || 0;
+};
 const ageUnit = (elapsed) => elapsed < 3600 ? 60 : elapsed < 86400 ? 3600 : 86400;
 function relativeTimeLabel(seconds, now) {
   const elapsed = Math.max(0, now - seconds);
@@ -73,7 +88,7 @@ const QuotaTime = createContext(0);
 
 // All rows share a clock. Only quota readings subscribe; a tick doesn't render
 // the account forms or fetch data. Sleep until the next visible unit changes.
-function QuotaClock({ accounts, children }) {
+export function QuotaClock({ accounts, children }) {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
     let timer;
@@ -91,7 +106,7 @@ function QuotaClock({ accounts, children }) {
           const unit = ageUnit(elapsed);
           delay = Math.min(delay, unit - elapsed % unit);
         }
-        for (const window of [account.quota?.five_hour, account.quota?.seven_day]) {
+        for (const window of allQuotaWindows(account.quota)) {
           const left = window?.resets_at - seconds;
           if (left > 0) delay = Math.min(delay, left <= 60 ? 1 : (left - 1) % 60 + 1);
           const seen = window?.observed_at;
@@ -125,7 +140,7 @@ const usageLabels = {
   signed_out: "登录后可查询额度", local: "已有会话读数", unknown: "尚未查询额度",
 };
 
-function useUsageCheck(profile, environment, perform, change) {
+export function useUsageCheck(profile, environment, perform, change) {
   const [manual, setManual] = useState(null);
   const check = () => perform(async () => {
     setManual({ state: "checking" });
@@ -148,7 +163,7 @@ function useUsageCheck(profile, environment, perform, change) {
   return { state, check };
 }
 
-function QuotaWindow({ label, snapshot, state }) {
+export function QuotaWindow({ label, snapshot, state }) {
   const tr = useTranslation();
   const now = useContext(QuotaTime);
   const reset = snapshot?.resets_at;
@@ -160,6 +175,7 @@ function QuotaWindow({ label, snapshot, state }) {
   const stale = known && (!lastSeen || now - lastSeen > 15 * 60 ||
     !["reported", "partial"].includes(state));
   const countdown = expired ? tr("等待更新") : remaining !== null ? resetCountdown(remaining) :
+    known && snapshot?.used_percentage === 0 ? tr("已获取额度") :
     known ? tr("重置时间未知") : state === "checking" ? tr("查询中") : tr("暂无读数");
   return <div className="claude-quota-row" role="group" aria-label={label + " " + tr("额度")}>
     <span className="claude-quota-period">{label}</span>
@@ -180,14 +196,34 @@ function QuotaWindow({ label, snapshot, state }) {
   </div>;
 }
 
-function ProfileUsage({ quota, state }) {
+export function ProfileUsage({ quota, state }) {
+  if (Array.isArray(quota?.groups) && quota.groups.length > 1) {
+    return <div className="claude-quota-grid">
+      {quota.groups.map((group) => (
+        <React.Fragment key={group.id}>
+          {group.five_hour !== undefined && <QuotaWindow label={`${group.label} · 5h`} snapshot={group.five_hour} state={state} />}
+          {group.seven_day !== undefined && <QuotaWindow label={`${group.label} · 7d`} snapshot={group.seven_day} state={state} />}
+        </React.Fragment>
+      ))}
+    </div>;
+  }
+  if (quota?.single_window === "seven_day" && quota?.seven_day) {
+    return <div className="claude-quota-grid">
+      <QuotaWindow label="7d" snapshot={quota.seven_day} state={state} />
+    </div>;
+  }
+  if (quota?.single_window === "five_hour" && quota?.five_hour) {
+    return <div className="claude-quota-grid">
+      <QuotaWindow label="5h" snapshot={quota.five_hour} state={state} />
+    </div>;
+  }
   return <div className="claude-quota-grid">
     <QuotaWindow label="5h" snapshot={quota?.five_hour} state={state} />
     <QuotaWindow label="7d" snapshot={quota?.seven_day} state={state} />
   </div>;
 }
 
-function UsageNote({ profile, state }) {
+export function UsageNote({ profile, state }) {
   const tr = useTranslation();
   const now = useContext(QuotaTime);
   const updated = usageUpdatedAt(profile);

@@ -72,6 +72,7 @@ var providerRegistry = []ProviderSpec{
 			DesktopID: "com.google.Antigravity",
 			Schemes:   []string{"antigravity"},
 		},
+		SupportsQuota: true,
 	},
 	{
 		ID:           "codex",
@@ -91,6 +92,7 @@ var providerRegistry = []ProviderSpec{
 			DesktopID: "com.openai.ChatGPT",
 			Schemes:   []string{"chatgpt", "codex", "openai"},
 		},
+		SupportsQuota: true,
 	},
 }
 

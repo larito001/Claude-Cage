@@ -253,7 +253,7 @@ func TestTerminalAuthorizationURLMultiProviderAndGuestScriptsLF(t *testing.T) {
 			t.Fatalf("unexpectedly accepted untrusted URL %q", raw)
 		}
 	}
-	for _, name := range []string{"linux-account-desktop.sh", "desktop-inspection.py", "host_tools_config.py"} {
+	for _, name := range []string{"linux-account-desktop.sh", "desktop-inspection.py", "host_tools_config.py", "provider_usage.py"} {
 		raw, err := os.ReadFile(name)
 		if err != nil {
 			t.Fatalf("read %s: %v", name, err)

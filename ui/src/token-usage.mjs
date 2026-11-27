@@ -5,8 +5,9 @@ export const tokenMetrics = [
 export const tokenFields = tokenMetrics.slice(1).map(([key]) => key);
 export const usageClients = [
   ["terminal", "Claude Code · 终端"], ["desktop_code", "Claude Desktop · Code"],
-  ["cowork", "Claude Desktop · Cowork"], ["ide", "IDE 扩展"],
-  ["automation", "SDK / 自动化"], ["remote", "远程入口"],
+  ["cowork", "Claude Desktop · Cowork"], ["codex_cli", "Codex · CLI"],
+  ["codex_desktop", "Codex · Desktop"], ["antigravity_cli", "Antigravity · CLI"],
+  ["ide", "IDE 扩展"], ["automation", "SDK / 自动化"], ["remote", "远程入口"],
   ["other", "其他已知入口"], ["unknown", "未知入口"],
 ];
 export const usageClient = row => usageClients.some(([key])=>key===row.client) ? row.client : "unknown";

@@ -13,11 +13,16 @@ import (
 )
 
 func TestTokenUsageCollector(t *testing.T) {
-	python, err := exec.LookPath("python3")
-	if err != nil {
-		python, err = exec.LookPath("python")
+	var python string
+	for _, candidate := range []string{"python3", "python"} {
+		if path, err := exec.LookPath(candidate); err == nil {
+			if exec.Command(path, "-I", "-c", "pass").Run() == nil {
+				python = path
+				break
+			}
+		}
 	}
-	if err != nil {
+	if python == "" {
 		t.Skip("Python unavailable")
 	}
 	cmd := exec.Command(python, "-I", "token_usage_test.py")

@@ -13,6 +13,7 @@ import {
 import { api } from "./api";
 import { ProviderIcon } from "./agent-icon";
 import { InlineSelect } from "./inline-select";
+import { ProfileUsage, QuotaClock, UsageNote, useUsageCheck } from "./claude-accounts";
 import { PROVIDERS, providerSpec } from "./providers.mjs";
 import { translate, useTranslation } from "./interface-language.mjs";
 
@@ -21,15 +22,20 @@ export function useProviderAccounts(provider) {
   const [error, setError] = useState("");
   const generation = useRef(0);
   const pendingMutation = useRef(0);
+  const polling = useRef(false);
 
   const load = useCallback(
-    async (change) => {
+    async (change, visiblePanel = false) => {
       if (!provider) return [];
-      if (!change && pendingMutation.current) return;
+      if (!change && (pendingMutation.current || (visiblePanel && polling.current))) return;
       const request = ++generation.current;
       if (change) pendingMutation.current++;
+      else if (visiblePanel) polling.current = true;
       try {
-        const value = await api(`/provider-accounts/${provider}`, change);
+        const endpoint = visiblePanel
+          ? `/provider-accounts/${provider}?panel=visible`
+          : `/provider-accounts/${provider}`;
+        const value = await api(endpoint, change);
         if (!Array.isArray(value?.accounts)) {
           throw new Error(translate("无法读取 {0} 账号列表", provider));
         }
@@ -43,6 +49,7 @@ export function useProviderAccounts(provider) {
         if (change) throw e;
       } finally {
         if (change) pendingMutation.current--;
+        else if (visiblePanel) polling.current = false;
       }
     },
     [provider],
@@ -57,10 +64,12 @@ export function useProviderAccounts(provider) {
 
   return {
     accounts: registry?.accounts ?? null,
-    detected: registry?.detected ?? null,
+    detected: registry?.detected ?? registry?.default_profile ?? null,
     desktopEmails: registry?.desktop_emails ?? [],
     detectionStatus: registry?.detection_status || "",
     detectionError: registry?.detection_error || "",
+    usageRunning: Boolean(registry?.usage_panel_running),
+    usageUnavailable: registry?.usage_unavailable_reason || "",
     scheduling: registry?.scheduling || { mode: "balanced", switch_policy: "ask" },
     loginNotice: registry?.login_notice || "",
     error,
@@ -118,8 +127,18 @@ function ProviderBadgeAvatar({ spec }) {
   );
 }
 
-function DetectedProviderProfile({ spec, profile, busy, onJoin, onDismiss }) {
+function DetectedProviderProfile({
+  spec,
+  profile,
+  usageEnvironment,
+  busy,
+  perform,
+  change,
+  onJoin,
+  onDismiss,
+}) {
   const tr = useTranslation();
+  const usage = useUsageCheck(profile, usageEnvironment, perform, change);
   return (
     <article className="claude-profile claude-detected" aria-label={profile.email || profile.label}>
       <div className="claude-profile-heading">
@@ -136,11 +155,21 @@ function DetectedProviderProfile({ spec, profile, busy, onJoin, onDismiss }) {
           </div>
         </div>
       </div>
+      <ProfileUsage quota={profile.quota} state={usage.state} />
       <div className="claude-profile-actions">
         <button className="quiet-button" disabled={busy} onClick={onJoin}>
           <Plus size={14} />
           {tr("加入调度")}
         </button>
+        <button
+          className="quiet-button"
+          disabled={busy || Boolean(usageEnvironment) || usage.state === "checking"}
+          onClick={usage.check}
+        >
+          <RefreshCw size={14} className={usage.state === "checking" ? "spin" : undefined} />
+          {tr("检查状态")}
+        </button>
+        <UsageNote profile={profile} state={usage.state} />
         <button className="text-button" disabled={busy} onClick={onDismiss}>
           {tr("取消")}
         </button>
@@ -155,6 +184,7 @@ function ProviderProfileCard({
   desktopNetwork,
   profile,
   environment,
+  usageEnvironment,
   busy,
   active,
   perform,
@@ -174,6 +204,7 @@ function ProviderProfileCard({
     !profile.subject &&
     ["pending", "signed_out", "duplicate"].includes(profile.status);
   const savedLabel = label.trim() || profile.email || profile.label;
+  const usage = useUsageCheck(profile, usageEnvironment, perform, change);
 
   const boundNodeName = useMemo(() => {
     if (!profile.proxy_node_id) return "";
@@ -294,6 +325,8 @@ function ProviderProfileCard({
         </label>
       </div>
 
+      <ProfileUsage quota={profile.quota} state={usage.state} />
+
       {desktopNetwork && boundNodeName && !configOpen && (
         <div className="claude-config-chips">
           <button
@@ -381,10 +414,10 @@ function ProviderProfileCard({
         )}
         <button
           className="quiet-button"
-          disabled={busy || Boolean(environment)}
-          onClick={() => perform(() => change({ action: "refresh", id: profile.id }))}
+          disabled={busy || Boolean(usageEnvironment) || usage.state === "checking"}
+          onClick={usage.check}
         >
-          <RefreshCw size={14} />
+          <RefreshCw size={14} className={usage.state === "checking" ? "spin" : undefined} />
           {tr("检查状态")}
         </button>
         {desktopNetwork && (
@@ -399,6 +432,7 @@ function ProviderProfileCard({
             {Boolean(boundNodeName) && <i className="claude-config-dot" aria-hidden="true" />}
           </button>
         )}
+        <UsageNote profile={profile} state={usage.state} />
         {isDraft ? (
           !active && (
             <button
@@ -448,6 +482,8 @@ export function ProviderAccountsPanel({
     desktopEmails,
     detectionStatus,
     detectionError,
+    usageRunning,
+    usageUnavailable,
     loginNotice,
     load,
     error,
@@ -458,7 +494,13 @@ export function ProviderAccountsPanel({
   const [schedulingOpen, setSchedulingOpen] = useState(false);
   const [node, setNode] = useState("");
   const [deviceAuth, setDeviceAuth] = useState(false);
+  const [requestingUsage, setRequestingUsage] = useState(false);
   const [actionError, setActionError] = useState("");
+
+  const visibleProfiles = useMemo(
+    () => (detected ? [detected, ...(accounts || [])] : accounts),
+    [accounts, detected],
+  );
 
   const nodeAvailable =
     !node ||
@@ -471,6 +513,10 @@ export function ProviderAccountsPanel({
       : detectionStatus === "update_required"
         ? "update_required"
         : "";
+  const usageEnvironment = environment || (usageUnavailable ? "blocked" : "");
+  const checking =
+    !usageEnvironment &&
+    (usageRunning || visibleProfiles?.some((profile) => profile.usage_checking));
 
   const activeCounts = useMemo(() => {
     const counts = new Map();
@@ -485,8 +531,39 @@ export function ProviderAccountsPanel({
   }, [tabs, provider, spec]);
 
   useEffect(() => {
-    void load();
-  }, [load, running]);
+    let requested = false;
+    let mounted = true;
+    const openPanel = () => {
+      if (requested || document.hidden) return;
+      requested = true;
+      setRequestingUsage(Boolean(running));
+      if (running) {
+        load({ action: "usage_panel" })
+          .catch(() => {})
+          .finally(() => {
+            if (mounted) setRequestingUsage(false);
+          });
+      } else {
+        void load();
+      }
+    };
+    openPanel();
+    document.addEventListener("visibilitychange", openPanel);
+    return () => {
+      mounted = false;
+      document.removeEventListener("visibilitychange", openPanel);
+    };
+  }, [load, running, provider]);
+
+  useEffect(() => {
+    const timer = setInterval(
+      () => {
+        if (!document.hidden) void load(undefined, true);
+      },
+      checking ? 2000 : 12000,
+    );
+    return () => clearInterval(timer);
+  }, [load, checking]);
 
   const perform = async (operation) => {
     if (busy) return;
@@ -547,10 +624,17 @@ export function ProviderAccountsPanel({
             {tr("账号列表")}
             <span>{(detected ? 1 : 0) + (accounts?.length ?? 0)}</span>
           </h4>
-          {accounts?.length > 0 && (
-            <small className="claude-toolbar-status">
-              {accounts.filter((a) => a.enabled).length} {tr("个启用调度")}
+          {requestingUsage || checking ? (
+            <small className="claude-toolbar-status" role="status">
+              <RefreshCw size={12} className="spin" />
+              {tr("正在查询账号用量…")}
             </small>
+          ) : (
+            accounts?.length > 0 && (
+              <small className="claude-toolbar-status">
+                {accounts.filter((a) => a.enabled).length} {tr("个启用调度")}
+              </small>
+            )
           )}
         </div>
         <div className="claude-toolbar-actions">
@@ -702,6 +786,11 @@ export function ProviderAccountsPanel({
           {detectionError}
         </p>
       )}
+      {usageUnavailable && !environment && (
+        <p className="claude-profile-note" role="status">
+          {usageUnavailable}
+        </p>
+      )}
 
       {unlinkedDesktopEmails.length > 0 && (
         <p className="claude-profile-note" role="status">
@@ -730,47 +819,53 @@ export function ProviderAccountsPanel({
             <small>{tr("登录成功后，账号会出现在这里。")}</small>
           </div>
         )}
-        {detected && (
-          <DetectedProviderProfile
-            spec={spec}
-            profile={detected}
-            busy={busy || environmentBusy || Boolean(environment)}
-            onJoin={() =>
-              perform(() =>
-                load({
-                  action: "join",
-                  identity: detected.identity || detected.subject || detected.email,
-                }),
-              )
-            }
-            onDismiss={() =>
-              perform(() =>
-                load({
-                  action: "dismiss_default",
-                  identity: detected.identity || detected.subject || detected.email,
-                }),
-              )
-            }
-          />
-        )}
-        {accounts?.map((profile) => (
-          <ProviderProfileCard
-            key={profile.id}
-            spec={spec}
-            proxySources={proxySources}
-            desktopNetwork={desktopNetwork}
-            profile={profile}
-            environment={environment}
-            busy={busy || environmentBusy}
-            active={activeCounts.get(profile.id) || 0}
-            perform={perform}
-            change={load}
-            login={login}
-            cancelDraft={cancelDraft}
-            removeAccount={removeAccount}
-            onOpenDesktop={onOpenDesktop}
-          />
-        ))}
+        <QuotaClock accounts={visibleProfiles}>
+          {detected && (
+            <DetectedProviderProfile
+              spec={spec}
+              profile={detected}
+              usageEnvironment={usageEnvironment}
+              busy={busy || environmentBusy || Boolean(environment)}
+              perform={perform}
+              change={load}
+              onJoin={() =>
+                perform(() =>
+                  load({
+                    action: "join",
+                    identity: detected.identity || detected.subject || detected.email,
+                  }),
+                )
+              }
+              onDismiss={() =>
+                perform(() =>
+                  load({
+                    action: "dismiss_default",
+                    identity: detected.identity || detected.subject || detected.email,
+                  }),
+                )
+              }
+            />
+          )}
+          {accounts?.map((profile) => (
+            <ProviderProfileCard
+              key={profile.id}
+              spec={spec}
+              proxySources={proxySources}
+              desktopNetwork={desktopNetwork}
+              profile={profile}
+              environment={environment}
+              usageEnvironment={usageEnvironment}
+              busy={busy || environmentBusy}
+              active={activeCounts.get(profile.id) || 0}
+              perform={perform}
+              change={load}
+              login={login}
+              cancelDraft={cancelDraft}
+              removeAccount={removeAccount}
+              onOpenDesktop={onOpenDesktop}
+            />
+          ))}
+        </QuotaClock>
       </div>
     </section>
   );

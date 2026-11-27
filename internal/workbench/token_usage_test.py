@@ -246,6 +246,52 @@ class UsageTests(unittest.TestCase):
         self.assertEqual(sum(sum(day[field] for field in usage.FIELDS) for day in result["days"]),150)
         self.assertEqual(self.collect()["days"],result["days"])
 
+    def test_codex_and_antigravity_local_transcripts_counted_without_content_leak(self):
+        cage_root = self.home / "cage"
+        claude_accounts = cage_root / "claude-accounts"
+        codex_acct = cage_root / "codex-accounts" / ("c" * 24) / "config/sessions/2026/11/27/rollout-1.jsonl"
+        agy_acct = cage_root / "antigravity-accounts" / ("d" * 24) / "config/antigravity-cli/brain/25ef7ed4-59ff-4251-9386-ddbbf5f19db9/.system_generated/logs/transcript.jsonl"
+        now_iso = dt.datetime.now(dt.timezone.utc).isoformat()
+
+        self.write([
+            {"timestamp": now_iso, "type": "session_meta", "payload": {"originator": "codex-tui", "source": "cli"}},
+            {"timestamp": now_iso, "type": "turn_context", "payload": {"model": "gpt-5.2-codex"}},
+            {"timestamp": now_iso, "type": "token_usage_record", "payload": {
+                "response_id": "resp_codex_1",
+                "usage": {"input_tokens": 1000, "cached_input_tokens": 600, "cache_write_input_tokens": 0, "output_tokens": 120},
+            }},
+        ], codex_acct)
+
+        self.write([
+            {"step_index": 0, "type": "USER_INPUT", "created_at": now_iso, "content": "SECRET_PROMPT"},
+            {"step_index": 1, "type": "PLANNER_RESPONSE", "created_at": now_iso, "model": "gemini-4-neon-high",
+             "input_tokens": 500, "cache_read_tokens": 100, "output_tokens": 80},
+        ], agy_acct)
+
+        res = usage.collect(self.root, self.home, claude_accounts)
+        by_source = {d["source"]: d for d in res["days"]}
+        self.assertIn("codex:" + ("c" * 24), by_source)
+        self.assertIn("antigravity:" + ("d" * 24), by_source)
+
+        codex_day = by_source["codex:" + ("c" * 24)]
+        self.assertEqual(codex_day["input_tokens"], 400)
+        self.assertEqual(codex_day["cache_read_input_tokens"], 600)
+        self.assertEqual(codex_day["output_tokens"], 120)
+        self.assertEqual(codex_day["client"], "codex_cli")
+        self.assertEqual(codex_day["model"], "gpt-5.2-codex")
+
+        agy_day = by_source["antigravity:" + ("d" * 24)]
+        self.assertEqual(agy_day["input_tokens"], 500)
+        self.assertEqual(agy_day["cache_read_input_tokens"], 100)
+        self.assertEqual(agy_day["output_tokens"], 80)
+        self.assertEqual(agy_day["client"], "antigravity_cli")
+        self.assertEqual(agy_day["model"], "gemini-4-neon-high")
+
+        for p in self.root.iterdir():
+            self.assertNotIn(b"SECRET_PROMPT", p.read_bytes())
+            self.assertNotIn(b"resp_codex_1", p.read_bytes())
+            self.assertNotIn(b"25ef7ed4", p.read_bytes())
+
 
 if __name__ == "__main__":
     unittest.main()

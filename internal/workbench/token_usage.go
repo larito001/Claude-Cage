@@ -76,8 +76,25 @@ func (s *Server) tokenUsageAvailable() bool {
 	return s.ready && !s.closing && !s.guestUpdateRequired
 }
 
+func validTokenUsageSource(source string) bool {
+	if source == "unknown" || validClaudeGuestID(source) {
+		return true
+	}
+	for _, prefix := range []string{"codex:", "antigravity:"} {
+		if after, ok := strings.CutPrefix(source, prefix); ok {
+			return validClaudeGuestID(after)
+		}
+	}
+	return false
+}
+
 func (s *Server) tokenUsageView(state tokenUsageState) any {
-	sources := map[string]string{"default": "默认配置（归属未核验）", "unknown": "来源不明（重复历史）"}
+	sources := map[string]string{
+		"default":             "Claude · 默认配置（归属未核验）",
+		"codex:default":       "Codex · 默认配置（归属未核验）",
+		"antigravity:default": "Antigravity · 默认配置（归属未核验）",
+		"unknown":             "来源不明（重复历史）",
+	}
 	s.claudeAccounts.mu.Lock()
 	list, _ := s.loadClaudeAccounts()
 	s.claudeAccounts.mu.Unlock()
@@ -88,6 +105,29 @@ func (s *Server) tokenUsageView(state tokenUsageState) any {
 				label = "独立配置 " + account.ID[:min(6, len(account.ID))]
 			}
 			sources[account.guestID()] = label
+		}
+	}
+	for _, prov := range []struct {
+		id, title string
+	}{
+		{"codex", "Codex"},
+		{"antigravity", "Antigravity"},
+	} {
+		st := s.providerAccounts.forProvider(prov.id)
+		st.mu.Lock()
+		pList, _ := s.loadProviderAccounts(prov.id)
+		st.mu.Unlock()
+		for _, account := range pList.Accounts {
+			if account.Source != "default" {
+				label := account.Label
+				if label == "" {
+					label = account.Email
+				}
+				if label == "" {
+					label = "独立配置 " + account.ID[:min(6, len(account.ID))]
+				}
+				sources[prov.id+":"+account.guestID()] = prov.title + " · " + label
+			}
 		}
 	}
 	for _, day := range state.Snapshot.Days {
@@ -187,11 +227,11 @@ func (s *Server) collectTokenUsage(ctx context.Context, state *tokenUsageState, 
 	}
 	for _, d := range snapshot.Days {
 		switch d.Client {
-		case "", "unknown", "terminal", "desktop_code", "cowork", "ide", "automation", "remote", "other":
+		case "", "unknown", "terminal", "desktop_code", "cowork", "ide", "automation", "remote", "other", "codex_cli", "codex_desktop", "antigravity_cli":
 		default:
 			return errors.New("运行入口记录校验失败，已保存的统计仍然保留")
 		}
-		if _, e := time.Parse("2006-01-02", d.Date); e != nil || d.Input < 0 || d.Output < 0 || d.Read < 0 || d.Write < 0 || d.Requests < 0 || len(d.Model) > 128 || !(d.Source == "unknown" || validClaudeGuestID(d.Source)) {
+		if _, e := time.Parse("2006-01-02", d.Date); e != nil || d.Input < 0 || d.Output < 0 || d.Read < 0 || d.Write < 0 || d.Requests < 0 || len(d.Model) > 128 || !validTokenUsageSource(d.Source) {
 			return errors.New("用量记录校验失败，已保存的统计仍然保留")
 		}
 	}

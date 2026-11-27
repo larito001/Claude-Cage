@@ -13,6 +13,7 @@ export const PROVIDERS = Object.freeze([
     homeURL: "https://claude.ai/",
     supportsAutoHandoff: true,
     supportsDeviceAuth: false,
+    supportsQuota: true,
   }),
   Object.freeze({
     id: "antigravity",
@@ -28,6 +29,7 @@ export const PROVIDERS = Object.freeze([
     homeURL: "https://antigravity.google/",
     supportsAutoHandoff: false,
     supportsDeviceAuth: false,
+    supportsQuota: true,
   }),
   Object.freeze({
     id: "codex",
@@ -43,6 +45,7 @@ export const PROVIDERS = Object.freeze([
     homeURL: "https://chatgpt.com/",
     supportsAutoHandoff: false,
     supportsDeviceAuth: true,
+    supportsQuota: true,
   }),
 ]);
 

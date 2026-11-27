@@ -1,4 +1,4 @@
-"""Read local Claude Code usage; persist counters, never transcript content."""
+"""Read local Claude, Codex, and Antigravity usage; persist counters, never transcript content."""
 import datetime as dt
 import hashlib
 import json
@@ -15,6 +15,7 @@ MAX_LINE = 4 << 20
 MAX_BYTES = 32 << 20
 MODEL = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,127}\Z")
 ACCOUNT = re.compile(r"[a-f0-9]{24}\Z")
+AGY_CONV = re.compile(r"[a-zA-Z0-9_-]{8,128}\Z")
 ENTRYPOINTS = {
     "cli": "terminal",
     "claude-desktop": "desktop_code", "claude-desktop-3p": "desktop_code",
@@ -25,6 +26,12 @@ ENTRYPOINTS = {
     "remote": "remote", "remote_desktop": "remote", "remote_mobile": "remote",
     "remote_cowork": "remote", "ssh-remote": "remote",
     "claude_in_slack": "other", "claude-in-slack": "other", "claude-in-teams": "other",
+}
+CODEX_CLIENTS = {
+    "codex-tui": "codex_cli", "cli": "codex_cli",
+    "codex-app": "codex_desktop", "desktop": "codex_desktop", "app-server": "codex_desktop",
+    "codex_vscode": "ide", "vscode": "ide",
+    "exec": "automation", "sdk": "automation",
 }
 
 
@@ -54,6 +61,155 @@ def sources(home, accounts):
         for entry in sorted(accounts.iterdir()):
             if ACCOUNT.fullmatch(entry.name) and ordinary(entry):
                 yield entry.name, entry / "config"
+
+
+def all_provider_sources(home, accounts):
+    for source, config in sources(home, accounts):
+        yield "claude", source, config
+    cage_root = accounts.parent if accounts.name == "claude-accounts" and ordinary(accounts.parent) else None
+    yield "codex", "codex:default", home / ".codex"
+    if cage_root is not None:
+        codex_root = cage_root / "codex-accounts"
+        if codex_root.is_dir() and ordinary(codex_root):
+            for entry in sorted(codex_root.iterdir()):
+                if ACCOUNT.fullmatch(entry.name) and ordinary(entry):
+                    yield "codex", "codex:" + entry.name, entry / "config"
+    yield "antigravity", "antigravity:default", home / ".gemini"
+    if cage_root is not None:
+        agy_root = cage_root / "antigravity-accounts"
+        if agy_root.is_dir() and ordinary(agy_root):
+            for entry in sorted(agy_root.iterdir()):
+                if ACCOUNT.fullmatch(entry.name) and ordinary(entry):
+                    yield "antigravity", "antigravity:" + entry.name, entry / "config"
+
+
+def codex_transcripts(config):
+    if not ordinary(config):
+        return
+    sessions = config / "sessions"
+    if not sessions.is_dir() or not ordinary(sessions):
+        return
+    for year in sorted(sessions.iterdir()):
+        if not ordinary(year) or not year.is_dir():
+            continue
+        for month in sorted(year.iterdir()):
+            if not ordinary(month) or not month.is_dir():
+                continue
+            for day in sorted(month.iterdir()):
+                if not ordinary(day) or not day.is_dir():
+                    continue
+                for item in sorted(day.iterdir()):
+                    if ordinary(item) and item.is_file() and item.suffix == ".jsonl":
+                        yield item
+
+
+def antigravity_transcripts(config):
+    if not ordinary(config):
+        return
+    cli_dir = config / "antigravity-cli"
+    if not cli_dir.is_dir() or not ordinary(cli_dir):
+        return
+    brain = cli_dir / "brain"
+    if not brain.is_dir() or not ordinary(brain):
+        return
+    for conv in sorted(brain.iterdir()):
+        if not ordinary(conv) or not conv.is_dir() or not AGY_CONV.fullmatch(conv.name):
+            continue
+        sys_gen = conv / ".system_generated"
+        if not sys_gen.is_dir() or not ordinary(sys_gen):
+            continue
+        logs = sys_gen / "logs"
+        if not logs.is_dir() or not ordinary(logs):
+            continue
+        item = logs / "transcript.jsonl"
+        if ordinary(item) and item.is_file():
+            yield item
+
+
+def provider_transcripts(kind, config):
+    if kind == "claude":
+        yield from transcripts(config)
+    elif kind == "codex":
+        yield from codex_transcripts(config)
+    elif kind == "antigravity":
+        yield from antigravity_transcripts(config)
+
+
+def parse_timestamp(raw_stamp, now):
+    if not isinstance(raw_stamp, str):
+        raise ValueError("invalid timestamp")
+    stamp = dt.datetime.fromisoformat(raw_stamp.replace("Z", "+00:00"))
+    if stamp.tzinfo is None:
+        raise ValueError("timestamp has no timezone")
+    timestamp = stamp.timestamp()
+    if not 0 < timestamp <= now + 300:
+        raise ValueError("invalid timestamp")
+    return timestamp
+
+
+def codex_usage_record(row, cutoff, now, state):
+    if not isinstance(row, dict):
+        return None
+    kind = row.get("type")
+    payload = row.get("payload")
+    if kind == "session_meta" and isinstance(payload, dict):
+        orig = payload.get("originator") or payload.get("source")
+        if isinstance(orig, str) and orig in CODEX_CLIENTS:
+            state["client"] = CODEX_CLIENTS[orig]
+        return None
+    if kind == "turn_context" and isinstance(payload, dict):
+        m = payload.get("model")
+        if isinstance(m, str) and MODEL.fullmatch(m):
+            state["model"] = m
+        return None
+    if kind != "token_usage_record" or not isinstance(payload, dict):
+        return None
+    usage = payload.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    resp_id = payload.get("response_id")
+    if not isinstance(resp_id, str) or not 1 <= len(resp_id) <= 256:
+        raise ValueError("missing codex response identity")
+    timestamp = parse_timestamp(row.get("timestamp"), now)
+    if timestamp < cutoff:
+        return None
+    if "input_tokens" not in usage or "output_tokens" not in usage:
+        raise ValueError("incomplete codex counters")
+    raw_in = usage.get("input_tokens", 0)
+    raw_out = usage.get("output_tokens", 0)
+    raw_read = usage.get("cached_input_tokens", 0)
+    raw_write = usage.get("cache_write_input_tokens", 0)
+    if any(type(n) is not int or not 0 <= n <= 10**12 for n in (raw_in, raw_out, raw_read, raw_write)):
+        raise ValueError("invalid codex counters")
+    uncached_in = max(0, raw_in - raw_read)
+    model = state.get("model") or "codex"
+    if not isinstance(model, str) or not MODEL.fullmatch(model):
+        model = "codex"
+    client = state.get("client") or "codex_cli"
+    return digest("codex:" + resp_id), timestamp, model, (uncached_in, raw_out, raw_read, raw_write), client
+
+
+def antigravity_usage_record(row, cutoff, now, conv_id):
+    if not isinstance(row, dict) or row.get("type") != "PLANNER_RESPONSE":
+        return None
+    step_idx = row.get("step_index")
+    if type(step_idx) is not int or not 0 <= step_idx <= 10**7:
+        raise ValueError("invalid antigravity step index")
+    timestamp = parse_timestamp(row.get("created_at"), now)
+    if timestamp < cutoff:
+        return None
+    if "input_tokens" not in row or "output_tokens" not in row:
+        raise ValueError("incomplete antigravity counters")
+    raw_in = row.get("input_tokens", 0)
+    raw_out = row.get("output_tokens", 0)
+    raw_read = row.get("cache_read_tokens") or 0
+    raw_write = row.get("cache_write_tokens") or 0
+    if any(type(n) is not int or not 0 <= n <= 10**12 for n in (raw_in, raw_out, raw_read, raw_write)):
+        raise ValueError("invalid antigravity counters")
+    model = row.get("model", "antigravity")
+    if not isinstance(model, str) or not MODEL.fullmatch(model):
+        model = "antigravity"
+    return digest(f"agy:{conv_id}:{step_idx}"), timestamp, model, (raw_in, raw_out, raw_read, raw_write), "antigravity_cli"
 
 
 def transcripts(config):
@@ -190,6 +346,10 @@ def collect(root, home, accounts, cutoff=0, scan=True):
             db.execute("ALTER TABLE requests ADD COLUMN client TEXT NOT NULL DEFAULT 'unknown'")
             db.execute("ALTER TABLE requests ADD COLUMN client_conflict INTEGER NOT NULL DEFAULT 0")
             db.execute("DELETE FROM files")
+        file_columns = {row[1] for row in db.execute("PRAGMA table_info(files)")}
+        if "ctx_model" not in file_columns:
+            db.execute("ALTER TABLE files ADD COLUMN ctx_model TEXT NOT NULL DEFAULT ''")
+            db.execute("ALTER TABLE files ADD COLUMN ctx_client TEXT NOT NULL DEFAULT ''")
         old_cutoff = db.execute("SELECT value FROM meta WHERE key='cutoff'").fetchone()
         cutoff = max(cutoff, old_cutoff[0] if old_cutoff else 0)
         if old_cutoff is None or old_cutoff[0] < cutoff:
@@ -203,12 +363,13 @@ def collect(root, home, accounts, cutoff=0, scan=True):
         deadline = time.monotonic() + 5
         now = time.time()
         if scan:
-            for source, config in sources(home, accounts):
-                for path in transcripts(config):
+            for kind, source, config in all_provider_sources(home, accounts):
+                for path in provider_transcripts(kind, config):
                     if scanned_bytes >= MAX_BYTES or time.monotonic() > deadline:
                         pending = True
                         break
                     file_key = digest(source + ":" + str(path.relative_to(config)))
+                    conv_id = path.parents[2].name if kind == "antigravity" else ""
                     try:
                         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0))
                         with os.fdopen(fd, "rb") as stream:
@@ -217,12 +378,15 @@ def collect(root, home, accounts, cutoff=0, scan=True):
                                 continue
                             # Fixed prefix length avoids invalidating the cursor on normal appends.
                             signature = digest(f"{info.st_dev}:{info.st_ino}:" + stream.read(min(64, info.st_size)).hex())
-                            saved = db.execute("SELECT signature,offset,modified,size,invalid,skipping FROM files WHERE id=?", (file_key,)).fetchone()
+                            saved = db.execute("SELECT signature,offset,modified,size,invalid,skipping,ctx_model,ctx_client FROM files WHERE id=?", (file_key,)).fetchone()
                             offset, invalid, skipping = 0, 0, False
+                            ctx_state = {"model": "", "client": ""}
                             if saved and saved[0] == signature and info.st_size >= saved[1]:
                                 offset, invalid, skipping = saved[1], saved[4], bool(saved[5])
+                                ctx_state = {"model": saved[6] or "", "client": saved[7] or ""}
                                 if info.st_size == saved[3] and info.st_mtime_ns != saved[2]:
                                     offset, invalid, skipping = 0, 0, False
+                                    ctx_state = {"model": "", "client": ""}
                             stream.seek(offset)
                             while True:
                                 if scanned_bytes >= MAX_BYTES or time.monotonic() > deadline:
@@ -247,7 +411,13 @@ def collect(root, home, accounts, cutoff=0, scan=True):
                                     break
                                 offset = stream.tell()
                                 try:
-                                    record = usage_record(json.loads(line), cutoff, now)
+                                    parsed_line = json.loads(line)
+                                    if kind == "claude":
+                                        record = usage_record(parsed_line, cutoff, now)
+                                    elif kind == "codex":
+                                        record = codex_usage_record(parsed_line, cutoff, now, ctx_state)
+                                    else:
+                                        record = antigravity_usage_record(parsed_line, cutoff, now, conv_id)
                                     if record is None:
                                         continue
                                     key, timestamp, model, counters, client = record
@@ -269,9 +439,9 @@ def collect(root, home, accounts, cutoff=0, scan=True):
                                                (key, timestamp, model, source, *counters, client))
                                 except (ValueError, KeyError, TypeError, OverflowError):
                                     invalid += 1
-                            current = (signature, offset, info.st_mtime_ns, info.st_size, invalid, int(skipping))
+                            current = (signature, offset, info.st_mtime_ns, info.st_size, invalid, int(skipping), ctx_state["model"], ctx_state["client"])
                             if saved != current:
-                                db.execute("INSERT OR REPLACE INTO files VALUES (?,?,?,?,?,?,?)", (file_key, *current))
+                                db.execute("INSERT OR REPLACE INTO files (id,signature,offset,modified,size,invalid,skipping,ctx_model,ctx_client) VALUES (?,?,?,?,?,?,?,?,?)", (file_key, *current))
                     except OSError:
                         pending = True
             db.execute("INSERT OR REPLACE INTO meta VALUES ('updated', ?)", (now,))

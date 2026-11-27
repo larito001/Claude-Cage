@@ -21,24 +21,43 @@ import (
 	"github.com/sylvinus/agent-vm/internal/diagnostics"
 )
 
+type providerQuotaGroup struct {
+	ID       string        `json:"id"`
+	Label    string        `json:"label"`
+	FiveHour *claudeWindow `json:"five_hour,omitempty"`
+	SevenDay *claudeWindow `json:"seven_day,omitempty"`
+}
+
+type providerQuota struct {
+	FiveHour     *claudeWindow        `json:"five_hour,omitempty"`
+	SevenDay     *claudeWindow        `json:"seven_day,omitempty"`
+	Groups       []providerQuotaGroup `json:"groups,omitempty"`
+	SingleWindow string               `json:"single_window,omitempty"`
+	ObservedAt   int64                `json:"observed_at"`
+}
+
 type providerAccount struct {
-	DesktopInstanceID       string `json:"desktop_instance_id,omitempty"`
-	DesktopStatus           string `json:"desktop_status,omitempty"`
-	CodeUnlinked            bool   `json:"code_unlinked,omitempty"`
-	ProxyNodeID             string `json:"proxy_node_id,omitempty"`
-	DesktopDedicatedNetwork bool   `json:"desktop_dedicated_network,omitempty"`
-	Number                  uint32 `json:"number"`
-	ID                      string `json:"id"`
-	Label                   string `json:"label"`
-	Source                  string `json:"source"`
-	ProfileID               string `json:"profile_id,omitempty"`
-	Enabled                 bool   `json:"enabled"`
-	Status                  string `json:"status"`
-	AuthState               string `json:"auth_state,omitempty"`
-	Email                   string `json:"email,omitempty"`
-	Organization            string `json:"organization,omitempty"`
-	Plan                    string `json:"plan,omitempty"`
-	CheckedAt               int64  `json:"checked_at,omitempty"`
+	DesktopInstanceID       string         `json:"desktop_instance_id,omitempty"`
+	DesktopStatus           string         `json:"desktop_status,omitempty"`
+	CodeUnlinked            bool           `json:"code_unlinked,omitempty"`
+	ProxyNodeID             string         `json:"proxy_node_id,omitempty"`
+	DesktopDedicatedNetwork bool           `json:"desktop_dedicated_network,omitempty"`
+	Number                  uint32         `json:"number"`
+	ID                      string         `json:"id"`
+	Label                   string         `json:"label"`
+	Source                  string         `json:"source"`
+	ProfileID               string         `json:"profile_id,omitempty"`
+	Enabled                 bool           `json:"enabled"`
+	Status                  string         `json:"status"`
+	AuthState               string         `json:"auth_state,omitempty"`
+	Email                   string         `json:"email,omitempty"`
+	Organization            string         `json:"organization,omitempty"`
+	Plan                    string         `json:"plan,omitempty"`
+	Quota                   *providerQuota `json:"quota,omitempty"`
+	CheckedAt               int64          `json:"checked_at,omitempty"`
+	UsageStatus             string         `json:"usage_status,omitempty"`
+	UsageCheckedAt          int64          `json:"usage_checked_at,omitempty"`
+	UsageChecking           bool           `json:"usage_checking,omitempty"`
 }
 
 func (a providerAccount) guestID() string {
@@ -60,13 +79,16 @@ func (a providerAccount) subject() string {
 }
 
 type providerGuestSnapshot struct {
-	LoggedIn      bool     `json:"logged_in"`
-	Email         string   `json:"email"`
-	Organization  string   `json:"organization"`
-	Plan          string   `json:"plan"`
-	AuthState     string   `json:"auth_state,omitempty"`
-	Subject       string   `json:"subject,omitempty"`
-	DesktopEmails []string `json:"desktop_emails,omitempty"`
+	UsageStatus    string         `json:"usage_status,omitempty"`
+	UsageCheckedAt int64          `json:"usage_checked_at,omitempty"`
+	LoggedIn       bool           `json:"logged_in"`
+	Email          string         `json:"email"`
+	Organization   string         `json:"organization"`
+	Plan           string         `json:"plan"`
+	AuthState      string         `json:"auth_state,omitempty"`
+	Subject        string         `json:"subject,omitempty"`
+	DesktopEmails  []string       `json:"desktop_emails,omitempty"`
+	Quota          *providerQuota `json:"quota,omitempty"`
 }
 
 func (snap providerGuestSnapshot) resolvedSubject() string {
@@ -94,14 +116,23 @@ type providerAccountList struct {
 }
 
 type providerAccountState struct {
-	mu             sync.Mutex
-	lastPick       string
-	recent         map[string]string
-	defaultChecked time.Time
-	defaultReading providerGuestSnapshot
-	defaultError   error
-	loginNotice    string
-	probe          func(context.Context, string, string) (providerGuestSnapshot, error)
+	mu                    sync.Mutex
+	lastPick              string
+	recent                map[string]string
+	defaultChecked        time.Time
+	defaultReading        providerGuestSnapshot
+	defaultError          error
+	defaultQuota          *providerQuota
+	defaultQuotaSubject   string
+	defaultUsageStatus    string
+	defaultUsageCheckedAt int64
+	loginNotice           string
+	probe                 func(context.Context, string, string) (providerGuestSnapshot, error)
+	usageProbe            func(context.Context, string, string, string) (providerGuestSnapshot, error)
+	quotasProbe           func(context.Context, string, []string) (map[string]providerGuestQuota, error)
+	usageActive           map[string]*claudeUsageCall
+	panelRunning          bool
+	panelUntil            time.Time
 }
 
 type providerAccountManagers struct {
@@ -283,7 +314,13 @@ func (s *Server) saveProviderAccounts(provider string, list providerAccountList)
 	if err := list.assignNumbers(); err != nil {
 		return err
 	}
-	if err := writePrivate(s.providerAccountsFile(provider), list); err != nil {
+	cleaned := list
+	cleaned.Accounts = make([]providerAccount, len(list.Accounts))
+	for i, a := range list.Accounts {
+		a.UsageChecking = false
+		cleaned.Accounts[i] = a
+	}
+	if err := writePrivate(s.providerAccountsFile(provider), cleaned); err != nil {
 		return fmt.Errorf("%s 账号设置未保存，请检查配置目录权限和磁盘空间", spec.Name)
 	}
 	s.desktopCatalogRevision.Add(1)
@@ -291,7 +328,7 @@ func (s *Server) saveProviderAccounts(provider string, list providerAccountList)
 }
 
 func providerSnapshotCommand(provider, guestID string) string {
-	cmd := "exec /usr/local/bin/cage-provider-account " + shellescape.Quote(provider) + " snapshot " + shellescape.Quote(guestID)
+	cmd := "exec " + providerUsageCommand(provider, "snapshot", guestID)
 	if guestID == "default" {
 		cmd = `set -o pipefail; cd "$HOME" && env TERM=xterm-256color COLORTERM=truecolor CAGE_WORKBENCH=1 /bin/bash -lic ` +
 			shellescape.Quote(`printf '\nCAGE_PROVIDER_SNAPSHOT '; `+cmd) +
@@ -521,28 +558,42 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errClaudeAccessLost.Error(), http.StatusLocked)
 		return
 	}
+	st := s.providerAccounts.forProvider(provider)
+	if r.URL.Query().Get("panel") == "visible" {
+		st.mu.Lock()
+		if st.panelRunning {
+			st.panelUntil = time.Now().Add(claudePanelLease)
+		}
+		st.mu.Unlock()
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	stop := context.AfterFunc(epoch, cancel)
 	defer func() { stop(); cancel() }()
 
-	st := s.providerAccounts.forProvider(provider)
 	s.mu.Lock()
 	vmUp := s.vmRunning()
 	updateReq := s.guestUpdateRequired
 	s.mu.Unlock()
 
 	environment := "ready"
+	detectionStatus := "ready"
+	detectionError := ""
 	if !vmUp {
 		environment = "stopped"
+		detectionStatus = "offline"
 	} else if updateReq {
 		environment = "update_required"
+		detectionStatus = "update_required"
+		detectionError = "请同步环境组件后再检测普通终端的登录"
 	}
 
 	var defaultSnap providerGuestSnapshot
+	var defaultProbeErr error
 	st.mu.Lock()
 	needDefaultProbe := environment == "ready" && time.Since(st.defaultChecked) > 20*time.Second
 	if !needDefaultProbe {
 		defaultSnap = st.defaultReading
+		defaultProbeErr = st.defaultError
 	}
 	st.mu.Unlock()
 
@@ -551,11 +602,21 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 		st.mu.Lock()
 		st.defaultChecked = time.Now()
 		st.defaultError = err
+		defaultProbeErr = err
 		if err == nil {
-			st.defaultReading = snap
-			defaultSnap = snap
+			st.observeDefaultSnapshot(snap, time.Now())
+			defaultSnap = st.defaultReading
 		}
 		st.mu.Unlock()
+	}
+
+	if environment == "ready" {
+		if defaultProbeErr != nil {
+			detectionStatus = "unavailable"
+			detectionError = defaultProbeErr.Error()
+		} else if defaultSnap.resolvedSubject() == "" {
+			detectionStatus = "signed_out"
+		}
 	}
 
 	st.mu.Lock()
@@ -571,9 +632,10 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 	if environment == "ready" {
 		prevChecked := make(map[string]int64, len(list.Accounts))
 		changed := false
+		now := time.Now()
 		for i := range list.Accounts {
 			a := &list.Accounts[i]
-			if a.CodeUnlinked || (a.CheckedAt > 0 && time.Since(time.Unix(a.CheckedAt, 0)) < 60*time.Second) {
+			if a.CodeUnlinked || (a.CheckedAt > 0 && now.Sub(time.Unix(a.CheckedAt, 0)) < 60*time.Second) {
 				continue
 			}
 			prevChecked[a.ID] = a.CheckedAt
@@ -582,7 +644,7 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 				delete(prevChecked, a.ID)
 				continue
 			}
-			a.CheckedAt = time.Now().Unix()
+			a.CheckedAt = now.Unix()
 			a.AuthState = snap.AuthState
 			if snap.LoggedIn && snap.resolvedSubject() != "" {
 				if a.Email == "" || a.subject() == snap.resolvedSubject() {
@@ -595,6 +657,7 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 						a.Label = a.Email
 					}
 					a.Status = "ready"
+					a.mergeQuota(snap.Quota, now)
 				} else {
 					a.Status = "changed"
 				}
@@ -620,7 +683,10 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 							target.Email = probed.Email
 							target.Organization = probed.Organization
 							target.Plan = probed.Plan
+						} else if probed.Plan != "" && target.Status == "ready" {
+							target.Plan = probed.Plan
 						}
+						target.mergeQuota(probed.Quota, now)
 						wrote = true
 					}
 				}
@@ -633,25 +699,56 @@ func (s *Server) listProviderAccounts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	st.mu.Lock()
+	panelRunning := st.panelRunning
+	viewAccounts := make([]providerAccount, len(list.Accounts))
+	for i, a := range list.Accounts {
+		a.UsageChecking = st.usageActive[a.subject()] != nil
+		viewAccounts[i] = a
+	}
 	var detectedDefault map[string]any
 	defSubject := defaultSnap.resolvedSubject()
 	if defaultSnap.LoggedIn && defSubject != "" && list.bySubject(defSubject) == nil && !slices.Contains(list.DismissedDefaults, defSubject) {
-		detectedDefault = map[string]any{
-			"identity":     defSubject,
-			"email":        defaultSnap.Email,
-			"organization": defaultSnap.Organization,
-			"plan":         defaultSnap.Plan,
-			"auth_state":   defaultSnap.AuthState,
+		var defQuota *providerQuota
+		var defUsageStatus string
+		var defUsageCheckedAt int64
+		if st.defaultQuotaSubject == defSubject {
+			defQuota = st.defaultQuota
+			defUsageStatus = st.defaultUsageStatus
+			defUsageCheckedAt = st.defaultUsageCheckedAt
 		}
+		detectedDefault = map[string]any{
+			"identity":         defSubject,
+			"email":            defaultSnap.Email,
+			"organization":     defaultSnap.Organization,
+			"plan":             defaultSnap.Plan,
+			"auth_state":       defaultSnap.AuthState,
+			"status":           "ready",
+			"quota":            defQuota,
+			"usage_status":     defUsageStatus,
+			"usage_checked_at": defUsageCheckedAt,
+			"usage_checking":   st.usageActive[defSubject] != nil,
+		}
+	}
+	st.mu.Unlock()
+
+	usageUnavailable := ""
+	if reason := s.usageAvailability(); reason != nil {
+		usageUnavailable = reason.Error()
 	}
 
 	jsonReply(w, map[string]any{
 		"provider":                  provider,
 		"provider_name":             spec.Name,
 		"cli_binary":                spec.CLI.Binary,
-		"accounts":                  list.Accounts,
+		"accounts":                  viewAccounts,
+		"detected":                  detectedDefault,
 		"default_profile":           detectedDefault,
 		"desktop_emails":            defaultSnap.DesktopEmails,
+		"detection_status":          detectionStatus,
+		"detection_error":           detectionError,
+		"usage_panel_running":       panelRunning,
+		"usage_unavailable_reason":  usageUnavailable,
 		"pending_login":             list.PendingLogin,
 		"pending_proxy_node":        list.PendingProxyNode,
 		"login_active":              s.providerLoginActive(provider, list.PendingLogin),
@@ -701,70 +798,20 @@ func (s *Server) mutateProviderAccounts(w http.ResponseWriter, r *http.Request) 
 	var err error
 
 	switch input.Action {
-	case "refresh_default":
-		snap, probeErr := s.probeProviderGuest(ctx, provider, "default")
-		st.mu.Lock()
-		st.defaultChecked = time.Now()
-		st.defaultError = probeErr
-		if probeErr == nil {
-			st.defaultReading = snap
-		}
-		st.mu.Unlock()
-		err = probeErr
-
-	case "refresh":
-		if !validClaudeID(input.ID) {
-			err = errors.New("账号标识无效")
-			break
-		}
+	case "usage_panel":
 		st.mu.Lock()
 		list, loadErr := s.loadProviderAccounts(provider)
-		var guestID string
-		if loadErr == nil {
-			if a := list.find(input.ID); a != nil {
-				guestID = a.guestID()
-			} else {
-				loadErr = errors.New("未找到该账号")
-			}
-		}
 		st.mu.Unlock()
 		if loadErr != nil {
-			err = loadErr
-			break
+			requestError(w, loadErr)
+			return
 		}
-		snap, probeErr := s.probeProviderGuest(ctx, provider, guestID)
-		if probeErr != nil {
-			err = probeErr
-			break
-		}
-		st.mu.Lock()
-		list, err = s.loadProviderAccounts(provider)
-		if err == nil {
-			if a := list.find(input.ID); a != nil {
-				a.CheckedAt = time.Now().Unix()
-				a.AuthState = snap.AuthState
-				if snap.LoggedIn && snap.resolvedSubject() != "" {
-					if a.Email == "" || a.subject() == snap.resolvedSubject() {
-						a.Email = strings.ToLower(strings.TrimSpace(snap.Email))
-						a.Organization = strings.TrimSpace(snap.Organization)
-						if snap.Plan != "" {
-							a.Plan = snap.Plan
-						}
-						if a.Label == "" {
-							a.Label = a.Email
-						}
-						a.Status = "ready"
-						a.CodeUnlinked = false
-					} else {
-						a.Status = "changed"
-					}
-				} else {
-					a.Status = "signed_out"
-				}
-				err = s.saveProviderAccounts(provider, list)
-			}
-		}
-		st.mu.Unlock()
+		s.startProviderPanelUsage(provider, list)
+		s.listProviderAccounts(w, r)
+		return
+
+	case "refresh_default", "refresh":
+		err = s.refreshProviderUsage(ctx, provider, input)
 
 	case "join":
 		if !validClaudeSubject(input.Identity) {
@@ -785,6 +832,15 @@ func (s *Server) mutateProviderAccounts(w http.ResponseWriter, r *http.Request) 
 		list, loadErr := s.loadProviderAccounts(provider)
 		err = loadErr
 		if err == nil {
+			now := time.Now()
+			var inheritedQuota *providerQuota
+			var inheritedStatus string
+			var inheritedChecked int64
+			if st.defaultQuotaSubject == input.Identity {
+				inheritedQuota = st.defaultQuota
+				inheritedStatus = st.defaultUsageStatus
+				inheritedChecked = st.defaultUsageCheckedAt
+			}
 			if existing := list.bySubject(input.Identity); existing != nil {
 				if existing.CodeUnlinked || existing.Status != "ready" {
 					existing.Source = "managed"
@@ -792,22 +848,32 @@ func (s *Server) mutateProviderAccounts(w http.ResponseWriter, r *http.Request) 
 					existing.Status = "ready"
 					existing.CodeUnlinked = false
 					existing.AuthState = snap.AuthState
-					existing.CheckedAt = time.Now().Unix()
+					existing.CheckedAt = now.Unix()
+					existing.mergeQuota(inheritedQuota, now)
+					if inheritedStatus != "" {
+						existing.UsageStatus = inheritedStatus
+						existing.UsageCheckedAt = inheritedChecked
+					}
 				}
 			} else {
-				list.Accounts = append(list.Accounts, providerAccount{
-					ID:           targetID,
-					Source:       "managed",
-					ProfileID:    targetID,
-					Label:        strings.ToLower(strings.TrimSpace(snap.Email)),
-					Enabled:      true,
-					Status:       "ready",
-					AuthState:    snap.AuthState,
-					Email:        strings.ToLower(strings.TrimSpace(snap.Email)),
-					Organization: strings.TrimSpace(snap.Organization),
-					Plan:         snap.Plan,
-					CheckedAt:    time.Now().Unix(),
-				})
+				added := providerAccount{
+					ID:             targetID,
+					Source:         "managed",
+					ProfileID:      targetID,
+					Label:          strings.ToLower(strings.TrimSpace(snap.Email)),
+					Enabled:        true,
+					Status:         "ready",
+					AuthState:      snap.AuthState,
+					Email:          strings.ToLower(strings.TrimSpace(snap.Email)),
+					Organization:   strings.TrimSpace(snap.Organization),
+					Plan:           snap.Plan,
+					CheckedAt:      now.Unix(),
+					UsageStatus:    inheritedStatus,
+					UsageCheckedAt: inheritedChecked,
+				}
+				added.mergeQuota(inheritedQuota, now)
+				added.mergeQuota(snap.Quota, now)
+				list.Accounts = append(list.Accounts, added)
 			}
 			list.undismissDefault(input.Identity)
 			err = s.saveProviderAccounts(provider, list)
@@ -1047,49 +1113,7 @@ func (s *Server) selectProviderAccount(provider, requested string, login bool, w
 	}
 
 	if requested == "" || requested == "auto" {
-		var eligible []providerAccount
-		for _, a := range list.Accounts {
-			if a.Enabled && a.Status == "ready" && !a.CodeUnlinked && a.subject() != "" {
-				eligible = append(eligible, a)
-			}
-		}
-		if len(eligible) == 0 {
-			if len(list.Accounts) == 0 {
-				// Allow unconfigured environment to run default slot until user adds accounts.
-				return claudeSelection{GuestID: "default"}, nil
-			}
-			return claudeSelection{}, fmt.Errorf("当前没有已启用且完成登录的 %s 账号，请在账号管理中授权或选择“在此终端登录”", spec.Name)
-		}
-		var chosen providerAccount
-		if list.Scheduling.Mode == "sequential" {
-			chosen = eligible[0]
-		} else {
-			if workspace != "" {
-				if preferred := st.recent[workspace]; preferred != "" {
-					for _, a := range eligible {
-						if a.ID == preferred {
-							chosen = a
-							break
-						}
-					}
-				}
-			}
-			if chosen.ID == "" {
-				idx := 0
-				for i, a := range eligible {
-					if a.ID == st.lastPick {
-						idx = (i + 1) % len(eligible)
-						break
-					}
-				}
-				chosen = eligible[idx]
-			}
-		}
-		st.lastPick = chosen.ID
-		if workspace != "" {
-			st.recent[workspace] = chosen.ID
-		}
-		return claudeSelection{ID: chosen.ID, GuestID: chosen.guestID(), Subject: chosen.subject()}, nil
+		return s.allocateProviderAccountLocked(provider, st, list, workspace)
 	}
 
 	a := list.find(requested)
