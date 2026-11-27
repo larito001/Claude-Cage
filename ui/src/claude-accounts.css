@@ -403,6 +403,8 @@
 }
 .claude-quota-row { --fill: var(--quota-five); }
 .claude-quota-row + .claude-quota-row { --fill: var(--quota-seven); }
+.claude-quota-row[data-mode="remaining"] { --fill: var(--quota-seven); }
+.claude-quota-row[data-mode="remaining"][data-low="true"] { --fill: var(--quota-five); }
 .claude-quota-row progress::-webkit-progress-bar { background: var(--chrome-dark); border-radius: 999px; }
 .claude-quota-row progress::-webkit-progress-value { background: var(--fill); border-radius: 999px; transition: width 220ms var(--ease-out); }
 .claude-quota-row progress::-moz-progress-bar { background: var(--fill); border-radius: 999px; }

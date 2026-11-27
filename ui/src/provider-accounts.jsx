@@ -155,7 +155,7 @@ function DetectedProviderProfile({
           </div>
         </div>
       </div>
-      <ProfileUsage quota={profile.quota} state={usage.state} />
+      <ProfileUsage quota={profile.quota} state={usage.state} mode={spec.quotaDisplay} />
       <div className="claude-profile-actions">
         <button className="quiet-button" disabled={busy} onClick={onJoin}>
           <Plus size={14} />
@@ -325,7 +325,7 @@ function ProviderProfileCard({
         </label>
       </div>
 
-      <ProfileUsage quota={profile.quota} state={usage.state} />
+      <ProfileUsage quota={profile.quota} state={usage.state} mode={spec.quotaDisplay} />
 
       {desktopNetwork && boundNodeName && !configOpen && (
         <div className="claude-config-chips">

@@ -14,6 +14,7 @@ export const PROVIDERS = Object.freeze([
     supportsAutoHandoff: true,
     supportsDeviceAuth: false,
     supportsQuota: true,
+    quotaDisplay: "used",
   }),
   Object.freeze({
     id: "antigravity",
@@ -30,6 +31,7 @@ export const PROVIDERS = Object.freeze([
     supportsAutoHandoff: false,
     supportsDeviceAuth: false,
     supportsQuota: true,
+    quotaDisplay: "remaining",
   }),
   Object.freeze({
     id: "codex",
@@ -46,6 +48,7 @@ export const PROVIDERS = Object.freeze([
     supportsAutoHandoff: false,
     supportsDeviceAuth: true,
     supportsQuota: true,
+    quotaDisplay: "remaining",
   }),
 ]);
 

@@ -5,6 +5,7 @@ import { InlineSelect } from "./inline-select";
 import crabIcon from "./claude-account-crab.svg";
 import "./claude-accounts.css";
 import { activeInterfaceLanguage, translate, useTranslation } from "./interface-language.mjs";
+import { isLowRemainingQuota, quotaDisplayPercentage } from "./quota-display.mjs";
 
 // Ordinary reads never start an upstream usage query.
 export function useClaudeAccounts() {
@@ -163,7 +164,7 @@ export function useUsageCheck(profile, environment, perform, change) {
   return { state, check };
 }
 
-export function QuotaWindow({ label, snapshot, state }) {
+export function QuotaWindow({ label, snapshot, state, mode = "used" }) {
   const tr = useTranslation();
   const now = useContext(QuotaTime);
   const reset = snapshot?.resets_at;
@@ -171,55 +172,62 @@ export function QuotaWindow({ label, snapshot, state }) {
   const expired = remaining !== null && remaining <= 0;
   const hasReading = Number.isFinite(snapshot?.used_percentage);
   const known = !expired && hasReading;
+  const isRemaining = mode === "remaining";
+  const displayPercentage = hasReading ? quotaDisplayPercentage(snapshot.used_percentage, mode) : null;
+  const lowRemaining = known && isLowRemainingQuota(snapshot.used_percentage, mode);
   const lastSeen = snapshot?.observed_at;
   const stale = known && (!lastSeen || now - lastSeen > 15 * 60 ||
     !["reported", "partial"].includes(state));
   const countdown = expired ? tr("等待更新") : remaining !== null ? resetCountdown(remaining) :
     known && snapshot?.used_percentage === 0 ? tr("已获取额度") :
     known ? tr("重置时间未知") : state === "checking" ? tr("查询中") : tr("暂无读数");
-  return <div className="claude-quota-row" role="group" aria-label={label + " " + tr("额度")}>
+  const meterLabel = isRemaining ? tr("剩余额度") : tr("已用额度");
+  const readingTitle = isRemaining
+    ? (lastSeen ? tr("剩余额度 · 读取于 {0}", (timeLabel(lastSeen))) : tr("剩余额度"))
+    : (lastSeen ? tr("已用额度 · 读取于 {0}", (timeLabel(lastSeen))) : tr("已用额度"));
+  return <div className="claude-quota-row" data-mode={mode} data-low={lowRemaining ? "true" : undefined} role="group" aria-label={label + " " + tr("额度")}>
     <span className="claude-quota-period">{label}</span>
     {known
-      ? <progress aria-label={label + " " + tr("已用额度")} value={snapshot.used_percentage} max={100} />
+      ? <progress aria-label={label + " " + meterLabel} value={displayPercentage} max={100} />
       : <span className="claude-quota-unknown" aria-hidden="true" />}
     <div className="claude-quota-reading">
       {stale && <span className="claude-quota-stale" title={lastSeen ? tr("历史读数 · {0}", (timeLabel(lastSeen))) : tr("历史读数")}>{tr("历史读数")}</span>}
-      {known && <strong title={lastSeen ? tr("已用额度 · 读取于 {0}", (timeLabel(lastSeen))) : tr("已用额度")}>{snapshot.used_percentage}%</strong>}
+      {known && <strong title={readingTitle}>{isRemaining ? tr("剩余 {0}%", displayPercentage) : `${displayPercentage}%`}</strong>}
       <span className="claude-quota-reset" title={reset ? tr("{0} 重置", (timeLabel(reset))) : tr("尚无重置时间")}>
         {remaining > 0 && <Timer size={12} aria-hidden="true" />}{countdown}
       </span>
     </div>
     {hasReading && (expired || stale || state === "partial") && <small className="claude-quota-history">
-      {expired && tr("上次 {0}% ·", (snapshot.used_percentage)) + " "}
+      {expired && (isRemaining ? tr("上次剩余 {0}% ·", displayPercentage) : tr("上次 {0}% ·", displayPercentage)) + " "}
       {lastSeen > 0 ? <>{!expired && tr("读取于") + " "}<time dateTime={new Date(lastSeen * 1000).toISOString()}>{timeLabel(lastSeen)}</time></> : tr("读数时间未知")}
     </small>}
   </div>;
 }
 
-export function ProfileUsage({ quota, state }) {
+export function ProfileUsage({ quota, state, mode = "used" }) {
   if (Array.isArray(quota?.groups) && quota.groups.length > 1) {
     return <div className="claude-quota-grid">
       {quota.groups.map((group) => (
         <React.Fragment key={group.id}>
-          {group.five_hour !== undefined && <QuotaWindow label={`${group.label} · 5h`} snapshot={group.five_hour} state={state} />}
-          {group.seven_day !== undefined && <QuotaWindow label={`${group.label} · 7d`} snapshot={group.seven_day} state={state} />}
+          {group.five_hour !== undefined && <QuotaWindow label={`${group.label} · 5h`} snapshot={group.five_hour} state={state} mode={mode} />}
+          {group.seven_day !== undefined && <QuotaWindow label={`${group.label} · 7d`} snapshot={group.seven_day} state={state} mode={mode} />}
         </React.Fragment>
       ))}
     </div>;
   }
   if (quota?.single_window === "seven_day" && quota?.seven_day) {
     return <div className="claude-quota-grid">
-      <QuotaWindow label="7d" snapshot={quota.seven_day} state={state} />
+      <QuotaWindow label="7d" snapshot={quota.seven_day} state={state} mode={mode} />
     </div>;
   }
   if (quota?.single_window === "five_hour" && quota?.five_hour) {
     return <div className="claude-quota-grid">
-      <QuotaWindow label="5h" snapshot={quota.five_hour} state={state} />
+      <QuotaWindow label="5h" snapshot={quota.five_hour} state={state} mode={mode} />
     </div>;
   }
   return <div className="claude-quota-grid">
-    <QuotaWindow label="5h" snapshot={quota?.five_hour} state={state} />
-    <QuotaWindow label="7d" snapshot={quota?.seven_day} state={state} />
+    <QuotaWindow label="5h" snapshot={quota?.five_hour} state={state} mode={mode} />
+    <QuotaWindow label="7d" snapshot={quota?.seven_day} state={state} mode={mode} />
   </div>;
 }
 
