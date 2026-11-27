@@ -547,6 +547,7 @@ func run() int {
 		"ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN",
 		"GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "AGY_ADC_AUTH",
 		"OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN",
+		cage.SkipBootEnvironmentEnv,
 	} {
 		os.Unsetenv(name)
 	}
@@ -698,7 +699,17 @@ func runGuestServiceStart(script string, stdio cli.IO, invoke func([]string, cli
 }
 
 func startEnvironment(command string, args []string, stdio cli.IO, invoke func([]string, cli.IO) int, startServices func() error) int {
-	if result := invoke(args, stdio); result != 0 {
+	// startServices immediately applies EnvironmentScript inside StartScript;
+	// skip the redundant SSH pass at the tail of cli boot.
+	prevSkip, hadSkip := os.LookupEnv(cage.SkipBootEnvironmentEnv)
+	_ = os.Setenv(cage.SkipBootEnvironmentEnv, "1")
+	result := invoke(args, stdio)
+	if hadSkip {
+		_ = os.Setenv(cage.SkipBootEnvironmentEnv, prevSkip)
+	} else {
+		_ = os.Unsetenv(cage.SkipBootEnvironmentEnv)
+	}
+	if result != 0 {
 		return result
 	}
 	if err := startServices(); err != nil {

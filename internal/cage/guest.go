@@ -405,6 +405,8 @@ func SingleToolInstallScript(tool string, tls12Compat bool) string {
 		"\ncage_install_tool " + shellescape.Quote(tool) + "\n"
 }
 
+const SkipBootEnvironmentEnv = "CAGE_SKIP_BOOT_ENV"
+
 func (c Config) EnvironmentScript() string {
 	env := fmt.Sprintf("export CAGE_TZ=%s\nexport CAGE_LOCALE=%s\nexport CAGE_LANGUAGE=%s\n", shellescape.Quote(c.Timezone), shellescape.Quote(c.Locale), shellescape.Quote(c.BrowserLanguage))
 	if theme := os.Getenv(GuestThemeEnv); theme == "light" || theme == "dark" {

@@ -179,7 +179,7 @@ apt_get install -y --no-install-recommends \
 
 # Cage's download inactivity monitor needs Python even when an optional
 # language preinstall is disabled. Keep standalone agent-vm choices intact.
-if [[ "${CLAUDE_CAGE:-}" == 1 ]]; then
+if [[ "${CLAUDE_CAGE:-}" == 1 && "$INSTALL_PYTHON" != "1" ]]; then
   apt_get install -y --no-install-recommends python3
 fi
 
@@ -270,7 +270,7 @@ if [[ "$INSTALL_DOCKER" == "1" ]]; then
   install_repository_key "https://download.docker.com/linux/$docker_distribution/gpg" /etc/apt/keyrings/docker.asc
   sudo chmod a+r /etc/apt/keyrings/docker.asc
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/$docker_distribution $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  apt_get update
+  apt_get -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/docker.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0 update
   # buildx and pigz are Recommends: `docker build` needs buildx, pigz speeds
   # up layer decompression. docker-ce-rootless-extras is left out: the user is
   # in the docker group of the rootful daemon.
@@ -291,7 +291,7 @@ if [[ "$INSTALL_NODE" == "1" ]]; then
   sudo chmod a+r /etc/apt/keyrings/nodesource.asc
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_24.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list > /dev/null
   printf 'Package: nodejs\nPin: origin deb.nodesource.com\nPin-Priority: 600\n' | sudo tee /etc/apt/preferences.d/nodejs > /dev/null
-  apt_get update
+  apt_get -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/nodesource.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0 update
   apt_get install -y --no-install-recommends nodejs
 fi
 

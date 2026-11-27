@@ -795,7 +795,7 @@ func (s *start) afterBoot(isNew, wasRunning, wantWritable bool) error {
 		s.runHostScript(projectRuntime)
 	}
 	s.bindFiles(isNew)
-	if path := os.Getenv(cage.ConfigEnv); path != "" {
+	if path := os.Getenv(cage.ConfigEnv); path != "" && os.Getenv(cage.SkipBootEnvironmentEnv) != "1" {
 		cfg, err := cage.Load(path)
 		if err != nil {
 			return err

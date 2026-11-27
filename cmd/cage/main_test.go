@@ -278,3 +278,33 @@ func TestVerifyVMAssetsPermissionHint(t *testing.T) {
 		t.Fatalf("temp directory %s was not cleaned up: %v", created, statErr)
 	}
 }
+
+func TestStartEnvironmentSkipsDuplicateBootEnvDuringInvokeOnly(t *testing.T) {
+	t.Setenv(cage.SkipBootEnvironmentEnv, "")
+	os.Unsetenv(cage.SkipBootEnvironmentEnv)
+
+	invokeSawSkip := ""
+	servicesSawSkip := "not-run"
+	code := startEnvironment("up", []string{"up"}, cli.IO{Stdout: io.Discard, Stderr: io.Discard},
+		func(_ []string, _ cli.IO) int {
+			invokeSawSkip = os.Getenv(cage.SkipBootEnvironmentEnv)
+			return 0
+		},
+		func() error {
+			servicesSawSkip = os.Getenv(cage.SkipBootEnvironmentEnv)
+			return nil
+		},
+	)
+	if code != 0 {
+		t.Fatalf("startEnvironment returned %d", code)
+	}
+	if invokeSawSkip != "1" {
+		t.Fatalf("invoke saw %s=%q, want \"1\"", cage.SkipBootEnvironmentEnv, invokeSawSkip)
+	}
+	if servicesSawSkip != "" {
+		t.Fatalf("startServices saw %s=%q, want unset", cage.SkipBootEnvironmentEnv, servicesSawSkip)
+	}
+	if _, exists := os.LookupEnv(cage.SkipBootEnvironmentEnv); exists {
+		t.Fatalf("%s leaked after startEnvironment", cage.SkipBootEnvironmentEnv)
+	}
+}

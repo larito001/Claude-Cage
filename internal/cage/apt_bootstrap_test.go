@@ -201,3 +201,27 @@ func TestGuestInstallEntrypointsCheckAPTFirst(t *testing.T) {
 		}
 	}
 }
+
+func TestGuestSetupPreinstallsAudioAndServicePackagesInOnePass(t *testing.T) {
+	firstInstallLine := ""
+	for _, line := range strings.Split(guestDependencies, "\n") {
+		if strings.Contains(line, "apt-get install") {
+			firstInstallLine = line
+			break
+		}
+	}
+	if firstInstallLine == "" {
+		t.Fatal("guest-setup.sh missing initial apt-get install line")
+	}
+	required := []string{
+		"pulseaudio", "pulseaudio-utils",
+		"xdotool", "libgtk-3-0", "ibus", "ibus-gtk3",
+		"gir1.2-ibus-1.0", "gir1.2-gtk-3.0", "python3-gi",
+		"python3-xlib", "xsettingsd", "xdg-utils",
+	}
+	for _, pkg := range required {
+		if !strings.Contains(" "+firstInstallLine+" ", " "+pkg+" ") {
+			t.Fatalf("guest-setup.sh initial install missing %q; would trigger a secondary apt-get pass", pkg)
+		}
+	}
+}
